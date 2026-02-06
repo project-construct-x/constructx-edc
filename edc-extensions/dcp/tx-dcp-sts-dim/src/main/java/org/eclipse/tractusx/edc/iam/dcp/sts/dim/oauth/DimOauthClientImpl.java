@@ -19,10 +19,11 @@
 
 package org.eclipse.tractusx.edc.iam.dcp.sts.dim.oauth;
 
-import org.eclipse.edc.iam.identitytrust.sts.remote.StsRemoteClientConfiguration;
+import org.eclipse.edc.iam.decentralizedclaims.sts.remote.StsRemoteClientConfiguration;
 import org.eclipse.edc.iam.oauth2.spi.client.Oauth2Client;
 import org.eclipse.edc.iam.oauth2.spi.client.Oauth2CredentialsRequest;
 import org.eclipse.edc.iam.oauth2.spi.client.SharedSecretOauth2CredentialsRequest;
+import org.eclipse.edc.participantcontext.spi.service.ParticipantContextSupplier;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -43,15 +44,18 @@ public class DimOauthClientImpl implements DimOauth2Client {
     private final Vault vault;
     private final Clock clock;
     private final Monitor monitor;
+    private final ParticipantContextSupplier participantContextSupplier;
 
     private volatile TimestampedToken authToken;
 
-    public DimOauthClientImpl(Oauth2Client oauth2Client, Vault vault, StsRemoteClientConfiguration configuration, Clock clock, Monitor monitor) {
+    public DimOauthClientImpl(Oauth2Client oauth2Client, Vault vault, StsRemoteClientConfiguration configuration, Clock clock,
+                              Monitor monitor, ParticipantContextSupplier participantContextSupplier) {
         this.configuration = configuration;
         this.oauth2Client = oauth2Client;
         this.vault = vault;
         this.clock = clock;
-        this.monitor = monitor;
+        this.monitor = monitor.withPrefix(getClass().getSimpleName());
+        this.participantContextSupplier = participantContextSupplier;
     }
 
     @Override
@@ -85,7 +89,14 @@ public class DimOauthClientImpl implements DimOauth2Client {
 
     @NotNull
     private Result<Oauth2CredentialsRequest> createRequest() {
-        var secret = vault.resolveSecret(configuration.clientSecretAlias());
+        var participantContextServiceResult = participantContextSupplier.get();
+        if (participantContextServiceResult.failed()) {
+            var msg = "Cannot retrieve Participant Context";
+            monitor.severe(msg + ": " + participantContextServiceResult.getFailureDetail());
+            return Result.failure(msg);
+        }
+
+        var secret = vault.resolveSecret(participantContextServiceResult.getContent().getParticipantContextId(), configuration.clientSecretAlias());
         if (secret != null) {
             var builder = SharedSecretOauth2CredentialsRequest.Builder.newInstance()
                     .url(configuration.tokenUrl())
@@ -95,7 +106,9 @@ public class DimOauthClientImpl implements DimOauth2Client {
 
             return Result.success(builder.build());
         } else {
-            return Result.failure("Failed to fetch client secret from the vault with alias: %s".formatted(configuration.clientSecretAlias()));
+            var msg = "Failed to fetch client secret from the vault with alias: %s".formatted(configuration.clientSecretAlias());
+            monitor.severe(msg);
+            return Result.failure(msg);
         }
     }
 

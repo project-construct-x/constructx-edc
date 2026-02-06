@@ -27,7 +27,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
+import org.eclipse.edc.iam.decentralizedclaims.spi.SecureTokenService;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -48,7 +48,7 @@ import java.util.function.Consumer;
 
 import static java.lang.String.format;
 import static org.eclipse.edc.http.spi.FallbackFactories.retryWhenStatusIsNotIn;
-import static org.eclipse.edc.iam.identitytrust.spi.SelfIssuedTokenConstants.PRESENTATION_TOKEN_CLAIM;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.SelfIssuedTokenConstants.PRESENTATION_TOKEN_CLAIM;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SUBJECT;
@@ -91,11 +91,11 @@ public class DimSecureTokenService implements SecureTokenService {
         this.dimUrl = dimUrl;
         this.dimOauth2Client = dimOauth2Client;
         this.mapper = mapper;
-        this.monitor = monitor;
+        this.monitor = monitor.withPrefix(getClass().getSimpleName());
     }
 
     @Override
-    public Result<TokenRepresentation> createToken(Map<String, Object> claims, @Nullable String bearerAccessScope) {
+    public Result<TokenRepresentation> createToken(String participantContextId, Map<String, Object> claims, @Nullable String bearerAccessScope) {
         return Optional.ofNullable(bearerAccessScope)
                 .map(scope -> grantAccessRequest(claims, scope))
                 .orElseGet(() -> signTokenRequest(claims));
@@ -145,7 +145,9 @@ public class DimSecureTokenService implements SecureTokenService {
     private Result<Void> extractCredential(String scope, Consumer<String> consumer) {
         var tokens = scope.split(":");
         if (tokens.length != 3) {
-            return Result.failure("Scope string %s has invalid format".formatted(scope));
+            var msg = "Scope string %s has invalid format".formatted(scope);
+            monitor.severe(msg);
+            return Result.failure(msg);
         }
         consumer.accept(tokens[1]);
         return Result.success();
@@ -159,7 +161,10 @@ public class DimSecureTokenService implements SecureTokenService {
 
     private Result<TokenRepresentation> executeRequest(Request request, String context) {
         return httpClient.execute(request, List.of(retryWhenStatusIsNotIn(200, 201)), this::handleResponse)
-                .recover(failure -> Result.failure("[%s] %s".formatted(context, failure.getFailureDetail())));
+                .recover(failure -> {
+                    monitor.warning("Request to %s failed: [%s] %s".formatted(request.url().url(), context, failure.getFailureDetail()));
+                    return Result.failure("[%s] %s".formatted(context, failure.getFailureDetail()));
+                });
     }
 
     private Result<TokenRepresentation> handleResponse(Response response) {
@@ -172,7 +177,7 @@ public class DimSecureTokenService implements SecureTokenService {
                     .map(Result::success)
                     .orElseGet(() -> Result.failure("Failed to get jwt field"));
         } catch (IOException e) {
-            monitor.severe("Failed to parse response from DIM");
+            monitor.warning("Failed to parse response from DIM");
             return Result.failure(e.getMessage());
         }
     }
@@ -183,6 +188,7 @@ public class DimSecureTokenService implements SecureTokenService {
             return baseRequestWithToken()
                     .map(builder -> builder.post(requestBody));
         } catch (JsonProcessingException e) {
+            monitor.severe("Failed to serialize request body: " + e.getMessage(), e);
             return Result.failure(e.getMessage());
         }
 

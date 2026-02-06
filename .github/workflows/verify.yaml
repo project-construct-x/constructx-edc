@@ -32,7 +32,7 @@ jobs:
   verify-helm-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: |
           docker run -v ${{ github.workspace }}/charts:/helm-docs jnorwood/helm-docs helm-docs
           
@@ -47,7 +47,7 @@ jobs:
   verify-formatting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-java
       - name: Run Checkstyle
@@ -59,7 +59,7 @@ jobs:
   verify-javadoc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-java
 
       - name: Run Javadoc
@@ -70,7 +70,7 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-java
 
@@ -81,7 +81,7 @@ jobs:
 
       # uploads the jacoco report as artifact
       - name: Upload JaCoCo Coverage Report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: JaCoCo coverage-report
           path: build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
@@ -108,7 +108,7 @@ jobs:
 
       # uploads the coverage-report.md artifact
       - name: Upload Code Coverage Markdown Report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: code-coverage-report-markdown
           path: "*/coverage-results.md"
@@ -117,7 +117,7 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-java
 
@@ -131,7 +131,7 @@ jobs:
   api-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-java
 
@@ -145,7 +145,7 @@ jobs:
     outputs:
       matrix: ${{ steps.outputStep.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: get api groups and create matrix for next job
         id: outputStep
         run: |
@@ -159,7 +159,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-end-to-end-tests.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-java
 
       - name: Run E2E tests (${{ matrix.dir }})
@@ -175,7 +175,7 @@ jobs:
           echo "ARTIFACT_NAME=${SANITIZED_NAME}" >> $GITHUB_ENV
 
       - name: Upload test artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: allure-results-${{ env.ARTIFACT_NAME }}
           path: edc-tests/e2e/${{ matrix.dir }}/build/allure-results
@@ -183,7 +183,7 @@ jobs:
   postgres-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-java
 
       - name: Run Postgresql E2E tests
@@ -197,7 +197,7 @@ jobs:
     if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'release/') }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Output report version
         id: release-version

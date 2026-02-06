@@ -41,24 +41,26 @@ dependencies {
     testFixturesApi(libs.edc.aws.s3.core)
     testFixturesApi(libs.edc.spi.edrstore)
     testFixturesApi(libs.edc.spi.jsonld)
-    testFixturesApi(libs.edc.spi.identity.trust)
+    testFixturesApi(libs.edc.spi.decentralized.claims)
     testFixturesApi(libs.edc.spi.identity.did)
     testFixturesApi(libs.edc.spi.policy)
     testFixturesApi(libs.edc.spi.transfer)
     testFixturesApi(libs.edc.spi.dataplane.dataplane)
+    testFixturesApi(libs.edc.spi.participant.context.single)
     testFixturesApi(testFixtures(libs.edc.api.management.test.fixtures))
 
     testFixturesApi(libs.awaitility)
     testFixturesApi(libs.aws.s3)
     testFixturesApi(libs.azure.storage.blob)
     testFixturesApi(libs.jakartaJson)
-    testFixturesApi(libs.netty.mockserver)
+    testFixturesApi(libs.wiremock)
     testFixturesApi(libs.postgres)
     testFixturesApi(libs.restAssured)
     testFixturesApi(libs.testcontainers.junit)
     testFixturesApi(libs.testcontainers.minio)
     testFixturesApi(libs.testcontainers.localstack)
     testFixturesApi(libs.testcontainers.postgres)
+    testFixturesApi(libs.wiremock)
 }
 
 edcBuild {

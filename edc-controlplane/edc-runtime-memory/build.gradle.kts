@@ -24,20 +24,23 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":edc-controlplane:edc-controlplane-base"))
-    runtimeOnly(project(":edc-dataplane:edc-dataplane-base")) {
+    implementation(project(":edc-controlplane:edc-controlplane-base"))
+    implementation(project(":edc-dataplane:edc-dataplane-base")) {
         exclude("org.eclipse.edc", "data-plane-selector-client")
     }
 
     implementation(project(":core:core-utils"))
+    implementation(project(":edc-extensions:single-participant-vault"))
     implementation(libs.edc.spi.core)
+    implementation(libs.edc.spi.participant.context.single)
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.lib.boot)
 }
 
-tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+tasks.shadowJar {
     mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     archiveFileName.set("${project.name}.jar")
     transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer())
 }
