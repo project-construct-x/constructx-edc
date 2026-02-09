@@ -32,32 +32,11 @@ body:json {
               {
                   "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
                   "operator": "=",
-                  "operandRight": "{{assetId}}"
+                  "operandRight": "{{ASSET_ID}}"
               }
           ]
       }
   }
-  
-  // {
-  //   "@context": [
-  //     {
-  //       "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
-  //       "odrl": "http://www.w3.org/ns/odrl/2/",
-  //       "dct": "http://purl.org/dc/terms/"
-  //     }
-  //   ],
-  //   "@type": "CatalogRequest",
-  //   "counterPartyAddress": "{{Bob_DSP}}/2025-1",
-  //   "counterPartyId": "{{Bob_DID}}",
-  //   "protocol": "dataspace-protocol-http:2025-1",
-  //     "querySpec": {
-  //     "offset": 0,
-  //     "limit": 50,
-  //     "sortOrder": "DESC",
-  //     "sortField": "fieldName",
-  //     "filterExpression": []
-  //   }
-  // }
 }
 
 tests {
