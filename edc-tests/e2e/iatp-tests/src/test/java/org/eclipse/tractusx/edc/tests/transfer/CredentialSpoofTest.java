@@ -19,17 +19,18 @@
 
 package org.eclipse.tractusx.edc.tests.transfer;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.connector.controlplane.test.system.utils.LazySupplier;
+import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationResponseMessage;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.iam.identitytrust.spi.model.PresentationResponseMessage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.junit.utils.LazySupplier;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
@@ -39,19 +40,20 @@ import org.eclipse.tractusx.edc.tests.transfer.extension.DidServerExtension;
 import org.eclipse.tractusx.edc.tests.transfer.iatp.harness.DataspaceIssuer;
 import org.eclipse.tractusx.edc.tests.transfer.iatp.harness.IatpParticipant;
 import org.eclipse.tractusx.edc.tests.transfer.iatp.harness.StsParticipant;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockserver.integration.ClientAndServer;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.CONSUMER_BPN;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.CONSUMER_NAME;
@@ -60,8 +62,6 @@ import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.PROVIDER_N
 import static org.eclipse.tractusx.edc.tests.helpers.PolicyHelperFunctions.bpnPolicy;
 import static org.eclipse.tractusx.edc.tests.transfer.iatp.runtime.Runtimes.iatpRuntime;
 import static org.eclipse.tractusx.edc.tests.transfer.iatp.runtime.Runtimes.stsRuntime;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
 
 @EndToEndTest
 public class CredentialSpoofTest {
@@ -97,7 +97,10 @@ public class CredentialSpoofTest {
             () -> STS.stsConfig(CONSUMER, PROVIDER, MALICIOUS_ACTOR).merge(BDRS_SERVER_EXTENSION.getConfig()));
 
     private static final Integer MOCKED_CS_SERVICE_PORT = getFreePort();
-    protected ClientAndServer server;
+    @RegisterExtension
+    protected static WireMockExtension server = WireMockExtension.newInstance()
+            .options(wireMockConfig().bindAddress("localhost").port(MOCKED_CS_SERVICE_PORT))
+            .build();
 
     private static IatpParticipant participant(String name, String bpn) {
         return IatpParticipant.Builder.newInstance().name(name).id(bpn)
@@ -119,20 +122,10 @@ public class CredentialSpoofTest {
 
         BDRS_SERVER_EXTENSION.addMapping(CONSUMER.getBpn(), CONSUMER.getDid());
         BDRS_SERVER_EXTENSION.addMapping(PROVIDER.getBpn(), PROVIDER.getDid());
-    }
-
-    @BeforeEach
-    void setup() {
-        server = ClientAndServer.startClientAndServer("localhost", getFreePort(), MOCKED_CS_SERVICE_PORT);
 
         CONSUMER.configureParticipant(DATASPACE_ISSUER_PARTICIPANT, CONSUMER_RUNTIME, STS_RUNTIME);
         PROVIDER.configureParticipant(DATASPACE_ISSUER_PARTICIPANT, PROVIDER_RUNTIME, STS_RUNTIME);
         MALICIOUS_ACTOR.configureParticipant(DATASPACE_ISSUER_PARTICIPANT, MALICIOUS_ACTOR_RUNTIME, STS_RUNTIME);
-    }
-
-    @AfterEach
-    void shutdown() {
-        server.stop();
     }
 
     @Test
@@ -146,7 +139,7 @@ public class CredentialSpoofTest {
                 "contentType", "application/json"
         );
 
-        var presentationService = MALICIOUS_ACTOR_RUNTIME.getService(VerifiablePresentationService.class);
+        var presentationService = STS_RUNTIME.getService(VerifiablePresentationService.class);
 
         withMock((membershipCredential) -> presentationService.createPresentation(MALICIOUS_ACTOR.getDid(), List.of(membershipCredential.getVerifiableCredential()), null, PROVIDER.getDid()));
 
@@ -172,7 +165,7 @@ public class CredentialSpoofTest {
                 "contentType", "application/json"
         );
 
-        var presentationService = CONSUMER_RUNTIME.getService(VerifiablePresentationService.class);
+        var presentationService = STS_RUNTIME.getService(VerifiablePresentationService.class);
 
         withMock((membershipCredential) -> presentationService.createPresentation(CONSUMER.getDid(), List.of(membershipCredential.getVerifiableCredential()), null, PROVIDER.getDid()));
 
@@ -202,25 +195,28 @@ public class CredentialSpoofTest {
 
     void withMock(Function<VerifiableCredentialResource, Result<PresentationResponseMessage>> response) {
 
-        var store = CONSUMER_RUNTIME.getService(CredentialStore.class);
+        var store = STS_RUNTIME.getService(CredentialStore.class);
 
-        var sokratesMembershipCredential = store.query(QuerySpec.max()).getContent()
-                .stream().filter(c -> c.getVerifiableCredential().credential().getType().contains("MembershipCredential"))
+        var sokratesMembershipCredential = store.query(QuerySpec.max()).getContent().stream()
+                .filter(c -> c.getVerifiableCredential().credential().getType().contains("MembershipCredential"))
                 .findFirst()
                 .orElseThrow();
 
         var transformerRegistry = MALICIOUS_ACTOR_RUNTIME.getService(TypeTransformerRegistry.class);
         var jsonLd = MALICIOUS_ACTOR_RUNTIME.getService(JsonLd.class);
 
+        JsonObject json =
+                response.apply(sokratesMembershipCredential)
+                        .compose(p -> transformerRegistry.transform(p, JsonObject.class))
+                        .compose(jsonLd::compact)
+                        .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
-        server.when(request().withMethod("POST").withPath("/presentations/query")).respond((request -> {
-            var json = response.apply(sokratesMembershipCredential)
-                    .compose(presentation -> transformerRegistry.transform(presentation, JsonObject.class))
-                    .compose(jsonLd::compact)
-                    .orElseThrow(failure -> new EdcException(failure.getFailureDetail()));
 
-            return response().withStatusCode(200).withBody(json.toString());
-        }));
+        server.stubFor(post(urlPathEqualTo("/presentations/query"))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(json.toString())));
     }
 
     protected JsonObject createAccessPolicy(String bpn) {

@@ -30,7 +30,7 @@ dependencies {
     implementation(project(":spi:bdrs-client-spi"))
     implementation(libs.edc.spi.catalog)
     implementation(libs.edc.spi.contract)
-    implementation(libs.edc.spi.identitytrust)
+    implementation(libs.edc.spi.decentralized.claims)
     implementation(libs.edc.spi.policyengine)
     implementation(libs.edc.spi.vc)
     implementation(libs.jakartaJson)
@@ -43,9 +43,6 @@ dependencies {
     implementation(libs.edc.lib.validator)
 
     testImplementation(libs.edc.junit)
-    implementation("com.networknt:json-schema-validator:1.5.9") {
-        because("There's a conflict between mockserver-netty and identity-hub dependencies for testing, forcing json-schema-validator to 1.5.9 is solving that.")
-    }
     testFixturesImplementation(libs.edc.junit)
     testFixturesImplementation(libs.edc.spi.jsonld)
 }

@@ -150,6 +150,8 @@ spec:
               value: {{ .Values.iatp.id | required ".Values.iatp.id is required" | quote }}
             - name: "EDC_IAM_ISSUER_ID"
               value: {{ .Values.iatp.id | required ".Values.iatp.id is required" | quote }}
+            - name: "EDC_PARTICIPANT_CONTEXT_ID"
+              value: {{ .Values.participant.contextId | required ".Values.participant.contextId is required" | quote }}
             - name: "TRACTUSX_EDC_PARTICIPANT_BPN"
               value: {{ .Values.participant.id | required ".Values.participant.id is required" | quote }}
 
@@ -254,6 +256,16 @@ spec:
             {{- end }}
             {{- end }}
             {{- end }}
+            - name: "TX_EDC_DID_SERVICE_SELF_REGISTRATION_ENABLED"
+              value: {{ .Values.iatp.didService.selfRegistration.enabled | quote}}
+            - name: "TX_EDC_DID_SERVICE_SELF_DEREGISTRATION_ENABLED"
+              value: {{ and (eq (int .Values.controlplane.replicaCount) 1) (not .Values.controlplane.autoscaling.enabled) | quote }}
+            - name: "TX_EDC_DID_SERVICE_SELF_REGISTRATION_ID"
+              value: {{ .Values.iatp.didService.selfRegistration.id | quote }}
+            - name: "TX_EDC_DCP_CACHE_ENABLED"
+              value: {{ .Values.iatp.cache.enabled | quote }}
+            - name: "TX_EDC_DCP_CACHE_VALIDITY_SECONDS"
+              value: {{ .Values.iatp.cache.validity | quote }}
 
             #################
             ## BDRS CLIENT ##

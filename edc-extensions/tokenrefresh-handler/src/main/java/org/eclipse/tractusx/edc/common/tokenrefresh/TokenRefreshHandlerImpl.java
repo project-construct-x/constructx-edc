@@ -25,7 +25,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.eclipse.edc.edr.spi.store.EndpointDataReferenceCache;
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
+import org.eclipse.edc.iam.decentralizedclaims.spi.SecureTokenService;
+import org.eclipse.edc.participantcontext.spi.service.ParticipantContextSupplier;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -38,6 +40,7 @@ import org.eclipse.tractusx.edc.spi.tokenrefresh.dataplane.model.TokenResponse;
 import java.io.IOException;
 import java.util.Map;
 
+import static java.lang.String.format;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.JWT_ID;
@@ -57,34 +60,39 @@ public class TokenRefreshHandlerImpl implements TokenRefreshHandler {
     private final Monitor monitor;
     private final SecureTokenService secureTokenService;
     private final ObjectMapper objectMapper;
+    private final ParticipantContextSupplier participantContextSupplier;
 
     /**
      * Creates a new TokenRefreshHandler
      *
-     * @param edrCache           a persistent storage where {@link DataAddress} objects are stored.
-     * @param httpClient         needed to make the actual refresh call against the refresh endpoint
-     * @param ownDid             the DID of this connector
-     * @param secureTokenService Service to generate the authentication token
-     * @param objectMapper       ObjectMapper to interpret JSON responses
+     * @param edrCache                   a persistent storage where {@link DataAddress} objects are stored.
+     * @param httpClient                 needed to make the actual refresh call against the refresh endpoint
+     * @param ownDid                     the DID of this connector
+     * @param secureTokenService         Service to generate the authentication token
+     * @param objectMapper               ObjectMapper to interpret JSON responses
+     * @param participantContextSupplier the participant context supplier.
      */
     public TokenRefreshHandlerImpl(EndpointDataReferenceCache edrCache,
                                    EdcHttpClient httpClient,
                                    String ownDid,
                                    Monitor monitor,
                                    SecureTokenService secureTokenService,
-                                   ObjectMapper objectMapper) {
+                                   ObjectMapper objectMapper, ParticipantContextSupplier participantContextSupplier) {
         this.edrCache = edrCache;
         this.httpClient = httpClient;
         this.ownDid = ownDid;
-        this.monitor = monitor;
+        this.monitor = monitor.withPrefix(getClass().getSimpleName());
         this.secureTokenService = secureTokenService;
         this.objectMapper = objectMapper;
+        this.participantContextSupplier = participantContextSupplier;
     }
 
     @Override
     public ServiceResult<DataAddress> refreshToken(String tokenId) {
         var edrResult = edrCache.get(tokenId);
         if (edrResult.failed()) {
+            var msg = "Could not find EDR for transfer process ID %s: %s".formatted(tokenId, edrResult.getFailureDetail());
+            monitor.debug(msg);
             return ServiceResult.notFound(edrResult.getFailureDetail());
         }
         var edr = edrResult.getContent();
@@ -99,16 +107,24 @@ public class TokenRefreshHandlerImpl implements TokenRefreshHandler {
         var refreshAudience = edr.getProperties().get(EDR_PROPERTY_REFRESH_AUDIENCE);
 
         if (isNullOrBlank(accessToken)) {
-            return ServiceResult.badRequest("Cannot perform token refresh: required property 'authorization' not found on EDR.");
+            var msg = "Cannot perform token refresh: required property 'authorization' not found on EDR.";
+            monitor.severe(msg);
+            return ServiceResult.badRequest(msg);
         }
         if (isNullOrBlank(StringUtils.toString(refreshToken))) {
-            return ServiceResult.badRequest("Cannot perform token refresh: required property 'refreshToken' not found on EDR.");
+            var msg = "Cannot perform token refresh: required property 'refreshToken' not found on EDR.";
+            monitor.severe(msg);
+            return ServiceResult.badRequest(msg);
         }
         if (isNullOrBlank(StringUtils.toString(refreshEndpoint))) {
-            return ServiceResult.badRequest("Cannot perform token refresh: required property 'refreshEndpoint' not found on EDR.");
+            var msg = "Cannot perform token refresh: required property 'refreshEndpoint' not found on EDR.";
+            monitor.severe(msg);
+            return ServiceResult.badRequest(msg);
         }
         if (isNullOrBlank(StringUtils.toString(refreshAudience))) {
-            return ServiceResult.badRequest("Cannot perform token refresh: required property 'refreshAudience' not found on EDR.");
+            var msg = "Cannot perform token refresh: required property 'refreshAudience' not found on EDR.";
+            monitor.severe(msg);
+            return ServiceResult.badRequest(msg);
         }
 
         var claims = Map.<String, Object>of(
@@ -119,14 +135,17 @@ public class TokenRefreshHandlerImpl implements TokenRefreshHandler {
                 "token", accessToken
         );
 
-        var result = secureTokenService.createToken(claims, null)
-                .compose(authToken -> createTokenRefreshRequest(refreshEndpoint.toString(), refreshToken.toString(), "Bearer %s".formatted(authToken.getToken())));
-
-        if (result.failed()) {
-            return ServiceResult.badRequest("Could not execute token refresh: " + result.getFailureDetail());
-        }
-
-        return executeRequest(result.getContent())
+        return participantContextSupplier.get().map(ParticipantContext::getParticipantContextId)
+                .compose(participantContextId -> secureTokenService.createToken(participantContextId, claims, null)
+                        .flatMap(ServiceResult::from))
+                .compose(authToken -> createTokenRefreshRequest(refreshEndpoint.toString(), refreshToken.toString(), "Bearer %s".formatted(authToken.getToken()))
+                        .flatMap(ServiceResult::from))
+                .recover(f -> {
+                    var msg = "Could not execute token refresh: " + f.getFailureDetail();
+                    monitor.warning(msg);
+                    return ServiceResult.badRequest(msg);
+                })
+                .compose(this::executeRequest)
                 .map(tr -> createNewEdr(edr, tr));
     }
 
@@ -143,16 +162,18 @@ public class TokenRefreshHandlerImpl implements TokenRefreshHandler {
     private ServiceResult<TokenResponse> executeRequest(Request tokenRefreshRequest) {
         try (var response = httpClient.execute(tokenRefreshRequest)) {
             if (response.isSuccessful()) {
-                if (response.body() != null) {
-
-                    var jsonBody = response.body().string();
-                    if (!StringUtils.isNullOrEmpty(jsonBody)) {
-                        var tokenResponse = objectMapper.readValue(jsonBody, TokenResponse.class);
-                        return ServiceResult.success(tokenResponse);
-                    }
+                var jsonBody = response.body().string();
+                if (!StringUtils.isNullOrEmpty(jsonBody)) {
+                    var tokenResponse = objectMapper.readValue(jsonBody, TokenResponse.class);
+                    return ServiceResult.success(tokenResponse);
                 }
-                return ServiceResult.badRequest("Token refresh successful, but body was empty.");
+                var msg = "Token refresh successful, but body was empty.";
+                monitor.warning(msg);
+                return ServiceResult.unexpected(msg);
             }
+            var responseBody = StringUtils.toString(response.body());
+            monitor.debug(format("Received error response from %s: %s - %s: \"%s\".", tokenRefreshRequest.url().url(),
+                    response.code(), response.message(), responseBody));
             return switch (response.code()) {
                 case 401 -> ServiceResult.unauthorized(response.message());
                 case 409 -> ServiceResult.conflict(response.message());
@@ -160,8 +181,9 @@ public class TokenRefreshHandlerImpl implements TokenRefreshHandler {
                 default -> ServiceResult.badRequest(response.message());
             };
         } catch (IOException e) {
-            monitor.warning("Error executing token refresh request", e);
-            return ServiceResult.from(StoreResult.generalError("Error executing token refresh request: %s".formatted(e)));
+            var msg = "Error executing token refresh request";
+            monitor.warning(msg, e);
+            return ServiceResult.from(StoreResult.generalError(msg + ": %s".formatted(e)));
         }
     }
 

@@ -23,8 +23,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.Request;
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceClient;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
+import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceClient;
+import org.eclipse.edc.iam.decentralizedclaims.spi.SecureTokenService;
+import org.eclipse.edc.participantcontext.spi.service.ParticipantContextSupplier;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -66,6 +68,7 @@ class BdrsClientImpl implements BdrsClient {
     private final String ownDid;
     private final Supplier<String> ownCredentialServiceUrl;
     private final CredentialServiceClient credentialServiceClient;
+    private final ParticipantContextSupplier participantContextSupplier;
     private Map<String, String> cacheBpnDid = new HashMap<>();
     private Map<String, String> cacheDidBpn = new HashMap<>();
     private Instant lastCacheUpdate;
@@ -78,16 +81,17 @@ class BdrsClientImpl implements BdrsClient {
                    Monitor monitor,
                    ObjectMapper mapper,
                    SecureTokenService secureTokenService,
-                   CredentialServiceClient credentialServiceClient) {
+                   CredentialServiceClient credentialServiceClient, ParticipantContextSupplier participantContextSupplier) {
         this.serverUrl = baseUrl;
         this.cacheValidity = cacheValidity;
         this.httpClient = httpClient;
-        this.monitor = monitor;
+        this.monitor = monitor.withPrefix(getClass().getSimpleName());
         this.mapper = mapper;
         this.secureTokenService = secureTokenService;
         this.ownDid = ownDid;
         this.ownCredentialServiceUrl = ownCredentialServiceUrl;
         this.credentialServiceClient = credentialServiceClient;
+        this.participantContextSupplier = participantContextSupplier;
     }
 
     @Override
@@ -151,7 +155,7 @@ class BdrsClientImpl implements BdrsClient {
                 .get()
                 .build();
         try (var response = httpClient.execute(request)) {
-            if (response.isSuccessful() && response.body() != null) {
+            if (response.isSuccessful()) {
                 var body = response.body().byteStream();
                 try (var gz = new GZIPInputStream(body)) {
                     var bytes = gz.readAllBytes();
@@ -167,6 +171,7 @@ class BdrsClientImpl implements BdrsClient {
                 }
             } else {
                 var msg = "Could not obtain data from BDRS server: code: %d, message: %s".formatted(response.code(), response.message());
+                monitor.warning(msg);
                 return Result.failure(msg);
             }
         } catch (IOException e) {
@@ -185,11 +190,22 @@ class BdrsClientImpl implements BdrsClient {
         );
         var scope = TxIatpConstants.MEMBERSHIP_SCOPE;
 
-        return secureTokenService.createToken(claims, scope)
+        return participantContextSupplier.get().map(ParticipantContext::getParticipantContextId)
+                .flatMap(result -> {
+                    if (result.succeeded()) {
+                        return Result.success(result.getContent());
+                    } else {
+                        monitor.severe("Could not get participant context: " + result.getFailureDetail());
+                        return Result.failure(result.getFailureDetail());
+                    }
+                })
+                .compose(id -> secureTokenService.createToken(id, claims, scope))
                 .compose(sit -> credentialServiceClient.requestPresentation(ownCredentialServiceUrl.get(), sit.getToken(), List.of(scope)))
                 .compose(pres -> {
                     if (pres.isEmpty()) {
-                        return Result.failure("Expected exactly 1 VP, but was empty");
+                        var msg = "Expected exactly 1 VP, but was empty";
+                        monitor.warning(msg);
+                        return Result.failure(msg);
                     }
                     if (pres.size() != 1) {
                         monitor.warning("Expected exactly 1 VP, but found %d.".formatted(pres.size()));

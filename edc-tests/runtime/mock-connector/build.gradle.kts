@@ -1,5 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 /********************************************************************************
  * Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
  *
@@ -36,6 +34,7 @@ dependencies {
     // runtime dependencies
     runtimeOnly(libs.edc.core.runtime)
     runtimeOnly(libs.edc.core.connector)
+    runtimeOnly(libs.edc.core.participant.context.single)
     runtimeOnly(libs.edc.boot)
     runtimeOnly(libs.edc.api.management) {
         exclude("org.eclipse.edc", "edr-cache-api")
@@ -59,8 +58,9 @@ edcBuild {
     publish.set(false)
 }
 
-tasks.withType<ShadowJar> {
+tasks.shadowJar {
     mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     archiveFileName.set("${project.name}.jar")
 }
 

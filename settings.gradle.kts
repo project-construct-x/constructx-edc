@@ -37,6 +37,8 @@ include(":spi:core-spi")
 include(":spi:tokenrefresh-spi")
 include(":spi:bdrs-client-spi")
 include(":spi:dataflow-spi")
+include(":spi:dcp-spi")
+include(":spi:did-document-service-spi")
 
 
 // core modules
@@ -51,6 +53,7 @@ include(":edc-extensions:bpn-validation:bpn-validation-spi")
 include(":edc-extensions:bpn-validation:bpn-validation-core")
 include(":edc-extensions:bpn-validation:business-partner-store-sql")
 include(":edc-extensions:migrations:postgresql-migration-lib")
+include(":edc-extensions:migrations:connector-migration")
 include(":edc-extensions:migrations:control-plane-migration")
 include(":edc-extensions:migrations:data-plane-migration")
 include(":edc-extensions:tokenrefresh-handler")
@@ -65,11 +68,16 @@ include(":edc-extensions:cx-policy")
 include(":edc-extensions:cx-policy-legacy")
 include(":edc-extensions:dcp:tx-dcp")
 include(":edc-extensions:dcp:tx-dcp-sts-dim")
+include(":edc-extensions:dcp:verifiable-presentation-cache")
 include(":edc-extensions:data-flow-properties-provider")
 include(":edc-extensions:validators:empty-asset-selector")
 include(":edc-extensions:log4j2-monitor")
 include("edc-extensions:connector-discovery:connector-discovery-api")
 include(":edc-extensions:dataspace-protocol")
+include(":edc-extensions:dataspace-protocol:cx-dataspace-protocol")
+include(":edc-extensions:dataspace-protocol:dataspace-protocol-core")
+include(":edc-extensions:did-document:did-document-service-self-registration")
+include(":edc-extensions:did-document:did-document-service-dim")
 
 include(":edc-extensions:agreements")
 include(":edc-extensions:agreements:retirement-evaluation-core")
@@ -95,6 +103,7 @@ include(":edc-extensions:agreements-bpns:bpns-evaluation-core")
 include(":edc-extensions:agreements-bpns:bpns-evaluation-store-sql")
 include(":edc-extensions:agreements-bpns:bpns-evaluation-spi")
 include(":edc-extensions:token-interceptor")
+include(":edc-extensions:single-participant-vault")
 
 // test modules
 include(":edc-tests:e2e-fixtures")
@@ -142,7 +151,7 @@ include(":edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-has
 include(":samples:testing-with-mocked-connector")
 
 plugins {
-    id("com.gradle.develocity") version "4.2.2"
+    id("com.gradle.develocity") version "4.3.2"
     id("com.gradle.common-custom-user-data-gradle-plugin") version "2.4.0"
 }
 
