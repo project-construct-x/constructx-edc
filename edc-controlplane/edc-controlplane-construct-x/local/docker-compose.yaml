@@ -40,7 +40,7 @@ services:
       - ./additional_config/mc-cred-def.json:/app/setup.json
       - ./additional_config/logging.properties:/app/logging.properties
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   shared-postgres:
     container_name: shared-postgres
@@ -56,7 +56,7 @@ services:
       timeout: 3s
       retries: 20
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   shared-vault:
     container_name: shared-vault
@@ -74,7 +74,7 @@ services:
     ports:
       - "8200:8200"
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   vault-init:
     container_name: vault-init
@@ -90,7 +90,7 @@ services:
     entrypoint: [ "sh", "-c", "apk add --no-check-certificate --no-cache curl jq openssl && sh /scripts/init.sh" ]
     restart: "no"
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   consumer-idhub:
     container_name: consumer-idhub
@@ -126,7 +126,7 @@ services:
     volumes:
       - ./additional_config/logging.properties:/app/logging.properties
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   provider-idhub:
     container_name: provider-idhub
@@ -162,7 +162,7 @@ services:
     volumes:
       - ./additional_config/logging.properties:/app/logging.properties
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   consumer-controlplane:
     container_name: consumer-controlplane
@@ -171,8 +171,15 @@ services:
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
       - tx.edc.postgresql.migration.asset.enabled=false
+      - tx.edc.postgresql.migration.agreementbpns.enabled=false
+      - tx.edc.postgresql.migration.bpn.enabled=false
       - tx.edc.postgresql.migration.contractdefinition.enabled=false
       - tx.edc.postgresql.migration.contractnegotiation.enabled=false
+      - tx.edc.postgresql.migration.dataplaneinstance.enabled=false
+      - tx.edc.postgresql.migration.edr.enabled=false
+      - tx.edc.postgresql.migration.federatedcatalog.enabled=false
+      - tx.edc.postgresql.migration.jti-validation.enabled=false
+      - tx.edc.postgresql.migration.policy-monitor.enabled=false
       - tx.edc.postgresql.migration.policy.enabled=false
       - tx.edc.postgresql.migration.transferprocess.enabled=false
       - edc.iam.trusted-issuer.example.id=did:web:local-issuer-service:con-x-issuer
@@ -216,7 +223,7 @@ services:
       - "29010:9010"  # Management API
       - "29020:9020" # DSP API
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   consumer-dataplane:
     container_name: consumer-dataplane
@@ -258,7 +265,7 @@ services:
       - "5008:5005"   # Debugger
       - "9600:9500" # Public API
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   provider-controlplane:
     container_name: provider-controlplane
@@ -267,8 +274,15 @@ services:
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
       - tx.edc.postgresql.migration.asset.enabled=false
+      - tx.edc.postgresql.migration.agreementbpns.enabled=false
+      - tx.edc.postgresql.migration.bpn.enabled=false
       - tx.edc.postgresql.migration.contractdefinition.enabled=false
       - tx.edc.postgresql.migration.contractnegotiation.enabled=false
+      - tx.edc.postgresql.migration.dataplaneinstance.enabled=false
+      - tx.edc.postgresql.migration.edr.enabled=false
+      - tx.edc.postgresql.migration.federatedcatalog.enabled=false
+      - tx.edc.postgresql.migration.jti-validation.enabled=false
+      - tx.edc.postgresql.migration.policy-monitor.enabled=false
       - tx.edc.postgresql.migration.policy.enabled=false
       - tx.edc.postgresql.migration.transferprocess.enabled=false
       - edc.iam.trusted-issuer.example.id=did:web:local-issuer-service:con-x-issuer
@@ -313,7 +327,7 @@ services:
       - "39020:9020" # DSP API
 
     networks:
-      - fx-test-network
+      - con-x-test-network
 
   provider-dataplane:
     container_name: provider-dataplane
@@ -356,9 +370,9 @@ services:
       - "5007:5005"   # Debugger
       - "9500:9500" # Public API
     networks:
-      - fx-test-network
+      - con-x-test-network
 
 networks:
-  fx-test-network:
-    name: fx-test-network
+  con-x-test-network:
+    name: con-x-test-network
     driver: bridge

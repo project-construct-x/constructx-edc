@@ -25,6 +25,9 @@ plugins {
     alias(libs.plugins.shadow)
 }
 
+configurations.all {
+    exclude(group = "org.eclipse.edc", module = "data-plane-util")
+}
 
 dependencies {
     val edcVersion = "0.14.1"
@@ -34,10 +37,13 @@ dependencies {
     implementation("org.eclipse.edc:vault-hashicorp:${edcVersion}")
 
     implementation("org.eclipse.tractusx.edc:dataplane-public-api-v2:$txVersion")
+    implementation("org.eclipse.tractusx.edc:dataplane-util:${txVersion}")
 }
+
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     archiveFileName.set("con-x-dataplane-postgresql-hashicorp-vault.jar")
     transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer())
 }
