@@ -17,8 +17,7 @@ docker compose up
 ```
 
 Then please use the attached Bruno collection. ([Bruno](https://www.usebruno.com/) is a convenient http client, which
-you should install, if you haven't already.) In order to this, choose the "open" (not "import") option item in the Bruno
-UI and select the respective [folder](./bruno/fx-local-test). After that, please use the icon in the upper right corner
+you should install, if you haven't already.) In order to this, choose the "open" (not "import") option item in the Bruno UI and select the respective [folder](bruno/con-x-local-test). After that, please use the icon in the upper right corner
 of the Bruno GUI to select the environment (which stores the variables, that the requests will need).
 
 In that collection you should first run the requests of the ´identities´ folder.
