@@ -140,16 +140,20 @@ spec:
                 {{ printf "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=%v" .Values.dataplane.debug.port }}
             {{- end }}
           {{- end }}
+            - name: EDC_HOSTNAME
+              value: {{ .Values.dataplane.hostname | quote }}
+            - name: "EDC_SQL_SCHEMA_AUTOCREATE"
+              value: {{ .Values.dataplane.schema.autocreate | quote }}
 
             ########################
             ## ID CONFIGURATION ##
             ########################
             - name: EDC_PARTICIPANT_ID
               value: {{ .Values.participant.id | required ".Values.participant.id is required" | quote }}
-            - name: EDC_PARTICIPANT_CONTEXT_ID
-              value: {{ .Values.participant.contextId | required ".Values.participant.contextId is required" | quote}}
             - name: "EDC_IAM_ISSUER_ID"
               value: {{ .Values.iatp.id | required ".Values.iatp.id is required" | quote}}
+            - name: "EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID"
+              value: {{ .Values.iatp.trustedIssuerId | required ".Values.iatp.trustedIssuerId is required" | quote}}
 
             ###########################
             ## LOGGING CONFIGURATION ##
@@ -162,6 +166,10 @@ spec:
             #######
             # API #
             #######
+            - name: "WEB_HTTP_MANAGEMENT_PORT"
+              value: {{ .Values.dataplane.endpoints.management.port | quote }}
+            - name: "WEB_HTTP_MANAGEMENT_PATH"
+              value: {{ .Values.dataplane.endpoints.management.path | quote }}
             - name: "TX_EDC_DPF_CONSUMER_PROXY_AUTH_APIKEY"
               value: {{ .Values.dataplane.endpoints.proxy.authKey | required ".Values.dataplane.endpoints.proxy.authKey is required" | quote }}
             - name: "WEB_HTTP_PORT"
