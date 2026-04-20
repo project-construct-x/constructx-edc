@@ -21,7 +21,7 @@
 services:
   local-issuer-service:
     container_name: local-issuer-service
-    image: issuerservice-dev:latest
+    image: ghcr.io/metaform/jad/issuerservice:latest
     pull_policy: never
     depends_on:
       shared-postgres:
@@ -46,8 +46,12 @@ services:
       - edc.issuer.issuance.send.retry.limit=0
       - edc.iam.did.web.use.https=false
       - edc.ih.api.superuser.id=admin
-      - edc.ih.api.superuser.key=YWRtaW4.adminKey
+      - edc.ih.api.key.superuser=YWRtaW4.adminKey
       - edc.issuer.statuslist.signing.key.alias=foo
+      - edc.encryption.aes.key.alias=aes-key-alias
+      - edc.iam.key.algorithm=RSA
+      - edc.ih.api.superuser.public.key.alias=admin#pubkey
+      - edc.ih.api.superuser.private.key.alias=admin#privkey
       - web.http.did.port=80
       - edc.sql.schema.autocreate=true
       - edc.datasource.default.url=jdbc:postgresql://shared-postgres:5432/iss_db
