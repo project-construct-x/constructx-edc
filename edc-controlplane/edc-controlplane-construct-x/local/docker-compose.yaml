@@ -49,7 +49,7 @@ services:
       - edc.ih.api.key.superuser=YWRtaW4.adminKey
       - edc.issuer.statuslist.signing.key.alias=foo
       - edc.encryption.aes.key.alias=aes-key-alias
-      - edc.iam.key.algorithm=RSA
+      - edc.iam.key.algorithm=EdDSA
       - edc.ih.api.superuser.public.key.alias=admin#pubkey
       - edc.ih.api.superuser.private.key.alias=admin#privkey
       - web.http.did.port=80

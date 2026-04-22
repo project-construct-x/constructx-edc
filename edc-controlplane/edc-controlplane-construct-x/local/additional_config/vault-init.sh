@@ -51,10 +51,15 @@ create_and_store_keypair() {
 create_and_store_keypair "cons"
 create_and_store_keypair "prov"
 
-curl -sSf \
-  -H "X-Vault-Token: vaultsecret0123456789" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  --data '{"data":{"content":"yHo9w6m2KOI3FE7vI+fcN6j86JDQ6V10lJPlv9lLWoE="}}' \
-  $VAULT/v1/secret/data/aes-key-alias \
+AES_KEY="$(openssl rand -base64 32 | tr -d '\n')"
+
+jq -n --arg content "$AES_KEY" '{data:{content:$content}}' | \
+  curl -sSf \
+    -H "X-Vault-Token: $TOKEN" \
+    -H "Content-Type: application/json" \
+    -X POST \
+    --data-binary @- \
+    "$VAULT/v1/secret/data/aes-key-alias" \
   || { echo "Failed to create aes key entry"; exit 1; }
+
+echo "AES key stored at secret/data/aes-key-alias"
