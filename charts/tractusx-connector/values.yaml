@@ -549,6 +549,9 @@ dataplane:
   #  - first-config-map
   #  - second-config-map
 
+  schema:
+    autocreate: true
+
   ## Ingress declaration to expose the network service.
   ingresses:
     ## Public / Internet facing Ingress
