@@ -48,7 +48,7 @@ helm dependency update
 
 ## 5. Configure the Connector Helm Chart
 
-
+The connector configuraion has already been prepared for the workshop.
 
 
 ## 6. Install the Connector
