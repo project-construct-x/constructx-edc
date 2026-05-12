@@ -1,0 +1,25 @@
+meta {
+  name: Version
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://localhost:29020/dsp/.well-known/dspace-version
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+}
+
+script:post-response {
+  const contractId = res.getBody()['contractAgreementId']; 
+  bru.setEnvVar("contractId", contractId);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
