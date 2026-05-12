@@ -21,13 +21,13 @@
 services:
   local-issuer-service:
     container_name: local-issuer-service
-    image: ghcr.io/metaform/jad/issuerservice:latest
+    image: org.construct-x/wallet:0.17.0-1
     pull_policy: never
     depends_on:
       shared-postgres:
         condition: service_healthy
-      shared-vault:
-        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     ports:
       - "1044:1044"       # debugger
       - "10000:80"        # did API           -> /
@@ -40,26 +40,26 @@ services:
 
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:1044
-      - edc.statuslist.callback.address=http://local-issuer-service:9999/statuslist
-      - edc.hostname=local-issuer-service
-      - edc.ih.issuer.dev.defaultconfig=/app/setup.json
-      - edc.issuer.issuance.send.retry.limit=0
-      - edc.iam.did.web.use.https=false
-      - edc.ih.api.superuser.id=admin
-      - edc.ih.api.key.superuser=YWRtaW4.adminKey
-      - edc.issuer.statuslist.signing.key.alias=foo
-      - edc.encryption.aes.key.alias=aes-key-alias
-      - edc.iam.key.algorithm=EdDSA
-      - edc.ih.api.superuser.public.key.alias=admin#pubkey
-      - edc.ih.api.superuser.private.key.alias=admin#privkey
-      - web.http.did.port=80
-      - edc.sql.schema.autocreate=true
-      - edc.datasource.default.url=jdbc:postgresql://shared-postgres:5432/iss_db
-      - edc.datasource.default.user=admin
-      - edc.datasource.default.password=password
-      - edc.vault.hashicorp.url=http://shared-vault:8200
-      - edc.vault.hashicorp.health.check.enabled=true
-      - edc.vault.hashicorp.token=vaultsecret0123456789
+      - EDC_STATUSLIST_CALLBACK_ADDRESS=http://local-issuer-service:9999/statuslist
+      - EDC_HOSTNAME=local-issuer-service
+      - EDC_ISSUER_ISSUANCE_SEND_RETRY_LIMIT=0
+      - EDC_IAM_CREDENTIAL_RENEWAL_GRACEPERIOD=172800
+      - EDC_IAM_DID_WEB_USE_HTTPS=false
+      - EDC_IH_API_SUPERUSER_ID=admin
+      - EDC_IH_API_KEY_SUPERUSER=YWRtaW4.adminKey
+      - EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo
+      - EDC_ENCRYPTION_AES_KEY_ALIAS=aes-key-alias
+      - EDC_IAM_KEY_ALGORITHM=RSA
+      - EDC_IH_API_SUPERUSER_PUBLIC_KEY_ALIAS=admin1#pubkey
+      - EDC_IH_API_SUPERUSER_PRIVATE_KEY_ALIAS=admin1#privkey
+      - WEB_HTTP_DID_PORT=80
+      - EDC_SQL_SCHEMA_AUTOCREATE=true
+      - EDC_DATASOURCE_DEFAULT_URL=jdbc:postgresql://shared-postgres:5432/iss_db
+      - EDC_DATASOURCE_DEFAULT_USER=admin
+      - EDC_DATASOURCE_DEFAULT_PASSWORD=password
+      - EDC_VAULT_HASHICORP_URL=http://shared-vault:8200
+      - EDC_VAULT_HASHICORP_HEALTH_CHECK_ENABLED=true
+      - EDC_VAULT_HASHICORP_TOKEN=vaultsecret0123456789
     volumes:
       - ./additional_config/mc-cred-def.json:/app/setup.json
       - ./additional_config/logging.properties:/app/logging.properties
@@ -124,13 +124,13 @@ services:
 
   consumer-idhub:
     container_name: consumer-idhub
-    image: identityhub-dev:latest
+    image: org.construct-x/wallet:0.17.0-1
     pull_policy: never
     depends_on:
       shared-postgres:
         condition: service_healthy
-      shared-vault:
-        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     ports:
       - "1045:1045"         # debugger
       - "20000:80"          # did API           -> /
@@ -141,18 +141,25 @@ services:
 #      - "9999:9999"        # statuslist API    -> /statuslist
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:1045
-      - edc.hostname=consumer-idhub
-      - edc.iam.did.web.use.https=false
-      - edc.ih.api.superuser.id=admin
-      - edc.ih.api.superuser.key=YWRtaW4.adminKey
-      - web.http.did.port=80
-      - edc.sql.schema.autocreate=true
-      - edc.datasource.default.url=jdbc:postgresql://shared-postgres:5432/cons_ih_db
-      - edc.datasource.default.user=admin
-      - edc.datasource.default.password=password
-      - edc.vault.hashicorp.url=http://shared-vault:8200
-      - edc.vault.hashicorp.health.check.enabled=true
-      - edc.vault.hashicorp.token=vaultsecret0123456789
+      - EDC_HOSTNAME=consumer-idhub
+      - EDC_IAM_DID_WEB_USE_HTTPS=false
+      - EDC_ISSUER_ISSUANCE_SEND_RETRY_LIMIT=0
+      - EDC_IAM_CREDENTIAL_RENEWAL_GRACEPERIOD=172800
+      - EDC_IH_API_SUPERUSER_ID=admin
+      - EDC_IH_API_KEY_SUPERUSER=YWRtaW4.adminKey
+      - EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo
+      - EDC_ENCRYPTION_AES_KEY_ALIAS=aes-key-alias
+      - EDC_IAM_KEY_ALGORITHM=RSA
+      - EDC_IH_API_SUPERUSER_PUBLIC_KEY_ALIAS=admin2#pubkey
+      - EDC_IH_API_SUPERUSER_PRIVATE_KEY_ALIAS=admin2#privkey
+      - WEB_HTTP_DID_PORT=80
+      - EDC_SQL_SCHEMA_AUTOCREATE=true
+      - EDC_DATASOURCE_DEFAULT_URL=jdbc:postgresql://shared-postgres:5432/cons_ih_db
+      - EDC_DATASOURCE_DEFAULT_USER=admin
+      - EDC_DATASOURCE_DEFAULT_PASSWORD=password
+      - EDC_VAULT_HASHICORP_URL=http://shared-vault:8200
+      - EDC_VAULT_HASHICORP_HEALTH_CHECK_ENABLED=true
+      - EDC_VAULT_HASHICORP_TOKEN=vaultsecret0123456789
     volumes:
       - ./additional_config/logging.properties:/app/logging.properties
     networks:
@@ -160,13 +167,13 @@ services:
 
   provider-idhub:
     container_name: provider-idhub
-    image: identityhub-dev:latest
+    image: org.construct-x/wallet:0.17.0-1
     pull_policy: never
     depends_on:
       shared-postgres:
         condition: service_healthy
-      shared-vault:
-        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     ports:
       - "1046:1045"         # debugger
       - "21000:80"          # did API           -> /
@@ -177,18 +184,25 @@ services:
     #      - "9999:9999"        # statuslist API    -> /statuslist
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:1045
-      - edc.hostname=provider-idhub
-      - edc.iam.did.web.use.https=false
-      - edc.ih.api.superuser.id=admin
-      - edc.ih.api.superuser.key=YWRtaW4.adminKey
-      - web.http.did.port=80
-      - edc.sql.schema.autocreate=true
-      - edc.datasource.default.url=jdbc:postgresql://shared-postgres:5432/prov_ih_db
-      - edc.datasource.default.user=admin
-      - edc.datasource.default.password=password
-      - edc.vault.hashicorp.url=http://shared-vault:8200
-      - edc.vault.hashicorp.health.check.enabled=true
-      - edc.vault.hashicorp.token=vaultsecret0123456789
+      - EDC_HOSTNAME=provider-idhub
+      - EDC_IAM_DID_WEB_USE_HTTPS=false
+      - EDC_ISSUER_ISSUANCE_SEND_RETRY_LIMIT=0
+      - EDC_IAM_CREDENTIAL_RENEWAL_GRACEPERIOD=172800
+      - EDC_IH_API_SUPERUSER_ID=admin
+      - EDC_IH_API_KEY_SUPERUSER=YWRtaW4.adminKey
+      - EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo
+      - EDC_ENCRYPTION_AES_KEY_ALIAS=aes-key-alias
+      - EDC_IAM_KEY_ALGORITHM=RSA
+      - EDC_IH_API_SUPERUSER_PUBLIC_KEY_ALIAS=admin3#pubkey
+      - EDC_IH_API_SUPERUSER_PRIVATE_KEY_ALIAS=admin3#privkey
+      - WEB_HTTP_DID_PORT=80
+      - EDC_SQL_SCHEMA_AUTOCREATE=true
+      - EDC_DATASOURCE_DEFAULT_URL=jdbc:postgresql://shared-postgres:5432/prov_ih_db
+      - EDC_DATASOURCE_DEFAULT_USER=admin
+      - EDC_DATASOURCE_DEFAULT_PASSWORD=password
+      - EDC_VAULT_HASHICORP_URL=http://shared-vault:8200
+      - EDC_VAULT_HASHICORP_HEALTH_CHECK_ENABLED=true
+      - EDC_VAULT_HASHICORP_TOKEN=vaultsecret0123456789
     volumes:
       - ./additional_config/logging.properties:/app/logging.properties
     networks:
@@ -239,6 +253,9 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
+      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
+      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
+      - tx.edc.iam.iatp.default-scopes.test.operation=read
     volumes:
       - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
@@ -343,6 +360,9 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
+      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
+      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
+      - tx.edc.iam.iatp.default-scopes.test.operation=read
     volumes:
       - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
