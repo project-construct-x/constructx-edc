@@ -21,7 +21,7 @@
 services:
   local-issuer-service:
     container_name: local-issuer-service
-    image: org.construct-x/wallet:0.17.0-1
+    image: wallet:0.17.0-1
     pull_policy: never
     depends_on:
       shared-postgres:
@@ -124,7 +124,7 @@ services:
 
   consumer-idhub:
     container_name: consumer-idhub
-    image: org.construct-x/wallet:0.17.0-1
+    image: wallet:0.17.0-1
     pull_policy: never
     depends_on:
       shared-postgres:
@@ -167,7 +167,7 @@ services:
 
   provider-idhub:
     container_name: provider-idhub
-    image: org.construct-x/wallet:0.17.0-1
+    image: wallet:0.17.0-1
     pull_policy: never
     depends_on:
       shared-postgres:
@@ -253,9 +253,9 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
-      - tx.edc.iam.iatp.default-scopes.test.operation=read
+#      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
+#      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
+#      - tx.edc.iam.iatp.default-scopes.test.operation=read
     volumes:
       - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
@@ -360,9 +360,9 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
-      - tx.edc.iam.iatp.default-scopes.test.operation=read
+#      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
+#      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
+#      - tx.edc.iam.iatp.default-scopes.test.operation=read
     volumes:
       - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
