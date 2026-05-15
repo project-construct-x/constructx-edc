@@ -1,5 +1,6 @@
 #################################################################################
 #  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+#  Copyright (c) 2026 ARENA2036 e.V.
 #  Copyright (c) 2023 Contributors to the Eclipse Foundation
 #
 #  See the NOTICE file(s) distributed with this work for additional
@@ -21,24 +22,24 @@
 
 ---
 name: "Publish Docker Image"
-description: "Build and publish a Docker Image to DockerHub"
+description: "Build and publish a Docker Image to GHCR"
 inputs:
   rootDir:
     required: true
     description: "The directory where the notice.md file and the src/main/docker directory are located"
   namespace:
     required: false
-    default: "tractusx"
+    default: "project-construct-x"
     description: "The Docker image namespace"
   imagename:
     required: true
     description: "the name of the image"
-  docker_user:
+  gh_user:
     required: false
-    description: "DockerHub user name. No push is done if omitted"
-  docker_token:
+    description: "GitHub Actor. No push is done if omitted"
+  gh_token:
     required: false
-    description: "DockerHub Token. No push is done if omitted"
+    description: "GitHub Token. No push is done if omitted"
   docker_tag:
     required: false
     description: 'additional docker tags'
@@ -66,8 +67,9 @@ runs:
     - name: DockerHub login
       uses: docker/login-action@v4
       with:
-        username: ${{ inputs.docker_user }}
-        password: ${{ inputs.docker_token }}
+        registry: ghcr.io
+        username: ${{ inputs.gh_user }}
+        password: ${{ inputs.gh_token }}
 
     #####################
     # Build JAR file
@@ -113,15 +115,3 @@ runs:
         platforms: linux/amd64,linux/arm64
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-
-    ###############################
-    # Update the description
-    # https://github.com/peter-evans/dockerhub-description
-    ###############################
-    - name: Update Docker Hub description
-      uses: peter-evans/dockerhub-description@v5
-      with:
-        readme-filepath: ${{ inputs.rootDir }}/notice.md
-        username: ${{ inputs.docker_user }}
-        password: ${{ inputs.docker_token }}
-        repository: ${{ inputs.namespace }}/${{ inputs.imagename }}
