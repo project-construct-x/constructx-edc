@@ -43,6 +43,9 @@ inputs:
   docker_tag:
     required: false
     description: 'additional docker tags'
+  registry:
+    required: false
+    description: 'GitHub Container Registry'
 
 runs:
   using: "composite"
@@ -67,7 +70,7 @@ runs:
     - name: DockerHub login
       uses: docker/login-action@v4
       with:
-        registry: ghcr.io
+        registry: ${{ inputs.registry }}
         username: ${{ inputs.gh_user }}
         password: ${{ inputs.gh_token }}
 
@@ -89,7 +92,7 @@ runs:
       uses: docker/metadata-action@v6
       with:
         images: |
-          ${{ inputs.namespace }}/${{ inputs.imagename }}
+          ${{ inputs.registry }}/${{ inputs.namespace }}/${{ inputs.imagename }}
         tags: |
           type=semver,pattern={{version}},value=${{ inputs.docker_tag }}
           type=semver,pattern={{major}}

@@ -73,3 +73,4 @@ jobs:
           namespace: ${{ inputs.namespace }}
           gh_user: ${{ github.actor }}
           gh_token: ${{ secrets.GITHUB_TOKEN }}
+          registry: 'ghcr.io'
