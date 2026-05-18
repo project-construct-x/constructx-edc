@@ -253,9 +253,9 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-#      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-#      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
-#      - tx.edc.iam.iatp.default-scopes.test.operation=read
+      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
+      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
+      - tx.edc.iam.iatp.default-scopes.test.operation=read
     volumes:
       - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
@@ -360,9 +360,9 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-#      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-#      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
-#      - tx.edc.iam.iatp.default-scopes.test.operation=read
+      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
+      - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
+      - tx.edc.iam.iatp.default-scopes.test.operation=read
     volumes:
       - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
