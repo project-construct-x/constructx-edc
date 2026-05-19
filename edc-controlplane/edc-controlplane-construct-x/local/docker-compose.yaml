@@ -48,7 +48,7 @@ services:
       - EDC_IH_API_SUPERUSER_ID=admin
       - EDC_IH_API_KEY_SUPERUSER=YWRtaW4.adminKey
       - EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo
-      - EDC_ENCRYPTION_AES_KEY_ALIAS=aes-key-alias
+      - EDC_ENCRYPTION_AES_KEY_ALIAS=issuer-wallet-aes-key-alias
       - EDC_IAM_KEY_ALGORITHM=RSA
       - EDC_IH_API_SUPERUSER_PUBLIC_KEY_ALIAS=admin1#pubkey
       - EDC_IH_API_SUPERUSER_PRIVATE_KEY_ALIAS=admin1#privkey
@@ -145,7 +145,7 @@ services:
       - EDC_IH_API_SUPERUSER_ID=admin
       - EDC_IH_API_KEY_SUPERUSER=YWRtaW4.adminKey
       - EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo
-      - EDC_ENCRYPTION_AES_KEY_ALIAS=aes-key-alias
+      - EDC_ENCRYPTION_AES_KEY_ALIAS=consumer-wallet-aes-key-alias
       - EDC_IAM_KEY_ALGORITHM=RSA
       - EDC_IH_API_SUPERUSER_PUBLIC_KEY_ALIAS=admin2#pubkey
       - EDC_IH_API_SUPERUSER_PRIVATE_KEY_ALIAS=admin2#privkey
@@ -186,7 +186,7 @@ services:
       - EDC_IH_API_SUPERUSER_ID=admin
       - EDC_IH_API_KEY_SUPERUSER=YWRtaW4.adminKey
       - EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo
-      - EDC_ENCRYPTION_AES_KEY_ALIAS=aes-key-alias
+      - EDC_ENCRYPTION_AES_KEY_ALIAS=provider-wallet-aes-key-alias
       - EDC_IAM_KEY_ALGORITHM=RSA
       - EDC_IH_API_SUPERUSER_PUBLIC_KEY_ALIAS=admin3#pubkey
       - EDC_IH_API_SUPERUSER_PRIVATE_KEY_ALIAS=admin3#privkey
