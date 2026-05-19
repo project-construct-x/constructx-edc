@@ -60,9 +60,6 @@ services:
       - EDC_VAULT_HASHICORP_URL=http://shared-vault:8200
       - EDC_VAULT_HASHICORP_HEALTH_CHECK_ENABLED=true
       - EDC_VAULT_HASHICORP_TOKEN=vaultsecret0123456789
-    volumes:
-      - ./additional_config/mc-cred-def.json:/app/setup.json
-      - ./additional_config/logging.properties:/app/logging.properties
     networks:
       - con-x-test-network
 
@@ -160,8 +157,6 @@ services:
       - EDC_VAULT_HASHICORP_URL=http://shared-vault:8200
       - EDC_VAULT_HASHICORP_HEALTH_CHECK_ENABLED=true
       - EDC_VAULT_HASHICORP_TOKEN=vaultsecret0123456789
-    volumes:
-      - ./additional_config/logging.properties:/app/logging.properties
     networks:
       - con-x-test-network
 
@@ -203,8 +198,6 @@ services:
       - EDC_VAULT_HASHICORP_URL=http://shared-vault:8200
       - EDC_VAULT_HASHICORP_HEALTH_CHECK_ENABLED=true
       - EDC_VAULT_HASHICORP_TOKEN=vaultsecret0123456789
-    volumes:
-      - ./additional_config/logging.properties:/app/logging.properties
     networks:
       - con-x-test-network
 
@@ -256,8 +249,6 @@ services:
       - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
       - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
       - tx.edc.iam.iatp.default-scopes.test.operation=read
-    volumes:
-      - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
         shared-postgres:
           condition: service_healthy
@@ -363,8 +354,6 @@ services:
       - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
       - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
       - tx.edc.iam.iatp.default-scopes.test.operation=read
-    volumes:
-      - ./additional_config/logging.properties:/app/dataspaceconnector-configuration.properties
     depends_on:
         shared-postgres:
           condition: service_healthy
