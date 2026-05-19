@@ -15,15 +15,14 @@ body:json {
     "@context": {
       "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
     },
-    "counterPartyAddress": "http://provider-controlplane:9020/dsp",
+    "counterPartyAddress": "http://provider-controlplane:9020/dsp/2025-1",
     "counterPartyId": "{{PROV_ID}}",
-    "protocol": "dataspace-protocol-http"
-  
+    "protocol": "dataspace-protocol-http:2025-1"
   }
 }
 
 script:post-response {
-  const offerId = res.getBody()['dcat:dataset']['odrl:hasPolicy']['@id'];
+  const offerId = res.getBody().dataset[0].hasPolicy['@id'];
   
   bru.setEnvVar("offerId", offerId);
 }
