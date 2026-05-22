@@ -19,14 +19,14 @@ body:json {
     "roles": [],
     "serviceEndpoints": [
       {
-        "id": "Issuer-IssuerService",
+        "id": "IssuerIssuerService-ID",
         "type": "IssuerService",
-        "serviceEndpoint": "http://local-issuer-service:13132/api/issuance/v1alpha/participants/{{ISS_PART_CONT}}"
+        "serviceEndpoint": "http://local-issuer-wallet:13132/api/issuance/v1alpha/participants/{{ISS_PART_CONT}}"
       },
       {
         "id": "IssuerCredentialService-ID",
         "type": "CredentialService",
-        "serviceEndpoint": "http://local-issuer-service:13131/api/credentials/v1/participants/{{ISS_PART_CONT}}"
+        "serviceEndpoint": "http://local-issuer-wallet:13131/api/credentials/v1/participants/{{ISS_PART_CONT}}"
       }
     ],
     "active": true,

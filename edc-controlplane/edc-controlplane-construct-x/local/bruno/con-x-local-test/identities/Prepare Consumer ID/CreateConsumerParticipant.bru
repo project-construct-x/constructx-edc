@@ -21,12 +21,12 @@ body:json {
       {
         "id": "ConsumerCredentialService-ID",
         "type": "CredentialService",
-        "serviceEndpoint": "http://consumer-idhub:13131/api/credentials/v1/participants/{{CONS_PART_CONT}}"
+        "serviceEndpoint": "http://consumer-wallet:13131/api/credentials/v1/participants/{{CONS_PART_CONT}}"
       },
       {
-        "id": "Consumer-IssuerService",
+        "id": "ConsumerIssuerService-ID",
         "type": "IssuerService",
-        "serviceEndpoint": "http://consumer-idhub:13132/api/issuance/v1alpha/participants/{{CONS_PART_CONT}}"
+        "serviceEndpoint": "http://consumer-wallet:13132/api/issuance/v1alpha/participants/{{CONS_PART_CONT}}"
       }
     ],
     "active": true,

@@ -19,10 +19,10 @@
 #
 
 services:
-  local-issuer-service:
-    container_name: local-issuer-service
-    image: wallet:0.17.0-1
-    pull_policy: never
+  local-issuer-wallet:
+    container_name: local-issuer-wallet
+    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    pull_policy: missing
     depends_on:
       shared-postgres:
         condition: service_healthy
@@ -40,8 +40,8 @@ services:
 
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:1044
-      - EDC_STATUSLIST_CALLBACK_ADDRESS=http://local-issuer-service:9999/statuslist
-      - EDC_HOSTNAME=local-issuer-service
+      - EDC_STATUSLIST_CALLBACK_ADDRESS=http://local-issuer-wallet:9999/statuslist
+      - EDC_HOSTNAME=local-issuer-wallet
       - EDC_ISSUER_ISSUANCE_SEND_RETRY_LIMIT=0
       - EDC_IAM_CREDENTIAL_RENEWAL_GRACEPERIOD=172800
       - EDC_IAM_DID_WEB_USE_HTTPS=false
@@ -119,10 +119,10 @@ services:
     networks:
       - con-x-test-network
 
-  consumer-idhub:
-    container_name: consumer-idhub
-    image: wallet:0.17.0-1
-    pull_policy: never
+  consumer-wallet:
+    container_name: consumer-wallet
+    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    pull_policy: missing
     depends_on:
       shared-postgres:
         condition: service_healthy
@@ -138,7 +138,7 @@ services:
 #      - "9999:9999"        # statuslist API    -> /statuslist
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:1045
-      - EDC_HOSTNAME=consumer-idhub
+      - EDC_HOSTNAME=consumer-wallet
       - EDC_IAM_DID_WEB_USE_HTTPS=false
       - EDC_ISSUER_ISSUANCE_SEND_RETRY_LIMIT=0
       - EDC_IAM_CREDENTIAL_RENEWAL_GRACEPERIOD=172800
@@ -160,10 +160,10 @@ services:
     networks:
       - con-x-test-network
 
-  provider-idhub:
-    container_name: provider-idhub
-    image: wallet:0.17.0-1
-    pull_policy: never
+  provider-wallet:
+    container_name: provider-wallet
+    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    pull_policy: missing
     depends_on:
       shared-postgres:
         condition: service_healthy
@@ -179,7 +179,7 @@ services:
     #      - "9999:9999"        # statuslist API    -> /statuslist
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:1045
-      - EDC_HOSTNAME=provider-idhub
+      - EDC_HOSTNAME=provider-wallet
       - EDC_IAM_DID_WEB_USE_HTTPS=false
       - EDC_ISSUER_ISSUANCE_SEND_RETRY_LIMIT=0
       - EDC_IAM_CREDENTIAL_RENEWAL_GRACEPERIOD=172800
@@ -219,13 +219,13 @@ services:
       - tx.edc.postgresql.migration.policy-monitor.enabled=false
       - tx.edc.postgresql.migration.policy.enabled=false
       - tx.edc.postgresql.migration.transferprocess.enabled=false
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-service:con-x-issuer
+      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=consumersecret
       - edc.iam.credential.revocation.mimetype=application/json
-      - edc.iam.sts.oauth.token.url=http://consumer-idhub:9292/api/sts/token
-      - edc.iam.sts.oauth.client.id=did:web:consumer-idhub:user:consumer
-      - edc.iam.issuer.id=did:web:consumer-idhub:user:consumer
+      - edc.iam.sts.oauth.token.url=http://consumer-wallet:9292/api/sts/token
+      - edc.iam.sts.oauth.client.id=did:web:consumer-wallet:user:consumer
+      - edc.iam.issuer.id=did:web:consumer-wallet:user:consumer
       - web.http.port=9000
       - web.http.path=/api
       - web.http.management.port=9010
@@ -237,7 +237,7 @@ services:
       - web.http.control.port=9050
       - web.http.control.path=/control
       - edc.hostname=consumer-controlplane
-      - edc.participant.id=did:web:consumer-idhub:user:consumer
+      - edc.participant.id=did:web:consumer-wallet:user:consumer
       - edc.dsp.callback.address=http://consumer-controlplane:9020/dsp
       - edc.sql.schema.autocreate=true
       - edc.datasource.default.url=jdbc:postgresql://shared-postgres:5432/cons_cpl
@@ -287,13 +287,13 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-service:con-x-issuer
+      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=consumersecret
       - edc.iam.credential.revocation.mimetype=application/json
-      - edc.iam.sts.oauth.token.url=http://consumer-idhub:9292/api/sts/token
-      - edc.iam.sts.oauth.client.id=did:web:consumer-idhub:user:consumer
-      - edc.iam.issuer.id=did:web:consumer-idhub:user:consumer
+      - edc.iam.sts.oauth.token.url=http://consumer-wallet:9292/api/sts/token
+      - edc.iam.sts.oauth.client.id=did:web:consumer-wallet:user:consumer
+      - edc.iam.issuer.id=did:web:consumer-wallet:user:consumer
     depends_on:
       shared-postgres:
         condition: service_healthy
@@ -324,13 +324,13 @@ services:
       - tx.edc.postgresql.migration.policy-monitor.enabled=false
       - tx.edc.postgresql.migration.policy.enabled=false
       - tx.edc.postgresql.migration.transferprocess.enabled=false
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-service:con-x-issuer
+      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=providersecret
       - edc.iam.credential.revocation.mimetype=application/json
-      - edc.iam.sts.oauth.token.url=http://provider-idhub:9292/api/sts/token
-      - edc.iam.sts.oauth.client.id=did:web:provider-idhub:user:provider
-      - edc.iam.issuer.id=did:web:provider-idhub:user:provider
+      - edc.iam.sts.oauth.token.url=http://provider-wallet:9292/api/sts/token
+      - edc.iam.sts.oauth.client.id=did:web:provider-wallet:user:provider
+      - edc.iam.issuer.id=did:web:provider-wallet:user:provider
       - web.http.port=9000
       - web.http.path=/api
       - web.http.management.port=9010
@@ -342,7 +342,7 @@ services:
       - web.http.control.port=9050
       - web.http.control.path=/control
       - edc.hostname=provider-controlplane
-      - edc.participant.id=did:web:provider-idhub:user:provider
+      - edc.participant.id=did:web:provider-wallet:user:provider
       - edc.dsp.callback.address=http://provider-controlplane:9020/dsp
       - edc.sql.schema.autocreate=true
       - edc.datasource.default.url=jdbc:postgresql://shared-postgres:5432/prov_cpl
@@ -392,13 +392,13 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-service:con-x-issuer
+      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=providersecret
       - edc.iam.credential.revocation.mimetype=application/json
-      - edc.iam.sts.oauth.token.url=http://provider-idhub:9292/api/sts/token
-      - edc.iam.sts.oauth.client.id=did:web:provider-idhub:user:provider
-      - edc.iam.issuer.id=did:web:provider-idhub:user:provider
+      - edc.iam.sts.oauth.token.url=http://provider-wallet:9292/api/sts/token
+      - edc.iam.sts.oauth.client.id=did:web:provider-wallet:user:provider
+      - edc.iam.issuer.id=did:web:provider-wallet:user:provider
     depends_on:
       shared-postgres:
         condition: service_healthy

@@ -21,12 +21,12 @@ body:json {
       {
         "id": "ProviderCredentialService-ID",
         "type": "CredentialService",
-        "serviceEndpoint": "http://provider-idhub:13131/api/credentials/v1/participants/{{PROV_PART_CONT}}"
+        "serviceEndpoint": "http://provider-wallet:13131/api/credentials/v1/participants/{{PROV_PART_CONT}}"
       },
       {
-        "id": "Provider-IssuerService",
+        "id": "ProviderIssuerService-ID",
         "type": "IssuerService",
-        "serviceEndpoint": "http://provider-idhub:13132/api/issuance/v1alpha/participants/{{PROV_PART_CONT}}"
+        "serviceEndpoint": "http://provider-wallet:13132/api/issuance/v1alpha/participants/{{PROV_PART_CONT}}"
       }
     ],
     "active": true,
