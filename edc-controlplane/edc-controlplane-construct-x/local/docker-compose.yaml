@@ -230,6 +230,8 @@ services:
       - web.http.path=/api
       - web.http.management.port=9010
       - web.http.management.path=/management
+      - web.http.management.auth.key=cons-management-api-key
+      - web.http.management.auth.type=tokenbased
       - web.http.protocol.port=9020
       - web.http.protocol.path=/dsp
       - web.http.validation.port=9030
@@ -338,6 +340,8 @@ services:
       - web.http.path=/api
       - web.http.management.port=9010
       - web.http.management.path=/management
+      - web.http.management.auth.key=prov-management-api-key
+      - web.http.management.auth.type=tokenbased
       - web.http.protocol.port=9020
       - web.http.protocol.path=/dsp
       - web.http.validation.port=9030
