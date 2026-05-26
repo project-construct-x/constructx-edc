@@ -249,6 +249,11 @@ services:
       - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
       - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
       - tx.edc.iam.iatp.default-scopes.test.operation=read
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1"]
+      start_period: 10s
+      interval: 3s
+      retries: 30
     depends_on:
         shared-postgres:
           condition: service_healthy
@@ -295,10 +300,8 @@ services:
       - edc.iam.sts.oauth.client.id=did:web:consumer-wallet:user:consumer
       - edc.iam.issuer.id=did:web:consumer-wallet:user:consumer
     depends_on:
-      shared-postgres:
+      consumer-controlplane:
         condition: service_healthy
-      vault-init:
-        condition: service_completed_successfully
     entrypoint: [ "java", "-jar", "edc-runtime.jar", "--log-level=DEBUG" ]
     ports:
       - "5008:5005"   # Debugger
@@ -354,6 +357,11 @@ services:
       - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
       - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
       - tx.edc.iam.iatp.default-scopes.test.operation=read
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1" ]
+      start_period: 10s
+      interval: 3s
+      retries: 30
     depends_on:
         shared-postgres:
           condition: service_healthy
@@ -400,10 +408,8 @@ services:
       - edc.iam.sts.oauth.client.id=did:web:provider-wallet:user:provider
       - edc.iam.issuer.id=did:web:provider-wallet:user:provider
     depends_on:
-      shared-postgres:
+      provider-controlplane:
         condition: service_healthy
-      vault-init:
-        condition: service_completed_successfully
     entrypoint: [ "java", "-jar", "edc-runtime.jar", "--log-level=DEBUG" ]
     ports:
       - "5007:5005"   # Debugger
