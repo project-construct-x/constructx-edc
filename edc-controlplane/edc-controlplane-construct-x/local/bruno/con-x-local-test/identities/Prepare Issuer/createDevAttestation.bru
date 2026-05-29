@@ -19,14 +19,14 @@ body:json {
     "attestationType": "dev",
     "id": "dev-def-1",
     "configuration": {
-      "did:web:consumer-idhub:user:consumer": {
+      "{{CONS_ID}}": {
         "isConsumer": true,
         "isProvider": false,
         "foo": {
           "bar": 123
         }
       },
-      "did:web:provider-idhub:user:provider": {
+      "{{PROV_ID}}": {
         "isConsumer": false,
         "isProvider": true,
         "foo": {
