@@ -50,3 +50,28 @@ create_and_store_keypair() {
 
 create_and_store_keypair "cons"
 create_and_store_keypair "prov"
+
+create_and_store_aes_key() {
+  local prefix=$1
+  local aes_key
+
+  # AES-Key erzeugen
+  aes_key="$(openssl rand -base64 32 | tr -d '\n')"
+
+  # AES-Key in Vault schreiben, Pfad an Prefix koppeln
+  jq -n --arg content "$aes_key" '{data:{content:$content}}' | \
+    curl -sSf \
+      -H "X-Vault-Token: $TOKEN" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      --data-binary @- \
+      "$VAULT/v1/secret/data/${prefix}-aes-key-alias" \
+    || { echo "Failed to create aes key entry for ${prefix}"; exit 1; }
+
+  echo "AES key stored at secret/data/${prefix}-aes-key-alias"
+}
+
+# create AES keys for wallets
+create_and_store_aes_key "issuer-wallet"
+create_and_store_aes_key "consumer-wallet"
+create_and_store_aes_key "provider-wallet"
