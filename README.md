@@ -2,7 +2,7 @@
 
 [![Apache 2.0 License][license-shield]][license-url]
 
-Construct-X specific Eclipse Dataspace Connector distributions and extensions, based on the Eclipse Tractus-X EDC.
+[Construct-X](https://www.construct-x.org/) specific Eclipse Dataspace Connector distributions and extensions, based on the [Eclipse Tractus-X EDC](https://github.com/eclipse-tractusx/tractusx-edc).
 
 ## Overview
 
@@ -12,7 +12,7 @@ Construct-X specific policies, extensions and configurations.
 This repository provides:
 - Construct-X specific EDC extensions
 - Control-Plane and Data-Plane distributions
-- Helm charts and container images
+- Helm charts and docker compose
 - Local development and testing environments
 
 ## Inventory
@@ -26,7 +26,7 @@ The Data Plane handles the actual transfer of data streams.
 
 ### Control Plane distributions
 
-- [edc-controlplane-postgresql-hashicorp-vault](edc-controlplane/edc-controlplane-postgresql-hashicorp-vault) with
+- [edc-controlplane-postgresql-hashicorp-vault](edc-controlplane/edc-controlplane-construct-x/con-x-controlplane-postgresql-hashicorp-vault) with
   dependencies on
   - [Hashicorp Vault](https://www.vaultproject.io/)
   - [PostgreSQL 8.2 or newer](https://www.postgresql.org/)
@@ -34,18 +34,10 @@ The Data Plane handles the actual transfer of data streams.
 
 ### Data Plane distributions
 
-- [edc-dataplane-hashicorp-vault](edc-dataplane/edc-dataplane-hashicorp-vault) with dependencies on
+- [edc-dataplane-hashicorp-vault](edc-dataplane/edc-dataplane-construct-x/con-x-dataplane-postgresql-hashicorp-vault) with dependencies on
   - [Hashicorp Vault](https://www.vaultproject.io/)
 
-## Important Resources
-
-### Local Testbed
-
-The local testbed provides a lightweight environment for local Construct-X EDC development and integration testing.
-
-- [Construct-X Local Testbed](https://github.com/project-construct-x/constructx-edc/blob/develop/edc-controlplane/edc-controlplane-construct-x/local/README.md)
-
-### Upstream References
+## Upstream References
 
 - [Eclipse Tractus-X EDC](https://github.com/eclipse-tractusx/tractusx-edc)
 - [Eclipse Dataspace Components](https://github.com/eclipse-edc/Connector)
@@ -63,17 +55,10 @@ This includes:
 
 ## Getting Started
 
-### Build
+The local testbed provides a lightweight environment for local Construct-X EDC development and integration testing.
+It is the recommended starting point for developers getting started with the Construct-X EDC.
 
-Build Construct-X EDC together with its Container Images
-
-```shell
-./gradlew dockerize
-```
-
-```shell
-./gradlew build
-```
+- [Construct-X Local Testbed](https://github.com/project-construct-x/constructx-edc/blob/develop/edc-controlplane/edc-controlplane-construct-x/local/README.md)
 
 ## Contributing
 See [CONTRIBUTING](https://github.com/project-construct-x/constructx-edc/blob/develop/CONTRIBUTING.md).
