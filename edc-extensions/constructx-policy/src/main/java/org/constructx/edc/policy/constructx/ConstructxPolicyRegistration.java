@@ -20,12 +20,14 @@
 
 package org.constructx.edc.policy.constructx;
 
+import org.constructx.edc.policy.constructx.membership.FooLevelCredentialConstraintFunction;
 import org.constructx.edc.policy.constructx.membership.MembershipCredentialConstraintFunction;
 import org.eclipse.edc.policy.engine.spi.PolicyEngine;
 import org.eclipse.edc.policy.engine.spi.RuleBindingRegistry;
 import org.eclipse.edc.policy.model.Permission;
 import org.eclipse.edc.spi.monitor.Monitor;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -58,11 +60,14 @@ public class ConstructxPolicyRegistration {
         FUNCTION_SCOPES_CLASSES.forEach(scope ->
                 engine.registerFunction(scope, Permission.class, new MembershipCredentialConstraintFunction<>(monitor))
         );
+        List.of(NEGOTIATION_SCOPE_CLASS, TRANSFER_PROCESS_SCOPE_CLASS).forEach(scope ->
+                engine.registerFunction(scope, Permission.class, new FooLevelCredentialConstraintFunction<>(monitor))
+        );
     }
 
     public static void registerBindings(RuleBindingRegistry registry) {
         registry.dynamicBind(s -> {
-            if (Stream.of(MEMBERSHIP_LITERAL, CONSTRUCTX_MEMBERSHIP_LITERAL)
+            if (Stream.of(MEMBERSHIP_LITERAL, CONSTRUCTX_MEMBERSHIP_LITERAL, "Foo.fooLevel")
                     .anyMatch(postfix -> s.startsWith(CONSTRUCTX_POLICY_NS + postfix))) {
                 return RULE_SCOPES;
             }

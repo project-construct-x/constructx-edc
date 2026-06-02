@@ -22,7 +22,6 @@ body:json {
 }
 
 script:post-response {
-  const offerArray = res.getBody().dataset[0].hasPolicy;
   var offerId;
   res.getBody().dataset[0].hasPolicy.forEach(item => {
     const type = item['@type'];

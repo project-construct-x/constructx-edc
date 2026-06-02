@@ -6,7 +6,9 @@ import org.eclipse.edc.policy.model.Policy;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -24,19 +26,18 @@ public class ConXTestScopeExtractor<C extends RequestPolicyContext> implements P
 
     @Override
     public Boolean apply(Policy policy, C requestPolicyContext) {
-        monitor.info("RequestPolicyContext class " + requestPolicyContext.requestContext().getClass());
-        monitor.info("Policy " + policy);
-
+        Set<String> scope = new HashSet<>();
+        scope.add(FX_SCOPE);
         for (org.eclipse.edc.policy.model.Permission permission : policy.getPermissions()) {
-            StringBuilder sb = new StringBuilder();
-            var perm = permission;
-            sb.append("Permission ");
-            sb.append(perm.getDuties()).append("\n").append(perm.getConstraints()).append("\n\n");
-            monitor.info(sb.toString());
+            for (var constraint : permission.getConstraints()) {
+                if (constraint.toString().contains("https://w3id.org/constructx/policy/v1.0/Foo")) {
+                    scope.add(FOO_SCOPE);
+                    monitor.info("Adding FooCredential requirement");
+                }
+            }
         }
-        monitor.info("Policy Permissions" + policy.getPermissions());
-
-        requestPolicyContext.requestScopeBuilder().scopes(List.of(FX_SCOPE, FOO_SCOPE));
+        monitor.info("Setting the following scopes " + scope);
+        requestPolicyContext.requestScopeBuilder().scopes(scope);
 
         return true;
     }

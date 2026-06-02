@@ -1,5 +1,5 @@
 meta {
-  name: CreatePolicy
+  name: CreateAccessPolicy
   type: http
   seq: 2
 }
@@ -19,7 +19,7 @@ body:json {
       }
     ],
     "@type": "PolicyDefinition",
-    "@id": "aPolicy",
+    "@id": "accessPolicy",
     "policy": {
       "@type": "Set",
       "permission": [
@@ -29,11 +29,6 @@ body:json {
             "and": [
               {
                 "leftOperand": "https://w3id.org/constructx/policy/v1.0/ConstructXMembership",
-                "operator": "eq",
-                "rightOperand": "active"
-              },
-              {
-                "leftOperand": "https://w3id.org/constructx/policy/v1.0/Foo",
                 "operator": "eq",
                 "rightOperand": "active"
               }

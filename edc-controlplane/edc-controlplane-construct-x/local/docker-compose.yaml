@@ -248,12 +248,6 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.iatp.default-scopes.test.type=ConstructXMembershipCredential
-      - tx.edc.iam.iatp.default-scopes.test.operation=read
-      - tx.edc.iam.iatp.default-scopes.test1.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.iatp.default-scopes.test1.type=FooCredential
-      - tx.edc.iam.iatp.default-scopes.test1.operation=read
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1"]
       start_period: 10s
@@ -361,12 +355,6 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.iatp.default-scopes.test.type=ConstructXMembershipCredential
-      - tx.edc.iam.iatp.default-scopes.test.operation=read
-      - tx.edc.iam.iatp.default-scopes.test1.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.iatp.default-scopes.test1.type=FooCredential
-      - tx.edc.iam.iatp.default-scopes.test1.operation=read
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1" ]
       start_period: 10s

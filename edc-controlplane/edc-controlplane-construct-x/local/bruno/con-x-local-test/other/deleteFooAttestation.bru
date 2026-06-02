@@ -1,0 +1,24 @@
+meta {
+  name: deleteFooAttestation
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/attestations/dev-def-2
+  body: none
+  auth: none
+}
+
+headers {
+  ~x-api-key: {{ISSUER_APIKEY}}
+}
+
+script:pre-request {
+  req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
