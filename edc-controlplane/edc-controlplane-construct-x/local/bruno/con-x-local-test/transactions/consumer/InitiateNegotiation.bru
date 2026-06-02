@@ -30,7 +30,21 @@ body:json {
       "@type": "Offer",
       "assigner": "{{PROV_ID}}",
       "assignee": "{{CONS_ID}}",
-      "target": "assetId"
+      "target": "assetId",
+      "permission": [
+        {
+          "action": "http://www.w3.org/ns/odrl/2/use",
+          "constraint": {
+            "and": [
+              {
+                "leftOperand": "https://w3id.org/constructx/policy/v1.0/ConstructXMembership",
+                "operator": "eq",
+                "rightOperand": "active"
+              }
+            ]
+          }
+        }
+      ]
     }
   }
 }

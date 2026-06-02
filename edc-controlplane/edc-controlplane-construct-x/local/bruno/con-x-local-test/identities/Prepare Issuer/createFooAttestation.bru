@@ -1,0 +1,37 @@
+meta {
+  name: createFooAttestation
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/attestations
+  body: json
+  auth: none
+}
+
+headers {
+  ~x-api-key: {{ISSUER_APIKEY}}
+}
+
+body:json {
+  {
+    "attestationType": "dev",
+    "id": "dev-def-2",
+    "configuration": {
+      "default": {
+        "isFoo": true
+      },
+      "blackList": []
+    }
+  }
+}
+
+script:pre-request {
+  req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,7 +1,7 @@
 meta {
-  name: CreatePolicy
+  name: CreatePolicy copy
   type: http
-  seq: 2
+  seq: 4
 }
 
 post {
@@ -19,7 +19,7 @@ body:json {
       }
     ],
     "@type": "PolicyDefinition",
-    "@id": "aPolicy",
+    "@id": "bPolicy",
     "policy": {
       "@type": "Set",
       "permission": [
@@ -30,12 +30,7 @@ body:json {
               {
                 "leftOperand": "https://w3id.org/constructx/policy/v1.0/ConstructXMembership",
                 "operator": "eq",
-                "rightOperand": "active"
-              },
-              {
-                "leftOperand": "https://w3id.org/constructx/policy/v1.0/Foo",
-                "operator": "eq",
-                "rightOperand": "active"
+                "rightOperand": "inactive"
               }
             ]
           }

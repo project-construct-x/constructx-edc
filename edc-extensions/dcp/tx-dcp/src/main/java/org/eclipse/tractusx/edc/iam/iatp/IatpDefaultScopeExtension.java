@@ -31,6 +31,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.Config;
+import org.eclipse.tractusx.edc.iam.iatp.scope.ConXTestScopeExtractor;
 import org.eclipse.tractusx.edc.iam.iatp.scope.DefaultScopeExtractor;
 
 import java.util.HashMap;
@@ -72,12 +73,15 @@ public class IatpDefaultScopeExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var defaultScopes = defaultScopes(context);
-        if (!defaultScopes.isEmpty()) {
-            policyEngine.registerPostValidator(RequestCatalogPolicyContext.class, new DefaultScopeExtractor<>(defaultScopes));
-            policyEngine.registerPostValidator(RequestContractNegotiationPolicyContext.class, new DefaultScopeExtractor<>(defaultScopes));
-            policyEngine.registerPostValidator(RequestTransferProcessPolicyContext.class, new DefaultScopeExtractor<>(defaultScopes));
-        }
+//        var defaultScopes = defaultScopes(context);
+//        if (!defaultScopes.isEmpty()) {
+//            policyEngine.registerPostValidator(RequestCatalogPolicyContext.class, new DefaultScopeExtractor<>(defaultScopes));
+//            policyEngine.registerPostValidator(RequestContractNegotiationPolicyContext.class, new DefaultScopeExtractor<>(defaultScopes));
+//            policyEngine.registerPostValidator(RequestTransferProcessPolicyContext.class, new DefaultScopeExtractor<>(defaultScopes));
+//        }
+        policyEngine.registerPostValidator(RequestCatalogPolicyContext.class, new ConXTestScopeExtractor<>(monitor));
+        policyEngine.registerPostValidator(RequestContractNegotiationPolicyContext.class, new ConXTestScopeExtractor<>(monitor));
+        policyEngine.registerPostValidator(RequestTransferProcessPolicyContext.class, new ConXTestScopeExtractor<>(monitor));
     }
 
     private Map<String, Set<String>> defaultScopes(ServiceExtensionContext context) {
