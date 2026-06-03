@@ -57,10 +57,10 @@ public class FooLevelCredentialConstraintFunction<C extends ParticipantAgentPoli
         boolean expectedFooLevelSatisfied = false;
         for (var cr : credentialResult.getContent()) {
             if (cr.getType().contains("FooCredential")) {
-                for (var claim : cr.getCredentialSubject()) {
-                    if (claim.getClaims().containsKey("fooLevel")) {
+                for (var credentialSubject : cr.getCredentialSubject()) {
+                    if (credentialSubject.getClaims().containsKey("fooLevel")) {
                         try {
-                            int provenFooLevel = Integer.parseInt(claim.getClaims().get("fooLevel").toString());
+                            int provenFooLevel = Integer.parseInt(credentialSubject.getClaims().get("fooLevel").toString());
                             boolean test = testPredicate.test(provenFooLevel);
                             if (test) {
                                 monitor.info("Expectation satisfied!");

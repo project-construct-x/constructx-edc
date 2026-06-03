@@ -7,7 +7,6 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -17,7 +16,7 @@ public class ConXTestScopeExtractor<C extends RequestPolicyContext> implements P
 
     private final Monitor monitor;
 
-    private static final String FX_SCOPE = "org.eclipse.dspace.dcp.vc.type:ConstructXMembershipCredential:read";
+    private static final String CONX_SCOPE = "org.eclipse.dspace.dcp.vc.type:ConstructXMembershipCredential:read";
     private static final String FOO_SCOPE = "org.eclipse.dspace.dcp.vc.type:FooCredential:read";
 
     public ConXTestScopeExtractor(Monitor monitor) {
@@ -27,7 +26,7 @@ public class ConXTestScopeExtractor<C extends RequestPolicyContext> implements P
     @Override
     public Boolean apply(Policy policy, C requestPolicyContext) {
         Set<String> scope = new HashSet<>();
-        scope.add(FX_SCOPE);
+        scope.add(CONX_SCOPE);
         for (org.eclipse.edc.policy.model.Permission permission : policy.getPermissions()) {
             for (var constraint : permission.getConstraints()) {
                 if (constraint.toString().contains("https://w3id.org/constructx/policy/v1.0/Foo")) {
