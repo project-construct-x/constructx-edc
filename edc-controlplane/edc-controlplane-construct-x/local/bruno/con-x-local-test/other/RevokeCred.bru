@@ -5,17 +5,13 @@ meta {
 }
 
 post {
-  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/credentials/27fa4b9e-b15b-4908-a174-e440fc026e99/revoke
+  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/credentials/{{credentialId}}/revoke
   body: none
   auth: inherit
 }
 
 headers {
   x-api-key: YWRtaW4.adminKey
-}
-
-script:pre-request {
-  // req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
 }
 
 settings {
