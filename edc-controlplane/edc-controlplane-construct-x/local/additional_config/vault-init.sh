@@ -58,7 +58,7 @@ create_and_store_aes_key() {
   # AES-Key erzeugen
   aes_key="$(openssl rand -base64 32 | tr -d '\n')"
 
-  # AES-Key in Vault schreiben, Pfad an Prefix koppeln
+  # write AES-Key to vault, bind path to prefix
   jq -n --arg content "$aes_key" '{data:{content:$content}}' | \
     curl -sSf \
       -H "X-Vault-Token: $TOKEN" \
