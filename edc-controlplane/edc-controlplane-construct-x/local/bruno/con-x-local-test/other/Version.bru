@@ -1,17 +1,17 @@
 meta {
-  name: Get Provider DID Doc
+  name: Version
   type: http
-  seq: 3
+  seq: 7
 }
 
 get {
-  url: {{PROVIDER_IDHUB_DID_API}}/user/provider
+  url: http://localhost:29020/dsp/.well-known/dspace-version
   body: none
   auth: inherit
 }
 
 headers {
-  Host: provider-wallet
+  Accept: application/json
 }
 
 settings {
