@@ -1,95 +1,96 @@
+_anchors:
+    connectorId: &connectorId did:web:provider-idhub.staging.construct-x.net:provider
+    secretAlias: &secretAlias providersecret
+    trustedIssuerId: &trustedIssuerId did:web:local-issuer-service.staging.construct-x.net:issuer
+    clusterIssuer: &clusterIssuer letsencrypt-staging
+    ingressClass: &ingressClass nginx
+    imagePullSecret: &imagePullSecret registry-creds
+    controlplaneFqdn: &controlplaneFqdn provider-conn-controlplane.staging.construct-x.net
+    dataplaneFqdn: &dataplaneFqdn provider-conn-dataplane.staging.construct-x.net
+
 nameOverride: provider-conn
+
 participant:
-    id: did:web:provider-idhub.staging.construct-x.net:provider
+    id: *connectorId
+
 iatp:
-    id: did:web:provider-idhub.staging.construct-x.net:provider
-    trustedIssuerId: did:web:local-issuer-service.staging.construct-x.net:issuer
+    id: *connectorId
+    trustedIssuerId: *trustedIssuerId
     trustedIssuers:
-        - id: did:web:local-issuer-service.staging.construct-x.net:issuer
+        - id: *trustedIssuerId
     sts:
         oauth:
             token_url: https://provider-idhub.staging.construct-x.net/api/sts/token
             client:
-                id: did:web:provider-idhub.staging.construct-x.net:provider
-                secret_alias: providersecret
+                id: *connectorId
+                secret_alias: *secretAlias
     didService:
         selfRegistration:
-            id: did:web:provider-idhub.staging.construct-x.net:provider
+            id: *connectorId
+
 controlplane:
-    nameOverride: provider-conn-controlplane
-    enabled: true
     hostname: provider-conn-controlplane
     image:
         repository: registry.onstackit.cloud/constructx/con-x-controlplane-postgresql-hashicorp-vault
     imagePullSecrets:
-        - name: registry-creds
+        - name: *imagePullSecret
+    endpoints:
+        management:
+            authKey: provider-conn-controlplane-management-password
     env:
-        EDC_IAM_ISSUER_ID: did:web:provider-idhub.staging.construct-x.net:provider
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: providersecret
+        EDC_IAM_ISSUER_ID: *connectorId
+        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
     ingresses:
         - enabled: true
-          hostname: provider-conn-controlplane.staging.construct-x.net
-          className: nginx
+          hostname: *controlplaneFqdn
           annotations:
-              cert-manager.io/cluster-issuer: letsencrypt-staging
-              external-dns.alpha.kubernetes.io/hostname: provider-conn-controlplane.staging.construct-x.net
+              cert-manager.io/cluster-issuer: *clusterIssuer
+              external-dns.alpha.kubernetes.io/hostname: *controlplaneFqdn
               external-dns.alpha.kubernetes.io/ttl: "300"
           endpoints:
               - default
               - management
-              - public
               - protocol
               - validation
               - metrics
+          className: *ingressClass
           tls:
               enabled: true
               secretName: provider-conn-cp-tls
           certManager:
-              clusterIssuer: letsencrypt-staging
-        - enabled: false
-          hostname: provider-conn-controlplane.staging.construct-x.net
-          endpoints:
-              - control
-          className: nginx
-          tls:
-              enabled: false
-              secretName: "provider-conn-cp-tls"
-          certManager:
-              clusterIssuer: letsencrypt-staging
-    url:
-        control: https://provider-conn-controlplane.staging.construct-x.net/control
+              clusterIssuer: *clusterIssuer
+
 dataplane:
-    nameOverride: provider-conn-dataplane
-    enabled: true
     hostname: provider-conn-dataplane
     image:
         repository: registry.onstackit.cloud/constructx/con-x-dataplane-postgresql-hashicorp-vault
     imagePullSecrets:
-        - name: registry-creds
+        - name: *imagePullSecret
     token:
         signer:
             privatekey_alias: prov_priv
         verifier:
             publickey_alias: prov_pub
     env:
-        EDC_IAM_ISSUER_ID: did:web:provider-idhub.staging.construct-x.net:provider
-        EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: did:web:local-issuer-service.staging.construct-x.net:issuer
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: providersecret
+        EDC_IAM_ISSUER_ID: *connectorId
+        EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: *trustedIssuerId
+        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
     ingresses:
         - enabled: true
-          hostname: provider-conn-dataplane.staging.construct-x.net
-          className: nginx
+          hostname: *dataplaneFqdn
           annotations:
-              cert-manager.io/cluster-issuer: letsencrypt-staging
-              external-dns.alpha.kubernetes.io/hostname: provider-conn-dataplane.staging.construct-x.net
+              cert-manager.io/cluster-issuer: *clusterIssuer
+              external-dns.alpha.kubernetes.io/hostname: *dataplaneFqdn
               external-dns.alpha.kubernetes.io/ttl: "300"
           endpoints:
               - public
+          className: *ingressClass
           tls:
               enabled: true
               secretName: provider-conn-dp-tls
           certManager:
-              clusterIssuer: letsencrypt-staging
+              clusterIssuer: *clusterIssuer
+
 postgresql:
     primary:
         persistence:

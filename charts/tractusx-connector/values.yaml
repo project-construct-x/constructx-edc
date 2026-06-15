@@ -37,11 +37,13 @@ imagePullSecrets: []
 customLabels: {}
 
 participant:
-    id: "did:web:wallet.staging.construct-x.net:user"
+    id: "did:web:changeme"
 
 iatp:
     # -- Decentralized IDentifier (DID) of the connector
     id: "did:web:changeme"
+    # -- ID of the trusted issuer that is used for SI token validation (maps to EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID)
+    trustedIssuerId: ""
     # -- Configures the trusted issuers for this runtime. If no supportedTypes are specified, the value defaults to "*" for that issuer
     trustedIssuers: []
     # - id: "did:web:example1.com"
@@ -117,6 +119,8 @@ log4j2:
 controlplane:
     nameOverride: ""
     fullnameOverride: ""
+    # -- hostname where the controlplane is reachable
+    hostname: ""
     image:
         # -- Which derivate of the control plane to use. When left empty the deployment will select the correct image automatically
         repository: "ghcr.io/project-construct-x/con-x-controlplane-postgresql-hashicorp-vault"
@@ -263,8 +267,24 @@ controlplane:
         # -- The container's process will run with the specified uid
         runAsUser: 10001
 
-    # -- Extra environment variables that will be pass onto deployment pods
-    #  ENV_NAME: value
+    # -- Extra environment variables that will be passed onto deployment pods
+    env:
+        EDC_IAM_DID_WEB_USE_HTTPS: true
+        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
+        TX_EDC_POSTGRESQL_MIGRATION_ASSET_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_AGREEMENTBPNS_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_BPN_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_CONTRACTDEFINITION_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_CONTRACTNEGOTIATION_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_DATAPLANEINSTANCE_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_EDR_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_FEDERATEDCATALOG_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_JTI-VALIDATION_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_POLICY-MONITOR_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_POLICY_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_TRANSFERPROCESS_ENABLED: false
+        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
+        EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
 
     # -- "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
     # ref: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envvarsource-v1-core
@@ -290,24 +310,6 @@ controlplane:
     # Database schema auto-creation
     schema:
         autocreate: true
-
-    env:
-        EDC_IAM_DID_WEB_USE_HTTPS: true
-        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
-        TX_EDC_POSTGRESQL_MIGRATION_ASSET_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_AGREEMENTBPNS_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_BPN_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_CONTRACTDEFINITION_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_CONTRACTNEGOTIATION_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_DATAPLANEINSTANCE_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_EDR_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_FEDERATEDCATALOG_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_JTI-VALIDATION_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_POLICY-MONITOR_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_POLICY_ENABLED: false
-        TX_EDC_POSTGRESQL_MIGRATION_TRANSFERPROCESS_ENABLED: false
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
-        EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
 
     ## Ingress declaration to expose the network service.
     ingresses:
@@ -410,6 +412,8 @@ controlplane:
 dataplane:
     nameOverride: ""
     fullnameOverride: ""
+    # -- hostname where the dataplane is reachable
+    hostname: ""
     image:
         # -- Which derivate of the data plane to use. when left empty the deployment will select the correct image automatically
         repository: "ghcr.io/project-construct-x/con-x-dataplane-postgresql-hashicorp-vault"
@@ -494,6 +498,14 @@ dataplane:
             port: 9510
             # -- path for incoming api calls
             path: /management
+        # -- proxy api for consumer data transfer
+        proxy:
+            # -- port for incoming api calls
+            port: 9511
+            # -- path for incoming api calls
+            path: /proxy
+            # -- authentication key, must be attached to each request as `X-Api-Key` header
+            authKey: "password"
         # -- metrics api, used for application metrics, must not be internet facing
         metrics:
             # -- port for incoming api calls
@@ -510,11 +522,11 @@ dataplane:
             # -- Optional endpoint for an OAuth2 token refresh. Default endpoint is `<PUBLIC_API>/token`
             refresh_endpoint:
         signer:
-          # -- Alias under which the private key (JWK or PEM format) is stored in the vault
-          privatekey_alias: priv
+            # -- Alias under which the private key (JWK or PEM format) is stored in the vault
+            privatekey_alias: priv
         verifier:
-          # -- Alias under which the public key (JWK or PEM format) is stored in the vault, that belongs to the private key which was referred to at `dataplane.token.signer.privatekey_alias`
-          publickey_alias: pub
+            # -- Alias under which the public key (JWK or PEM format) is stored in the vault, that belongs to the private key which was referred to at `dataplane.token.signer.privatekey_alias`
+            publickey_alias: pub
 
     # Database schema auto-creation
     schema:
@@ -557,7 +569,7 @@ dataplane:
         # -- The container's process will run with the specified uid
         runAsUser: 10001
 
-    # -- Extra environment variables that will be pass onto deployment pods
+    # -- Extra environment variables that will be passed onto deployment pods
     env:
         EDC_IAM_DID_WEB_USE_HTTPS: true
         EDC_DATA_PLANE_SELF_UNREGISTRATION: true
@@ -586,9 +598,6 @@ dataplane:
     envConfigMapNames: []
     #  - first-config-map
     #  - second-config-map
-
-    schema:
-        autocreate: true
 
     ## Ingress declaration to expose the network service.
     ingresses:
