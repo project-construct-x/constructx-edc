@@ -37,7 +37,7 @@ imagePullSecrets: []
 customLabels: {}
 
 participant:
-    id: "did:web:consumer-idhub.staging.construct-x.net:consumer"
+    id: "did:web:wallet.staging.construct-x.net:user"
 
 iatp:
     # -- Decentralized IDentifier (DID) of the connector
@@ -115,6 +115,8 @@ log4j2:
               ref: CONSOLE
 
 controlplane:
+    nameOverride: ""
+    fullnameOverride: ""
     image:
         # -- Which derivate of the control plane to use. When left empty the deployment will select the correct image automatically
         repository: "ghcr.io/project-construct-x/con-x-controlplane-postgresql-hashicorp-vault"
@@ -170,13 +172,13 @@ controlplane:
         # -- default api for health checks, should not be added to any ingress
         default:
             # -- port for incoming api calls
-            port: 8080
+            port: 9000
             # -- path for incoming api calls
             path: /api
         # -- data management api, used by internal users, can be added to an ingress and must not be internet facing
         management:
             # -- port for incoming api calls
-            port: 8081
+            port: 9010
             # -- path for incoming api calls
             path: /management
             # -- authentication key, must be attached to each request as `X-Api-Key` header
@@ -187,15 +189,21 @@ controlplane:
         # -- control api, used for internal control calls. can be added to the internal ingress, but should probably not
         control:
             # -- port for incoming api calls
-            port: 8083
+            port: 9050
             # -- path for incoming api calls
             path: /control
         # -- dsp api, used for inter connector communication and must be internet facing
         protocol:
             # -- port for incoming api calls
-            port: 8084
+            port: 9020
             # -- path for incoming api calls
-            path: /api/v1/dsp
+            path: /dsp
+        # -- validation api
+        validation:
+            # -- port for incoming api calls
+            port: 9030
+            # -- path for incoming api calls
+            path: /validation
         # -- metrics api, used for application metrics, must not be internet facing
         metrics:
             # -- port for incoming api calls
@@ -256,7 +264,6 @@ controlplane:
         runAsUser: 10001
 
     # -- Extra environment variables that will be pass onto deployment pods
-    env: {}
     #  ENV_NAME: value
 
     # -- "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
@@ -401,6 +408,8 @@ controlplane:
         protocol: ""
 
 dataplane:
+    nameOverride: ""
+    fullnameOverride: ""
     image:
         # -- Which derivate of the data plane to use. when left empty the deployment will select the correct image automatically
         repository: "ghcr.io/project-construct-x/con-x-dataplane-postgresql-hashicorp-vault"
@@ -464,28 +473,27 @@ dataplane:
         # -- default api for health checks, should not be added to any ingress
         default:
             # -- port for incoming api calls
-            port: 8080
+            port: 8181
             # -- path for incoming api calls
             path: /api
         # -- public endpoint where the data can be fetched from if HttpPull was used. Must be internet facing.
         public:
             # -- port for incoming api calls
-            port: 8081
+            port: 9500
             # -- path for incoming api calls
-            path: /api/public
+            path: /public
         # -- control api, used for internal control calls. can be added to the internal ingress, but should probably not
         control:
             # -- port for incoming api calls
-            port: 8084
+            port: 9550
             # -- path for incoming api calls
-            path: /api/control
-        proxy:
+            path: /control
+        # -- data management api
+        management:
             # -- port for incoming api calls
-            port: 8186
+            port: 9510
             # -- path for incoming api calls
-            path: /proxy
-            # -- authentication key, must be attached to each request as `X-Api-Key` header
-            authKey: "password"
+            path: /management
         # -- metrics api, used for application metrics, must not be internet facing
         metrics:
             # -- port for incoming api calls
