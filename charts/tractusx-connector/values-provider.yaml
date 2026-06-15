@@ -1,4 +1,4 @@
-_anchors:
+shared:
     connectorId: &connectorId did:web:provider-idhub.staging.construct-x.net:provider
     secretAlias: &secretAlias providersecret
     trustedIssuerId: &trustedIssuerId did:web:local-issuer-service.staging.construct-x.net:issuer

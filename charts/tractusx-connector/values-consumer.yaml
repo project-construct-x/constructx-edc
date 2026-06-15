@@ -1,4 +1,4 @@
-_anchors:
+shared:
     connectorId: &connectorId did:web:consumer-idhub.staging.construct-x.net:consumer
     secretAlias: &secretAlias consumersecret
     trustedIssuerId: &trustedIssuerId did:web:local-issuer-service.staging.construct-x.net:issuer
