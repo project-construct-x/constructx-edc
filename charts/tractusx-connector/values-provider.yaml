@@ -30,8 +30,6 @@ iatp:
 
 controlplane:
     hostname: provider-conn-controlplane
-    image:
-        repository: registry.onstackit.cloud/constructx/con-x-controlplane-postgresql-hashicorp-vault
     imagePullSecrets:
         - name: *imagePullSecret
     env:
@@ -74,8 +72,6 @@ controlplane:
 
 dataplane:
     hostname: provider-conn-dataplane
-    image:
-        repository: registry.onstackit.cloud/constructx/con-x-dataplane-postgresql-hashicorp-vault
     imagePullSecrets:
         - name: *imagePullSecret
     token:
