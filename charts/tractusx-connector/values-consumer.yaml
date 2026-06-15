@@ -1,8 +1,5 @@
 #################################################################################
-#  Copyright (c) 2023,2024 ZF Friedrichshafen AG
-#  Copyright (c) 2023 Mercedes-Benz Tech Innovation GmbH
-#  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
-#  Copyright (c) 2021,2024 Contributors to the Eclipse Foundation
+#  Copyright (c) 2026 ARENA2036 e.V.
 #
 #  See the NOTICE file(s) distributed with this work for additional
 #  information regarding copyright ownership.
@@ -273,9 +270,9 @@ controlplane:
   envConfigMapNames: []
   #  - first-config-map
   #  - second-config-map
-  
+
   schema:
-    autocreate: true 
+    autocreate: true
 
   env:
     EDC_IAM_DID_WEB_USE_HTTPS: true
@@ -408,7 +405,7 @@ dataplane:
     tag: "latest"
   imagePullSecrets:
     - name: registry-creds
-  
+
   initContainers: []
   debug:
     # -- Enables java debugging mode.
@@ -506,7 +503,7 @@ dataplane:
       publickey_alias: cons_pub
 
   schema:
-    autocreate: true 
+    autocreate: true
 
   env:
     EDC_IAM_DID_WEB_USE_HTTPS: true
@@ -589,7 +586,7 @@ dataplane:
       endpoints:
         - public
       # -- Defines the [ingress class](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class)  to use
-      
+
       tls:
         # -- Enables TLS on the ingress resource
         enabled: true
