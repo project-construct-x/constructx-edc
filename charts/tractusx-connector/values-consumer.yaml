@@ -9,6 +9,7 @@ shared:
     dataplaneFqdn: &dataplaneFqdn consumer-conn-dataplane.staging.construct-x.net
 
 nameOverride: consumer-conn
+fullnameOverride: consumer-conn
 
 participant:
     id: *connectorId

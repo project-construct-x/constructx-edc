@@ -17,7 +17,7 @@
   #
   #  SPDX-License-Identifier: Apache-2.0
   #################################################################################
-
+---
 {{- $vaultToken := index .Values "vault" "hashicorp" "token" -}}
 {{- $vaultUrl := tpl (index .Values  "vault" "hashicorp" "url") . -}}
 {{- $fullName := .Values.nameOverride -}}
