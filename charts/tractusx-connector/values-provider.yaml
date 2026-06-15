@@ -34,9 +34,6 @@ controlplane:
         repository: registry.onstackit.cloud/constructx/con-x-controlplane-postgresql-hashicorp-vault
     imagePullSecrets:
         - name: *imagePullSecret
-    endpoints:
-        management:
-            authKey: provider-conn-controlplane-management-password
     env:
         EDC_IAM_ISSUER_ID: *connectorId
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias

@@ -32,9 +32,6 @@ controlplane:
     hostname: consumer-conn-controlplane
     imagePullSecrets:
         - name: *imagePullSecret
-    endpoints:
-        management:
-            authKey: consumer-conn-controlplane-management-password
     env:
         EDC_IAM_ISSUER_ID: *connectorId
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
