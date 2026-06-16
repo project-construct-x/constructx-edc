@@ -1,0 +1,140 @@
+#################################################################################
+#  Copyright (c) 2026 Zentralverband der Deutschen Elektro- und Informationstechnischen Handwerke (ZVEH)
+#
+#  See the NOTICE file(s) distributed with this work for additional
+#  information regarding copyright ownership.
+#
+#  This program and the accompanying materials are made available under the
+#  terms of the Apache License, Version 2.0 which is available at
+#  https://www.apache.org/licenses/LICENSE-2.0.
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  License for the specific language governing permissions and limitations
+#  under the License.
+#
+#  SPDX-License-Identifier: Apache-2.0
+#################################################################################
+
+# this configmap contains the initialization script to generate and store aes and rsa keys into the vault.
+
+{{ if .Values.vault.hashicorp.init.enabled }}
+{{- $fullName := .Values.fullnameOverride -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-vault-init
+  namespace: {{ .Release.Namespace | default "default" | quote }}
+  labels:
+    {{- include "wallet.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  init.sh: |
+    #!/usr/bin/env sh
+    set -eu
+
+    VAULT="${VAULT_ADDR:?VAULT_ADDR is required}"
+    TOKEN="${VAULT_TOKEN:?VAULT_TOKEN is required}"
+    FORCE="${FORCE_REGENERATE:-false}"
+    SECRETS="${VAULT_SECRET_PATH:-/v1/secret}"
+    HEALTH="${VAULT_HEALTH_PATH:-/v1/sys/health}"
+
+    AES_ALIAS="${AES_KEY_ALIAS:-}"
+    PRIV_ALIAS="${PRIVATE_KEY_ALIAS:-}"
+    PUB_ALIAS="${PUBLIC_KEY_ALIAS:-}"
+
+    log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" >&2; }
+
+    # Check provided Aliases for plausibility (AES or RSA pair must be requested)
+    if [ -z "$AES_ALIAS" ] && [ -z "$PRIV_ALIAS" ] && [ -z "$PUB_ALIAS" ]; then
+      log "ERROR: no alias provided. Set AES_KEY_ALIAS and/or PRIVATE_KEY_ALIAS+PUBLIC_KEY_ALIAS."
+      exit 1
+    fi
+    if { [ -n "$PRIV_ALIAS" ] && [ -z "$PUB_ALIAS" ]; } || \
+       { [ -z "$PRIV_ALIAS" ] && [ -n "$PUB_ALIAS" ]; }; then
+      log "ERROR: RSA generation requires BOTH PRIVATE_KEY_ALIAS and PUBLIC_KEY_ALIAS."
+      exit 1
+    fi
+
+    # Install required tools
+    if ! command -v openssl >/dev/null 2>&1 \
+       || ! command -v curl >/dev/null 2>&1 \
+       || ! command -v jq   >/dev/null 2>&1; then
+      log "Installing curl, jq, openssl..."
+      apk add --no-cache curl jq openssl >/dev/null
+    fi
+
+    log "Waiting for Vault at $VAULT$HEALTH..."
+    i=0
+    until curl -fsS --connect-timeout 2 --max-time 5 "$VAULT$HEALTH" >/dev/null 2>&1; do
+      i=$((i+1))
+      [ "$i" -gt 60 ] && { log "Vault not ready after 60 attempts."; exit 1; }
+      sleep 3
+    done
+    log "Vault ready."
+
+    # Check for existing Secret
+    secret_exists() {
+      [ "$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "X-Vault-Token: $TOKEN" \
+            "$VAULT$SECRETS/data/$1")" = "200" ]
+    }
+
+    # Store Secret in Vault
+    put_secret() {
+      local alias="$1" payload="$2"
+      local code
+      code=$(printf '%s' "$payload" | curl -sS -o /dev/null -w "%{http_code}" \
+              -H "X-Vault-Token: $TOKEN" \
+              -H "Content-Type: application/json" \
+              -X POST --data-binary @- \
+              "$VAULT$SECRETS/data/$alias")
+      if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+        log "Failed to store '$alias' (HTTP $code)"
+        exit 1
+      fi
+    }
+
+    # Generate AES Key
+    if [ -n "$AES_ALIAS" ]; then
+      if [ "$FORCE" != "true" ] && secret_exists "$AES_ALIAS"; then
+        log "AES key '$AES_ALIAS' already present — skipping."
+      else
+        log "Generating AES-256 key for '$AES_ALIAS'..."
+        key=$(openssl rand -base64 32 | tr -d '\n')
+        payload=$(jq -n --arg content "$key" '{data:{content:$content}}')
+        put_secret "$AES_ALIAS" "$payload"
+        log "AES key stored at $VAULT$SECRETS/data/$AES_ALIAS"
+      fi
+    fi
+
+    # Generate RSA Keypair
+    if [ -n "$PRIV_ALIAS" ] && [ -n "$PUB_ALIAS" ]; then
+      if [ "$FORCE" != "true" ] \
+         && secret_exists "$PRIV_ALIAS" \
+         && secret_exists "$PUB_ALIAS"; then
+        log "RSA keypair ('$PRIV_ALIAS' / '$PUB_ALIAS') already present — skipping."
+      else
+        log "Generating RSA keypair ('$PRIV_ALIAS' / '$PUB_ALIAS')..."
+        umask 077
+        dir=$(mktemp -d)
+        openssl genrsa -out "$dir/k.pem" 2048 2>/dev/null
+        openssl pkcs8 -topk8 -nocrypt -in "$dir/k.pem" -out "$dir/priv.pem"
+        openssl rsa -in "$dir/k.pem" -pubout -out "$dir/pub.pem" 2>/dev/null
+
+        put_secret "$PRIV_ALIAS" \
+          "$(jq -n --rawfile content "$dir/priv.pem" '{data:{content:$content}}')"
+        put_secret "$PUB_ALIAS"  \
+          "$(jq -n --rawfile content "$dir/pub.pem"  '{data:{content:$content}}')"
+
+        rm -rf "$dir"
+        log "RSA keypair stored at $VAULT$SECRETS/data/{$PRIV_ALIAS,$PUB_ALIAS}"
+      fi
+    fi
+
+    log "Vault initialization complete."
+{{- end }}

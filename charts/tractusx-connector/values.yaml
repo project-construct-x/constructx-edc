@@ -735,6 +735,9 @@ vault:
             secret: /v1/secret
             health: /v1/sys/health
             folder: ""
+        init:
+            # Whether to run the post-install vault-init job that seeds required secrets. Creates RSA Keys for dataplane.token.signer and dataplane.token.verifier.
+            enabled: true
 
 networkPolicy:
     # -- If `true` network policy will be created to restrict access to control- and dataplane
