@@ -723,7 +723,7 @@ vault:
         dev:
             enabled: true
             devRootToken: "root"
-        postStart: # must be set externally!
+        postStart:  # must be set externally!
     hashicorp:
         url: "http://{{ .Release.Name }}-vault:8200"
         token: "root"
