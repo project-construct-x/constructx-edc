@@ -128,5 +128,6 @@ postgresql:
             enabled: true
 
 vault:
+    hashicorp:
         init:
             enabled: true
