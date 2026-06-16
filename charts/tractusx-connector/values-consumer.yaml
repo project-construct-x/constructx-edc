@@ -120,12 +120,10 @@ dataplane:
               clusterIssuer: *clusterIssuer
 
 postgresql:
-    primary:
-        persistence:
-            enabled: true
-    readReplicas:
-        persistence:
-            enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
 
 vault:
     hashicorp:
