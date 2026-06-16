@@ -1,15 +1,15 @@
 shared:
-    connectorId: &connectorId did:web:provider-idhub.staging.construct-x.net:provider
+    connectorId: &connectorId did:web:provider-wallet.staging.construct-x.net:provider
     secretAlias: &secretAlias providersecret
-    trustedIssuerId: &trustedIssuerId did:web:local-issuer-service.staging.construct-x.net:issuer
+    trustedIssuerId: &trustedIssuerId did:web:issuer.staging.construct-x.net:issuer
     clusterIssuer: &clusterIssuer letsencrypt-staging
     ingressClass: &ingressClass nginx
     imagePullSecret: &imagePullSecret registry-creds
-    controlplaneFqdn: &controlplaneFqdn provider-conn-controlplane.staging.construct-x.net
-    dataplaneFqdn: &dataplaneFqdn provider-conn-dataplane.staging.construct-x.net
+    controlplaneFqdn: &controlplaneFqdn provider-edc-controlplane.staging.construct-x.net
+    dataplaneFqdn: &dataplaneFqdn provider-edc-dataplane.staging.construct-x.net
 
-nameOverride: provider-conn
-fullnameOverride: provider-conn
+nameOverride: provider-edc
+fullnameOverride: provider-edc
 
 participant:
     id: *connectorId
@@ -21,7 +21,7 @@ iatp:
         - id: *trustedIssuerId
     sts:
         oauth:
-            token_url: https://provider-idhub.staging.construct-x.net/api/sts/token
+            token_url: https://provider-wallet.staging.construct-x.net/api/sts/token
             client:
                 id: *connectorId
                 secret_alias: *secretAlias
@@ -30,7 +30,7 @@ iatp:
             id: *connectorId
 
 controlplane:
-    hostname: provider-conn-controlplane
+    hostname: provider-edc-controlplane
     imagePullSecrets:
         - name: *imagePullSecret
     env:
@@ -49,7 +49,7 @@ controlplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: provider-conn-cp-tls
+              secretName: provider-edc-cp-tls
           certManager:
               clusterIssuer: *clusterIssuer
         ## Private / Intranet facing Ingress
@@ -67,12 +67,12 @@ controlplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: provider-conn-cp-int-tls
+              secretName: provider-edc-cp-int-tls
           certManager:
               clusterIssuer: *clusterIssuer
 
 dataplane:
-    hostname: provider-conn-dataplane
+    hostname: provider-edc-dataplane
     imagePullSecrets:
         - name: *imagePullSecret
     token:
@@ -98,7 +98,7 @@ dataplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: provider-conn-dp-tls
+              secretName: provider-edc-dp-tls
           certManager:
               clusterIssuer: *clusterIssuer
         ## Private / Intranet facing Ingress
@@ -115,7 +115,7 @@ dataplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: provider-conn-dp-int-tls
+              secretName: provider-edc-dp-int-tls
           certManager:
               clusterIssuer: *clusterIssuer
 

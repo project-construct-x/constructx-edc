@@ -1,15 +1,15 @@
 shared:
-    connectorId: &connectorId did:web:consumer-idhub.staging.construct-x.net:consumer
+    connectorId: &connectorId did:web:consumer-wallet.staging.construct-x.net:consumer
     secretAlias: &secretAlias consumersecret
-    trustedIssuerId: &trustedIssuerId did:web:local-issuer-service.staging.construct-x.net:issuer
+    trustedIssuerId: &trustedIssuerId did:web:issuer.staging.construct-x.net:issuer
     clusterIssuer: &clusterIssuer letsencrypt-staging
     ingressClass: &ingressClass nginx
     imagePullSecret: &imagePullSecret registry-creds
-    controlplaneFqdn: &controlplaneFqdn consumer-conn-controlplane.staging.construct-x.net
-    dataplaneFqdn: &dataplaneFqdn consumer-conn-dataplane.staging.construct-x.net
+    controlplaneFqdn: &controlplaneFqdn consumer-edc-controlplane.staging.construct-x.net
+    dataplaneFqdn: &dataplaneFqdn consumer-edc-dataplane.staging.construct-x.net
 
-nameOverride: consumer-conn
-fullnameOverride: consumer-conn
+nameOverride: consumer-edc
+fullnameOverride: consumer-edc
 
 participant:
     id: *connectorId
@@ -21,7 +21,7 @@ iatp:
         - id: *trustedIssuerId
     sts:
         oauth:
-            token_url: https://consumer-idhub.staging.construct-x.net/api/sts/token
+            token_url: https://consumer-wallet.staging.construct-x.net/api/sts/token
             client:
                 id: *connectorId
                 secret_alias: *secretAlias
@@ -30,7 +30,7 @@ iatp:
             id: *connectorId
 
 controlplane:
-    hostname: consumer-conn-controlplane
+    hostname: consumer-edc-controlplane
     imagePullSecrets:
         - name: *imagePullSecret
     env:
@@ -49,7 +49,7 @@ controlplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: consumer-conn-cp-tls
+              secretName: consumer-edc-cp-tls
           certManager:
               clusterIssuer: *clusterIssuer
         ## Private / Intranet facing Ingress
@@ -67,12 +67,12 @@ controlplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: consumer-conn-cp-int-tls
+              secretName: consumer-edc-cp-int-tls
           certManager:
               clusterIssuer: *clusterIssuer
 
 dataplane:
-    hostname: consumer-conn-dataplane
+    hostname: consumer-edc-dataplane
     imagePullSecrets:
         - name: *imagePullSecret
     token:
@@ -98,7 +98,7 @@ dataplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: consumer-conn-dp-tls
+              secretName: consumer-edc-dp-tls
           certManager:
               clusterIssuer: *clusterIssuer
         ## Private / Intranet facing Ingress
@@ -115,7 +115,7 @@ dataplane:
           className: *ingressClass
           tls:
               enabled: true
-              secretName: consumer-conn-dp-int-tls
+              secretName: consumer-edc-dp-int-tls
           certManager:
               clusterIssuer: *clusterIssuer
 
