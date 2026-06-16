@@ -126,3 +126,7 @@ postgresql:
     readReplicas:
         persistence:
             enabled: true
+
+vault:
+        init:
+            enabled: true
