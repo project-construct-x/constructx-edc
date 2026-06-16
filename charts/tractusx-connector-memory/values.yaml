@@ -53,12 +53,12 @@ iatp:
       url:
     oauth:
       # -- URL where connectors can request OAuth2 access tokens for DIV access
-      token_url:
+      token_url: "https://change-me"
       client:
         # -- Client ID for requesting OAuth2 access token for DIV access
-        id:
+        id: "change-me"
         # -- Alias under which the client secret is stored in the vault for requesting OAuth2 access token for DIV access
-        secret_alias:
+        secret_alias: "change-me"
   didService:
     selfRegistration:
       # -- Whether Service Self Registration is enabled
@@ -217,17 +217,17 @@ runtime:
       refresh_endpoint:
     signer:
       # -- Alias under which the private key (JWK or PEM format) is stored in the vault
-      privatekey_alias:
+      privatekey_alias: "change-me"
     verifier:
       # -- Alias under which the public key (JWK or PEM format) is stored in the vault, that belongs to the private key which was referred to at `dataplane.token.signer.privatekey_alias`
-      publickey_alias:
+      publickey_alias: "change-me"
 
   bdrs:
     # -- Time that a cached BPN/DID resolution map is valid in seconds, default is 600 seconds (10 min)
     cache_validity_seconds: 600
     server:
       # -- URL of the BPN/DID Resolution Service
-      url:
+      url: "https://change-me"
 
   # -- configuration for policy engine
   policy:
