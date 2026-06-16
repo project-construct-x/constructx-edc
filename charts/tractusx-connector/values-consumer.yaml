@@ -1,128 +1,128 @@
 shared:
-  connectorId: &connectorId did:web:consumer-idhub.staging.construct-x.net:consumer
-  secretAlias: &secretAlias consumersecret
-  trustedIssuerId: &trustedIssuerId did:web:local-issuer-service.staging.construct-x.net:issuer
-  clusterIssuer: &clusterIssuer letsencrypt-staging
-  ingressClass: &ingressClass nginx
-  imagePullSecret: &imagePullSecret registry-creds
-  controlplaneFqdn: &controlplaneFqdn consumer-conn-controlplane.staging.construct-x.net
-  dataplaneFqdn: &dataplaneFqdn consumer-conn-dataplane.staging.construct-x.net
+    connectorId: &connectorId did:web:consumer-idhub.staging.construct-x.net:consumer
+    secretAlias: &secretAlias consumersecret
+    trustedIssuerId: &trustedIssuerId did:web:local-issuer-service.staging.construct-x.net:issuer
+    clusterIssuer: &clusterIssuer letsencrypt-staging
+    ingressClass: &ingressClass nginx
+    imagePullSecret: &imagePullSecret registry-creds
+    controlplaneFqdn: &controlplaneFqdn consumer-conn-controlplane.staging.construct-x.net
+    dataplaneFqdn: &dataplaneFqdn consumer-conn-dataplane.staging.construct-x.net
 
 nameOverride: consumer-conn
 fullnameOverride: consumer-conn
 
 participant:
-  id: *connectorId
+    id: *connectorId
 
 iatp:
-  id: *connectorId
-  trustedIssuerId: *trustedIssuerId
-  trustedIssuers:
-    - id: *trustedIssuerId
-  sts:
-    oauth:
-      token_url: https://consumer-idhub.staging.construct-x.net/api/sts/token
-      client:
-        id: *connectorId
-        secret_alias: *secretAlias
-  didService:
-    selfRegistration:
-      id: *connectorId
+    id: *connectorId
+    trustedIssuerId: *trustedIssuerId
+    trustedIssuers:
+        - id: *trustedIssuerId
+    sts:
+        oauth:
+            token_url: https://consumer-idhub.staging.construct-x.net/api/sts/token
+            client:
+                id: *connectorId
+                secret_alias: *secretAlias
+    didService:
+        selfRegistration:
+            id: *connectorId
 
 controlplane:
-  hostname: consumer-conn-controlplane
-  imagePullSecrets:
-    - name: *imagePullSecret
-  env:
-    EDC_IAM_ISSUER_ID: *connectorId
-    EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
-  ingresses:
-    ## Public / Internet facing Ingress
-    - enabled: true
-      hostname: *controlplaneFqdn
-      annotations:
-        cert-manager.io/cluster-issuer: *clusterIssuer
-        external-dns.alpha.kubernetes.io/hostname: *controlplaneFqdn
-        external-dns.alpha.kubernetes.io/ttl: "300"
-      endpoints:
-        - protocol
-      className: *ingressClass
-      tls:
-        enabled: true
-        secretName: consumer-conn-cp-tls
-      certManager:
-        clusterIssuer: *clusterIssuer
-    ## Private / Intranet facing Ingress
-    - enabled: false
-      hostname: *controlplaneFqdn
-      annotations:
-        cert-manager.io/cluster-issuer: *clusterIssuer
-        external-dns.alpha.kubernetes.io/hostname: *controlplaneFqdn
-        external-dns.alpha.kubernetes.io/ttl: "300"
-      endpoints:
-        - management
-        - control
-        - validation
-        - metrics
-      className: *ingressClass
-      tls:
-        enabled: true
-        secretName: consumer-conn-cp-int-tls
-      certManager:
-        clusterIssuer: *clusterIssuer
+    hostname: consumer-conn-controlplane
+    imagePullSecrets:
+        - name: *imagePullSecret
+    env:
+        EDC_IAM_ISSUER_ID: *connectorId
+        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
+    ingresses:
+        ## Public / Internet facing Ingress
+        - enabled: true
+          hostname: *controlplaneFqdn
+          annotations:
+              cert-manager.io/cluster-issuer: *clusterIssuer
+              external-dns.alpha.kubernetes.io/hostname: *controlplaneFqdn
+              external-dns.alpha.kubernetes.io/ttl: "300"
+          endpoints:
+              - protocol
+          className: *ingressClass
+          tls:
+              enabled: true
+              secretName: consumer-conn-cp-tls
+          certManager:
+              clusterIssuer: *clusterIssuer
+        ## Private / Intranet facing Ingress
+        - enabled: false
+          hostname: *controlplaneFqdn
+          annotations:
+              cert-manager.io/cluster-issuer: *clusterIssuer
+              external-dns.alpha.kubernetes.io/hostname: *controlplaneFqdn
+              external-dns.alpha.kubernetes.io/ttl: "300"
+          endpoints:
+              - management
+              - control
+              - validation
+              - metrics
+          className: *ingressClass
+          tls:
+              enabled: true
+              secretName: consumer-conn-cp-int-tls
+          certManager:
+              clusterIssuer: *clusterIssuer
 
 dataplane:
-  hostname: consumer-conn-dataplane
-  imagePullSecrets:
-    - name: *imagePullSecret
-  token:
-    signer:
-      privatekey_alias: cons_priv
-    verifier:
-      publickey_alias: cons_pub
-  env:
-    EDC_IAM_ISSUER_ID: *connectorId
-    EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: *trustedIssuerId
-    EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
-  ingresses:
-    ## Public / Internet facing Ingress
-    - enabled: true
-      hostname: *dataplaneFqdn
-      annotations:
-        cert-manager.io/cluster-issuer: *clusterIssuer
-        external-dns.alpha.kubernetes.io/hostname: *dataplaneFqdn
-        external-dns.alpha.kubernetes.io/ttl: "300"
-      endpoints:
-        - public
-        - proxy
-      className: *ingressClass
-      tls:
-        enabled: true
-        secretName: consumer-conn-dp-tls
-      certManager:
-        clusterIssuer: *clusterIssuer
-    ## Private / Intranet facing Ingress
-    - enabled: false
-      hostname: *dataplaneFqdn
-      annotations:
-        cert-manager.io/cluster-issuer: *clusterIssuer
-        external-dns.alpha.kubernetes.io/hostname: *dataplaneFqdn
-        external-dns.alpha.kubernetes.io/ttl: "300"
-      endpoints:
-        - management
-        - control
-        - metrics
-      className: *ingressClass
-      tls:
-        enabled: true
-        secretName: consumer-conn-dp-int-tls
-      certManager:
-        clusterIssuer: *clusterIssuer
+    hostname: consumer-conn-dataplane
+    imagePullSecrets:
+        - name: *imagePullSecret
+    token:
+        signer:
+            privatekey_alias: cons_priv
+        verifier:
+            publickey_alias: cons_pub
+    env:
+        EDC_IAM_ISSUER_ID: *connectorId
+        EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: *trustedIssuerId
+        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
+    ingresses:
+        ## Public / Internet facing Ingress
+        - enabled: true
+          hostname: *dataplaneFqdn
+          annotations:
+              cert-manager.io/cluster-issuer: *clusterIssuer
+              external-dns.alpha.kubernetes.io/hostname: *dataplaneFqdn
+              external-dns.alpha.kubernetes.io/ttl: "300"
+          endpoints:
+              - public
+              - proxy
+          className: *ingressClass
+          tls:
+              enabled: true
+              secretName: consumer-conn-dp-tls
+          certManager:
+              clusterIssuer: *clusterIssuer
+        ## Private / Intranet facing Ingress
+        - enabled: false
+          hostname: *dataplaneFqdn
+          annotations:
+              cert-manager.io/cluster-issuer: *clusterIssuer
+              external-dns.alpha.kubernetes.io/hostname: *dataplaneFqdn
+              external-dns.alpha.kubernetes.io/ttl: "300"
+          endpoints:
+              - management
+              - control
+              - metrics
+          className: *ingressClass
+          tls:
+              enabled: true
+              secretName: consumer-conn-dp-int-tls
+          certManager:
+              clusterIssuer: *clusterIssuer
 
 postgresql:
-  primary:
-    persistence:
-      enabled: true
-  readReplicas:
-    persistence:
-      enabled: true
+    primary:
+        persistence:
+            enabled: true
+    readReplicas:
+        persistence:
+            enabled: true
