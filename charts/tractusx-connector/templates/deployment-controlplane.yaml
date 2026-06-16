@@ -1,4 +1,6 @@
-#
+#################################################################################
+
+  #  Copyright (c) 2026 ARENA2036 e.V.
   #  Copyright (c) 2023 ZF Friedrichshafen AG
   #  Copyright (c) 2023 Mercedes-Benz Tech Innovation GmbH
   #  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
@@ -18,7 +20,7 @@
   #  under the License.
   #
   #  SPDX-License-Identifier: Apache-2.0
-  #
+  #################################################################################
 
 ---
 apiVersion: apps/v1
@@ -46,7 +48,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.controlplane.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -142,6 +144,10 @@ spec:
             {{- end }}
           {{- end }}
 
+            - name: EDC_HOSTNAME
+              value: {{ .Values.controlplane.hostname | quote }}
+            - name: "EDC_SQL_SCHEMA_AUTOCREATE"
+              value: {{ .Values.controlplane.schema.autocreate | quote }}
 
             ########################
             ## ID CONFIGURATION ##
@@ -150,10 +156,8 @@ spec:
               value: {{ .Values.iatp.id | required ".Values.iatp.id is required" | quote }}
             - name: "EDC_IAM_ISSUER_ID"
               value: {{ .Values.iatp.id | required ".Values.iatp.id is required" | quote }}
-            - name: "EDC_PARTICIPANT_CONTEXT_ID"
-              value: {{ .Values.participant.contextId | required ".Values.participant.contextId is required" | quote }}
-            - name: "TRACTUSX_EDC_PARTICIPANT_BPN"
-              value: {{ .Values.participant.id | required ".Values.participant.id is required" | quote }}
+            - name: "EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID"
+              value: {{ .Values.iatp.trustedIssuerId | required ".Values.iatp.trustedIssuerId is required" | quote }}
 
             ###########################
             ## LOGGING CONFIGURATION ##
@@ -194,9 +198,10 @@ spec:
               value: {{ .Values.controlplane.endpoints.protocol.port | quote }}
             - name: "WEB_HTTP_PROTOCOL_PATH"
               value: {{ .Values.controlplane.endpoints.protocol.path | quote }}
-            - name: "EDC_CONTROL_ENDPOINT"
-              value: {{ include "txdc.controlplane.url.control" .}}
-
+            - name: "WEB_HTTP_VALIDATION_PORT"
+              value: {{ .Values.controlplane.endpoints.validation.port | quote }}
+            - name: "WEB_HTTP_VALIDATION_PATH"
+              value: {{ .Values.controlplane.endpoints.validation.path | quote }}
 
             #########
             ## DSP ##
@@ -258,17 +263,6 @@ spec:
               value: {{ .Values.iatp.cache.enabled | quote }}
             - name: "TX_EDC_DCP_CACHE_VALIDITY_SECONDS"
               value: {{ .Values.iatp.cache.validity | quote }}
-
-            #################
-            ## BDRS CLIENT ##
-            #################
-
-            - name: "TX_EDC_IAM_IATP_BDRS_SERVER_URL"
-              value: {{ .Values.controlplane.bdrs.server.url | required ".Values.controlplane.bdrs.server.url is required" | quote }}
-            {{- if .Values.controlplane.bdrs.cache_validity_seconds }}
-            - name: "TX_EDC_IAM_IATP_BDRS_CACHE_VALIDITY"
-              value: {{ .Values.controlplane.bdrs.cache_validity_seconds | quote}}
-            {{- end}}
 
             ###########
             ## VAULT ##
