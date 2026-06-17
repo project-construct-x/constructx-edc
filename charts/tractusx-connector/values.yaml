@@ -285,6 +285,9 @@ controlplane:
         TX_EDC_POSTGRESQL_MIGRATION_TRANSFERPROCESS_ENABLED: false
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
         EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_ALIAS: org.eclipse.dspace.dcp.vc.type
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_TYPE: MembershipCredential
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_OPERATION: read
 
     # -- "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
     # ref: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envvarsource-v1-core
