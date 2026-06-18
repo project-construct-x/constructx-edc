@@ -43,7 +43,7 @@ iatp:
     # -- Decentralized IDentifier (DID) of the connector
     id: "did:web:changeme"
     # -- ID of the trusted issuer that is used for SI token validation (maps to EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID)
-    trustedIssuerId: ""
+    trustedIssuerId: "change-me"
     # -- Configures the trusted issuers for this runtime. If no supportedTypes are specified, the value defaults to "*" for that issuer
     trustedIssuers: []
     # - id: "did:web:example1.com"
@@ -56,12 +56,12 @@ iatp:
             url:
         oauth:
             # -- URL where connectors can request OAuth2 access tokens for DIV access
-            token_url:
+            token_url: "https://change-me"
             client:
                 # -- Client ID for requesting OAuth2 access token for DIV access
-                id:
+                id: "change-me"
                 # -- Alias under which the client secret is stored in the vault for requesting OAuth2 access token for DIV access
-                secret_alias:
+                secret_alias: "change-me"
     didService:
         selfRegistration:
             # -- Whether Service Self Registration is enabled
@@ -731,7 +731,7 @@ vault:
         dev:
             enabled: true
             devRootToken: "root"
-        postStart: # must be set externally!
+        postStart:  # must be set externally!
     hashicorp:
         url: "http://{{ .Release.Name }}-vault:8200"
         token: "root"
