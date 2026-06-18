@@ -270,7 +270,6 @@ controlplane:
     # -- Extra environment variables that will be passed onto deployment pods
     env:
         EDC_IAM_DID_WEB_USE_HTTPS: true
-        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
         TX_EDC_POSTGRESQL_MIGRATION_ASSET_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_AGREEMENTBPNS_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_BPN_ENABLED: false
@@ -283,7 +282,6 @@ controlplane:
         TX_EDC_POSTGRESQL_MIGRATION_POLICY-MONITOR_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_POLICY_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_TRANSFERPROCESS_ENABLED: false
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
         EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
         TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_ALIAS: org.eclipse.dspace.dcp.vc.type
         TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_TYPE: MembershipCredential
@@ -579,9 +577,6 @@ dataplane:
         EDC_IAM_DID_WEB_USE_HTTPS: true
         EDC_DATA_PLANE_SELF_UNREGISTRATION: true
         EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
-        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
-        EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: did:web:issuer-wallet.staging.construct-x.net:issuer
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
 
     # -- "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
     # ref: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envvarsource-v1-core
