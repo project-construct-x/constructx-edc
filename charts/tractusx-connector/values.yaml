@@ -699,30 +699,30 @@ dataplane:
         public: ""
 
 postgresql:
-  # JDBC connection URL passed to the edc runtime.
-  jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-postgresql:5432/edc"
-  auth:
-    # Name of the PostgreSQL database created on first start. Must match with postgresql.jdbcUrl path.
-    database: "edc"
-    # PostgreSQL user that the issuer-wallet connects as.
-    username: "user"
-    # Password for the PostgreSQL user. Change before production use.
-    password: "password"
-  persistence:
-    # Persist data across pod restarts.
-    enabled: true
-    size: 10Gi
-    storageClass: ""
-  # Initialization scripts ConfigMap
-  initdb:
-    scriptsConfigMap: ""         # Optional: ConfigMap with init scripts
-  resources:
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 250m
-      memory: 256Mi
+    # JDBC connection URL passed to the edc runtime.
+    jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-postgresql:5432/edc"
+    auth:
+        # Name of the PostgreSQL database created on first start. Must match with postgresql.jdbcUrl path.
+        database: "edc"
+        # PostgreSQL user that the issuer-wallet connects as.
+        username: "user"
+        # Password for the PostgreSQL user. Change before production use.
+        password: "password"
+    persistence:
+        # Persist data across pod restarts.
+        enabled: true
+        size: 10Gi
+        storageClass: ""
+    # Initialization scripts ConfigMap
+    initdb:
+        scriptsConfigMap: ""         # Optional: ConfigMap with init scripts
+    resources:
+        limits:
+        cpu: 500m
+        memory: 1Gi
+        requests:
+        cpu: 250m
+        memory: 256Mi
 
 vault:
     injector:
