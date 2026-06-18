@@ -25,7 +25,7 @@ metadata:
   name: {{ $fullName }}-vault-init
   namespace: {{ .Release.Namespace | default "default" | quote }}
   labels:
-    {{- include "txdc.controlplane.labels" . | nindent 4 }}
+    {{- include "txdc.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
@@ -37,7 +37,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "txdc.controlplane.labels" . | nindent 4 }}
+        {{- include "txdc.labels" . | nindent 8 }}
     spec:
       restartPolicy: OnFailure
       serviceAccountName: {{ include "txdc.serviceAccountName" . }}
