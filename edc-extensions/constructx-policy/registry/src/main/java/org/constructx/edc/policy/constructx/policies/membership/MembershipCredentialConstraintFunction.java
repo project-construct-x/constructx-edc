@@ -32,6 +32,7 @@ import org.eclipse.edc.participant.spi.ParticipantAgentPolicyContext;
 import org.eclipse.edc.policy.model.Operator;
 import org.eclipse.edc.policy.model.Permission;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.tractusx.edc.core.utils.credentials.CredentialTypePredicate;
 
 import java.util.List;
@@ -88,7 +89,7 @@ public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPo
                 .filter(vc -> {
                     return
                         new CredentialTypePredicate(CONSTRUCTX_CREDENTIAL_NS, CONSTRUCTX_MEMBERSHIP_LITERAL + CREDENTIAL_LITERAL).test(vc) ||
-                            new CredentialTypePredicate(CONSTRUCTX_CREDENTIAL_NS, MEMBERSHIP_LITERAL + CREDENTIAL_LITERAL).test(vc);
+                        new CredentialTypePredicate(CONSTRUCTX_CREDENTIAL_NS, MEMBERSHIP_LITERAL + CREDENTIAL_LITERAL).test(vc);
                 }).toList();
         if (expectedVcs.isEmpty()) {
             context.reportProblem("ParticipantAgent does not contain a credential of type %s or %s".formatted(CONSTRUCTX_MEMBERSHIP_LITERAL, MEMBERSHIP_LITERAL));
@@ -121,5 +122,16 @@ public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPo
         return
             namespace.equals(CONSTRUCTX_POLICY_NS) &&
             keyArray.length > 1 && keyArray[0].matches("^\\d+$") && !keyArray[1].isEmpty();
+    }
+
+    @Override
+    public Result<Void> validate(Object leftValue, Operator operator, Object rightValue, Permission rule) {
+        if (!Operator.EQ.equals(operator) && !Operator.NEQ.equals(operator)) {
+            return Result.failure("Just eq or neq allowed");
+        }
+        if (!"true".equals(String.valueOf(rightValue))) {
+            return Result.failure("rightOperand must be 'true'");
+        }
+        return Result.success();
     }
 }
