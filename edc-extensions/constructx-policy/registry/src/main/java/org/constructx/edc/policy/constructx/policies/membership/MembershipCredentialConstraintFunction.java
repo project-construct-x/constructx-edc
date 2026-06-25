@@ -36,8 +36,8 @@ import org.eclipse.tractusx.edc.core.utils.credentials.CredentialTypePredicate;
 
 import java.util.List;
 
-import static org.constructx.edc.policy.constructx.ConstructxPolicyConstants.CONSTRUCTX_CREDENTIAL_NS;
-import static org.constructx.edc.policy.constructx.ConstructxPolicyConstants.CONSTRUCTX_POLICY_NS;
+import static org.constructx.edc.policy.constructx.common.ConstructxPolicyConstants.CONSTRUCTX_CREDENTIAL_NS;
+import static org.constructx.edc.policy.constructx.common.ConstructxPolicyConstants.CONSTRUCTX_POLICY_NS;
 
 
 /**
@@ -100,7 +100,7 @@ public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPo
             List<CredentialSubject> credentialSubject = vc.getCredentialSubject();
 
             String leftOperandStr = leftOperand.toString();
-            String key = "/" + leftOperandStr.substring(leftOperandStr.lastIndexOf("/")).replace("\\.", "/");
+            String key = leftOperandStr.substring(leftOperandStr.lastIndexOf("/")).replace(".", "/");
             JsonNode vcContent = mapper.valueToTree(credentialSubject);
             JsonNode value = vcContent.at(key);
 
@@ -114,10 +114,10 @@ public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPo
 
     @Override
     public boolean canHandle(Object leftOperand) {
-        int nameSpaceKeySeparatorIndex = leftOperand.toString().lastIndexOf("/");
+        int nameSpaceKeySeparatorIndex = leftOperand.toString().lastIndexOf("/")+1;
         String namespace = leftOperand.toString().substring(0, nameSpaceKeySeparatorIndex);
         String key = leftOperand.toString().substring(nameSpaceKeySeparatorIndex);
-        String[] keyArray = leftOperand.toString().split("\\.");
+        String[] keyArray = key.split("\\.");
         return
             namespace.equals(CONSTRUCTX_POLICY_NS) &&
             keyArray.length > 1 && keyArray[0].matches("^\\d+$") && !keyArray[1].isEmpty();
