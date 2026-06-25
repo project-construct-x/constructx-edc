@@ -20,6 +20,7 @@
 package org.constructx.edc.policy.constructx.registry;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Declares how a constraint key is bound to EDC policy scopes.
@@ -29,7 +30,7 @@ public sealed interface PolicyBinding {
     /**
      * Binds constraint keys that start with {@code namespace + literal} to the given scopes.
      */
-    record DynamicPrefix(String namespace, Set<String> literals, Set<String> scopes) implements PolicyBinding {
+    record DynamicPrefix(String namespace, Pattern credSubKeyPattern, Set<String> scopes) implements PolicyBinding {
     }
 
     /**

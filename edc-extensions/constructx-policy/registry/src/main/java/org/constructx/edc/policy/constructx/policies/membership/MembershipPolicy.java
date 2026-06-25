@@ -29,11 +29,9 @@ import org.eclipse.edc.policy.model.Permission;
 import org.eclipse.edc.spi.monitor.Monitor;
 
 import java.util.List;
-import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.constructx.edc.policy.constructx.common.ConstructxPolicyConstants.CONSTRUCTX_POLICY_NS;
-import static org.constructx.edc.policy.constructx.policies.membership.MembershipCredentialConstraintFunction.CONSTRUCTX_MEMBERSHIP_LITERAL;
-import static org.constructx.edc.policy.constructx.policies.membership.MembershipCredentialConstraintFunction.MEMBERSHIP_LITERAL;
 import static org.eclipse.edc.policy.model.OdrlNamespace.ODRL_SCHEMA;
 
 /**
@@ -65,7 +63,7 @@ public class MembershipPolicy implements ConstructxPolicy {
         return List.of(
             new PolicyBinding.DynamicPrefix(
                     CONSTRUCTX_POLICY_NS,
-                    Set.of(MEMBERSHIP_LITERAL, CONSTRUCTX_MEMBERSHIP_LITERAL),
+                    Pattern.compile("^\\d+\\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$"),
                     PolicyScopes.ALL_RULE_SCOPES
             ),
             new PolicyBinding.StaticKey(ODRL_SCHEMA + "use", PolicyScopes.CATALOG_SCOPE),
