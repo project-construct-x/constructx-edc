@@ -1,0 +1,29 @@
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:v3.5.0
+    command:
+      - "--certificatesresolvers.edc-resolver.acme.email=${EMAIL:?Email must be set in the .env file}"
+    environment:
+      DOMAIN: ${DOMAIN:?${DOMAIN_MISSING_MESSAGE}}
+    ports:
+      - "80:80"
+      - "443:443"
+      # - "8080:8080" #dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+      - "./traefik-static-conf.yaml:/etc/traefik/traefik.yaml"
+      - "./traefik-dynamic-conf.yaml:/etc/traefik/config/dynamic.yaml"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

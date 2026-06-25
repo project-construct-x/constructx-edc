@@ -1,0 +1,210 @@
+http:
+  routers:
+    dataplane-public-api:
+      entrypoints: 
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/public`)
+      service: dataplane-public-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    controlplane-management-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/management`)
+      service: controlplane-management-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    controlplane-dsp-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/dsp`)
+      service: controlplane-dsp-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    controlplane-cpcontrol-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/cpcontrol`)
+      service: controlplane-cpcontrol-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    dataplane-dpcontrol-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/dpcontrol`)
+      service: dataplane-dpcontrol-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    idhub-did-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`)
+      service: idhub-did-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    idhub-wellknown-did-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/.well-known/did.json`)
+      service: idhub-did-api-svc
+      tls:
+        certresolver: edc-resolver
+    
+    idhub-identity-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/api/identity`)
+      service: idhub-identity-api-svc
+      tls:
+        certresolver: edc-resolver
+    
+    idhub-sts-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/api/sts`)
+      service: idhub-sts-api-svc
+      tls:
+        certresolver: edc-resolver
+    
+    idhub-credentials-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/api/credentials`)
+      service: idhub-credentials-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    idhub-statuslist-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/statuslist`)
+      service: idhub-statuslist-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    issuance-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/api/issuance`)
+      service: issuance-api-svc
+      tls:
+        certresolver: edc-resolver
+      
+    issuer-api:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/api/issuer`)
+      service: issuer-api-svc
+      tls:
+        certresolver: edc-resolver
+
+    # debug:
+    #   entrypoints:
+    #     - web
+    #     - websecure
+    #   rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/dashboard`)
+    #   service: debug-svc
+    #   tls:
+    #     certresolver: edc-resolver
+    
+    vault-ui:
+      entrypoints:
+        - web
+        - websecure
+      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/ui`) || PathPrefix(`/v1`)
+      service: vault-svc
+      tls:
+        certresolver: edc-resolver
+
+
+
+  services:
+    dataplane-public-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-dataplane:9500
+
+    controlplane-management-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-controlplane:9010
+    
+    controlplane-dsp-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-controlplane:9020
+
+    controlplane-cpcontrol-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-controlplane:9050
+
+    dataplane-dpcontrol-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-dataplane:9550
+    
+    idhub-did-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-wallet:80
+    
+    idhub-identity-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-wallet:15151
+    
+    idhub-sts-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-wallet:9292
+    
+    idhub-credentials-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-wallet:13131
+
+    idhub-statuslist-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-wallet:9999
+
+    issuance-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-wallet:13132
+
+    issuer-api-svc:
+      loadBalancer:
+        servers:
+          - url: http://provider-wallet:15152
+
+
+    # debug-svc:
+    #   loadBalancer:
+    #     servers:
+    #       - url: http://traefik:8080
+    
+    vault-svc:
+      loadBalancer:
+        servers:
+          - url: http://shared-vault:8200

@@ -1,0 +1,47 @@
+meta {
+  name: RequestProviderCatalog
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{CONSUMER_MANAGEMENT}}/v3/catalog/request
+  body: json
+  auth: apikey
+}
+
+auth:apikey {
+  key: X-Api-key
+  value: {{CONSUMER_MANAGEMENT_API_KEY}}
+  placement: header
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "{{PROVIDER_DOMAIN}}/dsp/2025-1",
+    "counterPartyId": "{{PROV_ID}}",
+    "protocol": "dataspace-protocol-http:2025-1"
+  }
+}
+
+script:post-response {
+  const offerArray = res.getBody().dataset[0].hasPolicy;
+  var offerId;
+  res.getBody().dataset[0].hasPolicy.forEach(item => {
+    const type = item['@type'];
+    const id = item['@id'];
+    if (type != null && type == "Offer" && id != null) {
+          offerId = id;
+        }
+  });
+  
+  bru.setEnvVar("offerId", offerId);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Version
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://localhost:29020/dsp/.well-known/dspace-version
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

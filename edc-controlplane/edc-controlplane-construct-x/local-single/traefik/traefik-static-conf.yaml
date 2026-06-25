@@ -1,0 +1,35 @@
+log:
+  level: INFO
+
+providers:
+  docker:
+    watch: true
+    exposedByDefault: false
+    network: proxy
+  file:
+    directory: /etc/traefik/config # path to dynamic config
+
+# api:
+#   insecure: true #dashboard
+
+ping:
+  entryPoint: web
+
+entryPoints:
+  websecure:
+    address: :443
+  web:
+    address: :80
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+certificatesResolvers:
+  edc-resolver:
+    acme:
+      storage: /letsencrypt/acme-edc.json
+      httpChallenge:
+        entryPoint: web
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory

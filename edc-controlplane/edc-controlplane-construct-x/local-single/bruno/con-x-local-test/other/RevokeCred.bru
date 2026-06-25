@@ -1,0 +1,20 @@
+meta {
+  name: RevokeCred
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/credentials/{{credentialId}}/revoke
+  body: none
+  auth: inherit
+}
+
+headers {
+  x-api-key: YWRtaW4.adminKey
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
