@@ -74,8 +74,8 @@ public class RegistryHelper {
         if (binding instanceof PolicyBinding.DynamicPrefix dynamicPrefix) {
             registry.dynamicBind(constraintKey -> {
                 if (constraintKey.startsWith(dynamicPrefix.namespace())) {
-                    String credSubKey = constraintKey.substring(constraintKey.lastIndexOf("/")+1);
-                    if(dynamicPrefix.credSubKeyPattern().matcher(credSubKey).matches()) {
+                    String credSubKey = constraintKey.substring(constraintKey.lastIndexOf("/") + 1);
+                    if (dynamicPrefix.credSubKeyPattern().matcher(credSubKey).matches()) {
                         return dynamicPrefix.scopes();
                     }
                 }
