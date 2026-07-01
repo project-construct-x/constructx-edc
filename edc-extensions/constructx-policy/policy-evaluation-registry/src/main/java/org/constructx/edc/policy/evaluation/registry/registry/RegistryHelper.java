@@ -19,7 +19,7 @@
 
 package org.constructx.edc.policy.evaluation.registry.registry;
 
-import org.constructx.edc.policy.constructx.spi.ConstructxPolicyEvaluation;
+import org.constructx.edc.policy.evaluation.registry.spi.ConstructxPolicyEvaluation;
 import org.eclipse.edc.participant.spi.ParticipantAgentPolicyContext;
 import org.eclipse.edc.policy.engine.spi.PolicyEngine;
 import org.eclipse.edc.policy.engine.spi.RuleBindingRegistry;

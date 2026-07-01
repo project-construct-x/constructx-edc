@@ -18,7 +18,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
-package org.constructx.edc.policy.evaluation.registry.policy_evaluations.membership;
+package org.constructx.edc.policy.evaluation.registry.evaluations.membership;
 
 import org.eclipse.edc.connector.controlplane.catalog.spi.policy.CatalogPolicyContext;
 import org.eclipse.edc.connector.controlplane.contract.spi.policy.ContractNegotiationPolicyContext;

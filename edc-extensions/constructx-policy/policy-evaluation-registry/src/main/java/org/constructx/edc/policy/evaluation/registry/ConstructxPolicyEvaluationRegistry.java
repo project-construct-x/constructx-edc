@@ -19,9 +19,9 @@
 
 package org.constructx.edc.policy.evaluation.registry;
 
-import org.constructx.edc.policy.constructx.policy_evaluations.membership.MembershipPolicyEvaluation;
-import org.constructx.edc.policy.constructx.registry.RegistryHelper;
-import org.constructx.edc.policy.constructx.spi.ConstructxPolicyEvaluation;
+import org.constructx.edc.policy.evaluation.registry.evaluations.membership.MembershipPolicyEvaluation;
+import org.constructx.edc.policy.evaluation.registry.registry.RegistryHelper;
+import org.constructx.edc.policy.evaluation.registry.spi.ConstructxPolicyEvaluation;
 import org.eclipse.edc.policy.engine.spi.PolicyEngine;
 import org.eclipse.edc.policy.engine.spi.RuleBindingRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;

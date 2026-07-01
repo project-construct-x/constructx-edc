@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.evaluation.registry.policy_evaluations.membership;
+package org.constructx.edc.policy.evaluation.registry.evaluations.membership;
 
-import org.constructx.edc.policy.constructx.registry.PolicyEvaluationBinding;
-import org.constructx.edc.policy.constructx.registry.PolicyFunctionRegistration;
-import org.constructx.edc.policy.constructx.spi.ConstructxPolicyEvaluation;
+import org.constructx.edc.policy.evaluation.registry.registry.PolicyEvaluationBinding;
+import org.constructx.edc.policy.evaluation.registry.registry.PolicyFunctionRegistration;
+import org.constructx.edc.policy.evaluation.registry.spi.ConstructxPolicyEvaluation;
 import org.eclipse.edc.connector.controlplane.catalog.spi.policy.CatalogPolicyContext;
 import org.eclipse.edc.connector.controlplane.contract.spi.policy.ContractNegotiationPolicyContext;
 import org.eclipse.edc.connector.controlplane.contract.spi.policy.TransferProcessPolicyContext;
@@ -31,7 +31,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static org.constructx.edc.policy.constructx.common.ConstructxPolicyEvalConstants.CONSTRUCTX_POLICY_NS;
+import static org.constructx.edc.policy.evaluation.registry.common.ConstructxPolicyEvalConstants.CONSTRUCTX_POLICY_NS;
 import static org.eclipse.edc.policy.model.OdrlNamespace.ODRL_SCHEMA;
 
 /**

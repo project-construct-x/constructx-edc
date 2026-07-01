@@ -20,11 +20,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.evaluation.registry.policy_evaluations.membership;
+package org.constructx.edc.policy.evaluation.registry.evaluations.membership;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.constructx.edc.policy.constructx.common.AbstractDynamicCredentialConstraintFunction;
+import org.constructx.edc.policy.evaluation.registry.common.AbstractDynamicCredentialConstraintFunction;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.participant.spi.ParticipantAgent;

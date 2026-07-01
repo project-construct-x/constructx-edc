@@ -19,9 +19,9 @@
 
 package org.constructx.edc.policy.evaluation.registry.spi;
 
-import org.constructx.edc.policy.constructx.ConstructxPolicyEvaluationRegistry;
-import org.constructx.edc.policy.constructx.registry.PolicyEvaluationBinding;
-import org.constructx.edc.policy.constructx.registry.PolicyFunctionRegistration;
+import org.constructx.edc.policy.evaluation.registry.ConstructxPolicyEvaluationRegistry;
+import org.constructx.edc.policy.evaluation.registry.registry.PolicyEvaluationBinding;
+import org.constructx.edc.policy.evaluation.registry.registry.PolicyFunctionRegistration;
 import org.eclipse.edc.spi.monitor.Monitor;
 
 import java.util.List;
