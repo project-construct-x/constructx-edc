@@ -23,19 +23,19 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Declares how a constraint key is bound to EDC policy scopes.
+ * Declares how a left operand is bound to DSP scopes.
  */
-public sealed interface PolicyBinding {
+public sealed interface PolicyEvaluationBinding {
 
     /**
-     * Binds constraint keys that start with {@code namespace + literal} to the given scopes.
+     * Binds left operand that starts with {@code namespace + pattern} to the given DSP scopes.
      */
-    record DynamicPrefix(String namespace, Pattern credSubKeyPattern, Set<String> scopes) implements PolicyBinding {
+    record DynamicPrefix(String namespace, Pattern credSubKeyPattern, Set<String> scopes) implements PolicyEvaluationBinding {
     }
 
     /**
-     * Binds an exact constraint key to a single scope.
+     * Binds an exact left operand to a single DSP scope.
      */
-    record StaticKey(String key, String scope) implements PolicyBinding {
+    record StaticKey(String key, String scope) implements PolicyEvaluationBinding {
     }
 }

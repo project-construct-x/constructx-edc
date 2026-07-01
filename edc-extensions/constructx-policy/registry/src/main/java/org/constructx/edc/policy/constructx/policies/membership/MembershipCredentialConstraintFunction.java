@@ -37,18 +37,18 @@ import org.eclipse.tractusx.edc.core.utils.credentials.CredentialTypePredicate;
 
 import java.util.List;
 
-import static org.constructx.edc.policy.constructx.common.ConstructxPolicyConstants.CONSTRUCTX_CREDENTIAL_NS;
-import static org.constructx.edc.policy.constructx.common.ConstructxPolicyConstants.CONSTRUCTX_POLICY_NS;
+import static org.constructx.edc.policy.constructx.common.ConstructxPolicyEvalConstants.CONSTRUCTX_CREDENTIAL_NS;
+import static org.constructx.edc.policy.constructx.common.ConstructxPolicyEvalConstants.CONSTRUCTX_POLICY_NS;
 
 
 /**
- * This constraint function checks that a MembershipCredential is present in a list of {@link VerifiableCredential}
+ * This policy function checks that a MembershipCredential is present and evaluates it.
  * objects extracted from a {@link ParticipantAgent} which is expected to be present on the {@link ParticipantAgentPolicyContext}.
  */
 public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPolicyContext> extends AbstractDynamicCredentialConstraintFunction<C> {
 
     /**
-     * key of the membership credential constraint
+     * key of the membership credential
      *
      * @deprecated Use {@value CONSTRUCTX_MEMBERSHIP_LITERAL} instead.
      */
@@ -56,7 +56,7 @@ public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPo
     public static final String MEMBERSHIP_LITERAL = "Membership";
 
     /**
-     * key for constructx-membership credential constraint
+     * key for constructx-membership credential
      */
     public static final String CONSTRUCTX_MEMBERSHIP_LITERAL = "ConstructXMembership";
 

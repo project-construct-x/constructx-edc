@@ -19,23 +19,24 @@
 
 package org.constructx.edc.policy.constructx.spi;
 
-import org.constructx.edc.policy.constructx.registry.PolicyBinding;
+import org.constructx.edc.policy.constructx.ConstructxPolicyEvaluationRegistry;
+import org.constructx.edc.policy.constructx.registry.PolicyEvaluationBinding;
 import org.constructx.edc.policy.constructx.registry.PolicyFunctionRegistration;
 import org.eclipse.edc.spi.monitor.Monitor;
 
 import java.util.List;
 
 /**
- * Contributes Construct-X policy functions and bindings to the central registry.
+ * Contributes Construct-X policy evaluation -- functions and bindings to the central registry.
  * <p>
- * Add a new policy by implementing this interface and registering it in
- * {@link org.constructx.edc.policy.constructx.ConstructxPolicyRegistry}.
+ * Add a new policy evaluation by implementing this interface and registering it in
+ * {@link ConstructxPolicyEvaluationRegistry}.
  */
-public interface ConstructxPolicy {
+public interface ConstructxPolicyEvaluation {
 
     String name();
 
     List<PolicyFunctionRegistration<?, ?>> functionRegistrations(Monitor monitor);
 
-    List<PolicyBinding> bindings();
+    List<PolicyEvaluationBinding> bindings();
 }

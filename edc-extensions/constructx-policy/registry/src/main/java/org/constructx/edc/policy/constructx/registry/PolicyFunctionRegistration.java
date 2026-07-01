@@ -25,7 +25,7 @@ import org.eclipse.edc.policy.model.Rule;
 
 
 /**
- * Registers one constraint function for a given policy context and ODRL rule type.
+ * Registers one policy evaluation function for a given policy context and ODRL rule type.
  */
 public record PolicyFunctionRegistration<C extends ParticipantAgentPolicyContext, R extends Rule>(
         Class<C> scope,

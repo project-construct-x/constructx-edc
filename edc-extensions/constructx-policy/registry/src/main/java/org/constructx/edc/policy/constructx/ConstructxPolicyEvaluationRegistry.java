@@ -19,9 +19,9 @@
 
 package org.constructx.edc.policy.constructx;
 
-import org.constructx.edc.policy.constructx.policies.membership.MembershipPolicy;
+import org.constructx.edc.policy.constructx.policies.membership.MembershipPolicyEvaluation;
 import org.constructx.edc.policy.constructx.registry.RegistryHelper;
-import org.constructx.edc.policy.constructx.spi.ConstructxPolicy;
+import org.constructx.edc.policy.constructx.spi.ConstructxPolicyEvaluation;
 import org.eclipse.edc.policy.engine.spi.PolicyEngine;
 import org.eclipse.edc.policy.engine.spi.RuleBindingRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -33,22 +33,22 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import java.util.List;
 
 /**
- * Central Construct-X policy registry extension.
+ * Central Construct-X policy evaluation registry extension.
  *
- * Registers all {@link ConstructxPolicy} implementations with the EDC policy engine.
- * To add a new policy, implement {@link ConstructxPolicy} and append it to
- * {@link #POLICIES}.
+ * Registers all {@link ConstructxPolicyEvaluation} implementations with the EDC policy engine.
+ * To add a new policy evaluation, implement {@link ConstructxPolicyEvaluation} and append it to
+ * {@link #POLICY_EVALUATIONS}.
  */
-@Extension(ConstructxPolicyRegistry.NAME)
-public class ConstructxPolicyRegistry implements ServiceExtension {
+@Extension(ConstructxPolicyEvaluationRegistry.NAME)
+public class ConstructxPolicyEvaluationRegistry implements ServiceExtension {
 
-    public static final String NAME = "Construct-X Policy Registry";
+    public static final String NAME = "Construct-X Policy Evaluation Registry";
 
     /**
      * Add new Construct-X policies here.
      */
-    private static final List<ConstructxPolicy> POLICIES = List.of(
-        new MembershipPolicy()
+    private static final List<ConstructxPolicyEvaluation> POLICY_EVALUATIONS = List.of(
+        new MembershipPolicyEvaluation()
     );
 
     @Inject
@@ -67,6 +67,6 @@ public class ConstructxPolicyRegistry implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        new RegistryHelper(POLICIES).registerAll(policyEngine, bindingRegistry, monitor);
+        new RegistryHelper(POLICY_EVALUATIONS).registerAll(policyEngine, bindingRegistry, monitor);
     }
 }

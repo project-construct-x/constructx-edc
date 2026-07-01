@@ -19,7 +19,7 @@
 
 package org.constructx.edc.policy.constructx.registry;
 
-import org.constructx.edc.policy.constructx.spi.ConstructxPolicy;
+import org.constructx.edc.policy.constructx.spi.ConstructxPolicyEvaluation;
 import org.eclipse.edc.participant.spi.ParticipantAgentPolicyContext;
 import org.eclipse.edc.policy.engine.spi.PolicyEngine;
 import org.eclipse.edc.policy.engine.spi.RuleBindingRegistry;
@@ -31,13 +31,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Applies contributed policy functions and bindings to the EDC policy engine.
+ * Applies contributed policy evaluation functions and bindings to the EDC policy engine.
  */
 public class RegistryHelper {
 
-    private final List<ConstructxPolicy> policies;
+    private final List<ConstructxPolicyEvaluation> policies;
 
-    public RegistryHelper(List<ConstructxPolicy> policies) {
+    public RegistryHelper(List<ConstructxPolicyEvaluation> policies) {
         this.policies = List.copyOf(policies);
     }
 
@@ -60,8 +60,8 @@ public class RegistryHelper {
         return registrations;
     }
 
-    private List<PolicyBinding> bindings() {
-        var bindings = new ArrayList<PolicyBinding>();
+    private List<PolicyEvaluationBinding> bindings() {
+        var bindings = new ArrayList<PolicyEvaluationBinding>();
         policies.forEach(policy -> bindings.addAll(policy.bindings()));
         return bindings;
     }
@@ -70,8 +70,8 @@ public class RegistryHelper {
         engine.registerFunction(registration.scope(), registration.ruleType(), registration.function());
     }
 
-    private void applyBinding(RuleBindingRegistry registry, PolicyBinding binding) {
-        if (binding instanceof PolicyBinding.DynamicPrefix dynamicPrefix) {
+    private void applyBinding(RuleBindingRegistry registry, PolicyEvaluationBinding binding) {
+        if (binding instanceof PolicyEvaluationBinding.DynamicPrefix dynamicPrefix) {
             registry.dynamicBind(constraintKey -> {
                 if (constraintKey.startsWith(dynamicPrefix.namespace())) {
                     String credSubKey = constraintKey.substring(constraintKey.lastIndexOf("/") + 1);
@@ -81,7 +81,7 @@ public class RegistryHelper {
                 }
                 return Set.of();
             });
-        } else if (binding instanceof PolicyBinding.StaticKey staticKey) {
+        } else if (binding instanceof PolicyEvaluationBinding.StaticKey staticKey) {
             registry.bind(staticKey.key(), staticKey.scope());
         }
     }

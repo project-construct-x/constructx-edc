@@ -17,4 +17,4 @@
 #  SPDX-License-Identifier: Apache-2.0
 #################################################################################
 
-org.constructx.edc.policy.constructx.ConstructxPolicyRegistry
+org.constructx.edc.policy.constructx.ConstructxPolicyEvaluationRegistry

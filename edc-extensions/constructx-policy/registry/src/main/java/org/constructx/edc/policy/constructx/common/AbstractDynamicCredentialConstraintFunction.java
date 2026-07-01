@@ -32,7 +32,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * This is a base class for dynamically bound Construct-X constraint evaluation functions that implements some basic common functionality and defines some
+ * This is a base class for dynamically bound Construct-X policy evaluation functions that implements some basic common functionality and defines some
  * common constants
  */
 public abstract class AbstractDynamicCredentialConstraintFunction<C extends ParticipantAgentPolicyContext> implements DynamicAtomicConstraintRuleFunction<Permission, C> {

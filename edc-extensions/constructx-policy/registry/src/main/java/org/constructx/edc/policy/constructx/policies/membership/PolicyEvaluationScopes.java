@@ -26,7 +26,7 @@ import org.eclipse.edc.connector.controlplane.contract.spi.policy.TransferProces
 
 import java.util.Set;
 
-public interface PolicyScopes {
+public interface PolicyEvaluationScopes {
     /**
      * scope of catalog requests to edc
      */
@@ -73,7 +73,7 @@ public interface PolicyScopes {
     Class<TransferProcessPolicyContext> TRANSFER_PROCESS_SCOPE_CLASS = TransferProcessPolicyContext.class;
 
     /**
-     * All scopes where Construct-X credential constraints may appear.
+     * All scopes where Construct-X credential policies may appear.
      */
     Set<String> ALL_RULE_SCOPES = Set.of(
             CATALOG_REQUEST_SCOPE,

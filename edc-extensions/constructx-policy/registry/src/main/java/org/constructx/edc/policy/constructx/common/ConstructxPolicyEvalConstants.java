@@ -19,7 +19,7 @@
 
 package org.constructx.edc.policy.constructx.common;
 
-public class ConstructxPolicyConstants {
+public class ConstructxPolicyEvalConstants {
     public static final String CONSTRUCTX_POLICY_NS = "https://w3id.org/constructx/policy/v1.0/";
     public static final String CONSTRUCTX_POLICY_PREFIX = "constructx-policy";
     public static final String CONSTRUCTX_POLICY_CONTEXT = CONSTRUCTX_POLICY_NS + "context.jsonld";
@@ -30,6 +30,6 @@ public class ConstructxPolicyConstants {
     public static final String CONSTRUCTX_CREDENTIAL_PREFIX = "constructx-credentials";
     public static final String CONSTRUCTX_CREDENTIAL_CONTEXT = CONSTRUCTX_CREDENTIAL_NS + "context.jsonld";
 
-    private ConstructxPolicyConstants() {
+    private ConstructxPolicyEvalConstants() {
     }
 }
