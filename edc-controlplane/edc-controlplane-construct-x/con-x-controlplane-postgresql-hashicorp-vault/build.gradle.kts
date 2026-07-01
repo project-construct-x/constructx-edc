@@ -37,7 +37,7 @@ dependencies {
     implementation("org.eclipse.tractusx.edc:retirement-evaluation-store-sql:$txVersion")
     implementation("org.eclipse.tractusx.edc:control-plane-migration:$txVersion")
     implementation("org.eclipse.tractusx.edc:tx-dcp:$txVersion")
-    implementation(project(":edc-extensions:constructx-policy:registry"))
+    implementation(project(":edc-extensions:constructx-policy:policy-evaluation-registry"))
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.constructx.policies.membership;
+package org.constructx.edc.policy.evaluation.registry.policy_evaluations.membership;
 
 import org.constructx.edc.policy.constructx.registry.PolicyEvaluationBinding;
 import org.constructx.edc.policy.constructx.registry.PolicyFunctionRegistration;

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.constructx.registry;
+package org.constructx.edc.policy.evaluation.registry.registry;
 
 import java.util.Set;
 import java.util.regex.Pattern;

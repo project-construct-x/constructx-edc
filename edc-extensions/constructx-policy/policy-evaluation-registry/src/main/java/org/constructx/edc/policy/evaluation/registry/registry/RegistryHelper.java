@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.constructx.registry;
+package org.constructx.edc.policy.evaluation.registry.registry;
 
 import org.constructx.edc.policy.constructx.spi.ConstructxPolicyEvaluation;
 import org.eclipse.edc.participant.spi.ParticipantAgentPolicyContext;
@@ -35,10 +35,10 @@ import java.util.Set;
  */
 public class RegistryHelper {
 
-    private final List<ConstructxPolicyEvaluation> policies;
+    private final List<ConstructxPolicyEvaluation> policyEvaluations;
 
-    public RegistryHelper(List<ConstructxPolicyEvaluation> policies) {
-        this.policies = List.copyOf(policies);
+    public RegistryHelper(List<ConstructxPolicyEvaluation> policyEvaluations) {
+        this.policyEvaluations = List.copyOf(policyEvaluations);
     }
 
     public void registerAll(PolicyEngine engine, RuleBindingRegistry bindingRegistry, Monitor monitor) {
@@ -56,13 +56,13 @@ public class RegistryHelper {
 
     private List<PolicyFunctionRegistration<?, ?>> functionRegistrations(Monitor monitor) {
         var registrations = new ArrayList<PolicyFunctionRegistration<?, ?>>();
-        policies.forEach(policy -> registrations.addAll(policy.functionRegistrations(monitor)));
+        this.policyEvaluations.forEach(policy -> registrations.addAll(policy.functionRegistrations(monitor)));
         return registrations;
     }
 
     private List<PolicyEvaluationBinding> bindings() {
         var bindings = new ArrayList<PolicyEvaluationBinding>();
-        policies.forEach(policy -> bindings.addAll(policy.bindings()));
+        this.policyEvaluations.forEach(policy -> bindings.addAll(policy.bindings()));
         return bindings;
     }
 

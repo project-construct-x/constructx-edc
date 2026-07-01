@@ -20,7 +20,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.constructx.policies.membership;
+package org.constructx.edc.policy.evaluation.registry.policy_evaluations.membership;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -37,8 +37,8 @@ import org.eclipse.tractusx.edc.core.utils.credentials.CredentialTypePredicate;
 
 import java.util.List;
 
-import static org.constructx.edc.policy.constructx.common.ConstructxPolicyEvalConstants.CONSTRUCTX_CREDENTIAL_NS;
-import static org.constructx.edc.policy.constructx.common.ConstructxPolicyEvalConstants.CONSTRUCTX_POLICY_NS;
+import static org.constructx.edc.policy.evaluation.registry.common.ConstructxPolicyEvalConstants.CONSTRUCTX_CREDENTIAL_NS;
+import static org.constructx.edc.policy.evaluation.registry.common.ConstructxPolicyEvalConstants.CONSTRUCTX_POLICY_NS;
 
 
 /**

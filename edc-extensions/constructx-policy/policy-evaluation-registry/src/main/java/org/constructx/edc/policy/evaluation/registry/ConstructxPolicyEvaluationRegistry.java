@@ -17,9 +17,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.constructx;
+package org.constructx.edc.policy.evaluation.registry;
 
-import org.constructx.edc.policy.constructx.policies.membership.MembershipPolicyEvaluation;
+import org.constructx.edc.policy.constructx.policy_evaluations.membership.MembershipPolicyEvaluation;
 import org.constructx.edc.policy.constructx.registry.RegistryHelper;
 import org.constructx.edc.policy.constructx.spi.ConstructxPolicyEvaluation;
 import org.eclipse.edc.policy.engine.spi.PolicyEngine;

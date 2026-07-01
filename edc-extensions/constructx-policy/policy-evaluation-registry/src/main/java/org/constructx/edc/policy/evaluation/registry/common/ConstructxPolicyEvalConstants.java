@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policy.constructx.common;
+package org.constructx.edc.policy.evaluation.registry.common;
 
 public class ConstructxPolicyEvalConstants {
     public static final String CONSTRUCTX_POLICY_NS = "https://w3id.org/constructx/policy/v1.0/";
