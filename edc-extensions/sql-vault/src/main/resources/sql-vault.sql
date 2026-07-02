@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS sql_vault
+(
+    id     VARCHAR NOT NULL PRIMARY KEY,
+    secret VARCHAR NOT NULL
+);
+
+
+
