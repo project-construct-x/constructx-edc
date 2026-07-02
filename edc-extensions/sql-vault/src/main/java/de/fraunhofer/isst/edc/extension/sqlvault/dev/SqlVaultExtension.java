@@ -50,7 +50,7 @@ public class SqlVaultExtension implements ServiceExtension {
     private SqlVault sqlVault;
     private Monitor monitor;
 
-    @Setting(description = "initial k-v pairs to be used", key = "edc.sql.store.vault.initdata")
+    @Setting(description = "initial k-v pairs to be used", key = "edc.sql.store.vault.initdata", required = false)
     private String initData;
 
     @Override
