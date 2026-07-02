@@ -34,7 +34,8 @@ dependencies {
     val txVersion = "0.12.0"
     implementation("org.eclipse.edc:dataplane-base-bom:$edcVersion")
     implementation("org.eclipse.edc:dataplane-feature-sql-bom:$edcVersion")
-    implementation("org.eclipse.edc:vault-hashicorp:$edcVersion")
+//    implementation("org.eclipse.edc:vault-hashicorp:$edcVersion")
+    implementation(project(":edc-extensions:sql-vault"))
 
     implementation("org.eclipse.edc:participant-context-config-core:$edcVersion")
 
