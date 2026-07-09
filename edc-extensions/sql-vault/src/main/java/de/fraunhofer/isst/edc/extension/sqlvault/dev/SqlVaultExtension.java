@@ -74,10 +74,10 @@ public class SqlVaultExtension implements ServiceExtension {
     @Override
     public void start(){
         if (initData != null && !initData.isEmpty()) {
-            String[] kvPairs = initData.split(";");
+            String[] kvPairs = initData.split(";;;");
             for (String kvPair : kvPairs) {
                 try {
-                    String[] kv = kvPair.split("::");
+                    String[] kv = kvPair.split(":::");
                     sqlVault.storeSecret(kv[0], kv[1]);
                 } catch (Exception e) {
                     monitor.warning("Error storing sql vault data: " + kvPair);
