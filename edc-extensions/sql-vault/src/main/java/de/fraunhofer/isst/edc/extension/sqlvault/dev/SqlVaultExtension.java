@@ -16,12 +16,10 @@
 
 package de.fraunhofer.isst.edc.extension.sqlvault.dev;
 
-import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -32,17 +30,9 @@ import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import java.util.Map;
-
 
 @Extension("Sql Vault Extension")
 public class SqlVaultExtension implements ServiceExtension {
-
-    public static final String CONFIG_PREFIX = "edc.sql.vault.init";
-    @SettingContext(CONFIG_PREFIX)
-    @Configuration
-    private Map<String, String> initialKVPairs;
-
 
     @Setting(description = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.vault.datasource")
     private String dataSourceName;
@@ -83,19 +73,16 @@ public class SqlVaultExtension implements ServiceExtension {
 
     @Override
     public void start(){
-//        if (initData != null && !initData.isEmpty()) {
-//            String[] kvPairs = initData.split(";;;");
-//            for (String kvPair : kvPairs) {
-//                try {
-//                    String[] kv = kvPair.split(":::");
-//                    sqlVault.storeSecret(kv[0], kv[1]);
-//                } catch (Exception e) {
-//                    monitor.warning("Error storing sql vault data: " + kvPair);
-//                }
-//            }
-//        }
-        if (initialKVPairs!=null) {
-            initialKVPairs.forEach((k,v)->{sqlVault.storeSecret(k,v);});
+        if (initData != null && !initData.isEmpty()) {
+            String[] kvPairs = initData.split(";;;");
+            for (String kvPair : kvPairs) {
+                try {
+                    String[] kv = kvPair.split(":::");
+                    sqlVault.storeSecret(kv[0], kv[1]);
+                } catch (Exception e) {
+                    monitor.warning("Error storing sql vault data: " + kvPair);
+                }
+            }
         }
 
     }
