@@ -1,12 +1,12 @@
 shared:
-    connectorId: &connectorId did:web:consumer-wallet.staging.construct-x.net:consumer
+    connectorId: &connectorId did:web:consumer-wallet.int.construct-x.net:consumer
     secretAlias: &secretAlias consumersecret
-    trustedIssuerId: &trustedIssuerId did:web:issuer.staging.construct-x.net:issuer
-    clusterIssuer: &clusterIssuer letsencrypt-staging
+    trustedIssuerId: &trustedIssuerId did:web:issuer.int.construct-x.net:issuer
+    clusterIssuer: &clusterIssuer letsencrypt-int
     ingressClass: &ingressClass nginx
-    imagePullSecret: &imagePullSecret registry-creds
-    controlplaneFqdn: &controlplaneFqdn consumer-edc-controlplane.staging.construct-x.net
-    dataplaneFqdn: &dataplaneFqdn consumer-edc-dataplane.staging.construct-x.net
+    imagePullSecret: &imagePullSecret ghcr-creds
+    controlplaneFqdn: &controlplaneFqdn consumer-edc-controlplane.int.construct-x.net
+    dataplaneFqdn: &dataplaneFqdn consumer-edc-dataplane.int.construct-x.net
 
 nameOverride: consumer-edc
 fullnameOverride: consumer-edc
@@ -21,7 +21,7 @@ iatp:
         - id: *trustedIssuerId
     sts:
         oauth:
-            token_url: https://consumer-wallet.staging.construct-x.net/api/sts/token
+            token_url: https://consumer-wallet.int.construct-x.net/api/sts/token
             client:
                 id: *connectorId
                 secret_alias: *secretAlias
@@ -36,6 +36,23 @@ controlplane:
     env:
         EDC_IAM_ISSUER_ID: *connectorId
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
+        EDC_IAM_DID_WEB_USE_HTTPS: true
+        TX_EDC_POSTGRESQL_MIGRATION_ASSET_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_AGREEMENTBPNS_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_BPN_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_CONTRACTDEFINITION_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_CONTRACTNEGOTIATION_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_DATAPLANEINSTANCE_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_EDR_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_FEDERATEDCATALOG_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_JTI-VALIDATION_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_POLICY-MONITOR_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_POLICY_ENABLED: false
+        TX_EDC_POSTGRESQL_MIGRATION_TRANSFERPROCESS_ENABLED: false
+        EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_ALIAS: org.eclipse.dspace.dcp.vc.type
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_TYPE: MembershipCredential
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_OPERATION: read
     ingresses:
         ## Public / Internet facing Ingress
         - enabled: true
@@ -46,6 +63,7 @@ controlplane:
               external-dns.alpha.kubernetes.io/ttl: "300"
           endpoints:
               - protocol
+              - management      ## exposed only for testing purposes
           className: *ingressClass
           tls:
               enabled: true
@@ -84,6 +102,9 @@ dataplane:
         EDC_IAM_ISSUER_ID: *connectorId
         EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: *trustedIssuerId
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
+        EDC_IAM_DID_WEB_USE_HTTPS: true
+        EDC_DATA_PLANE_SELF_UNREGISTRATION: true
+        EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
     ingresses:
         ## Public / Internet facing Ingress
         - enabled: true
@@ -95,6 +116,7 @@ dataplane:
           endpoints:
               - public
               - proxy
+              - management    ## exposed only for testing purposes
           className: *ingressClass
           tls:
               enabled: true
