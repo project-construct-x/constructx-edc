@@ -30,6 +30,10 @@ import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 
 @Extension("Sql Vault Extension")
 public class SqlVaultExtension implements ServiceExtension {
@@ -50,8 +54,14 @@ public class SqlVaultExtension implements ServiceExtension {
     private SqlVault sqlVault;
     private Monitor monitor;
 
-    @Setting(description = "initial k-v pairs to be used", key = "edc.sql.store.vault.initdata", required = false)
+    @Setting(description = "Initial k-v pairs to be used", key = "edc.sql.store.vault.initdata", required = false)
     private String initData;
+
+
+    private Path initDataPath;
+    static final String defaultDirectoryPath = System.getProperty("user.dir") + "/vault-init";
+    @Setting(description = "Path to directory containing initial vault data", key = "edc.sql.store.vault.directory", required = false)
+    private String vaultInitDirectory;
 
     @Override
     public String name() {
@@ -62,6 +72,8 @@ public class SqlVaultExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         this.monitor = context.getMonitor().withPrefix(this.getClass().getSimpleName());
         sqlSchemaBootstrapper.addStatementFromResource(dataSourceName, "sql-vault.sql");
+        vaultInitDirectory = vaultInitDirectory == null || vaultInitDirectory.isBlank() ? defaultDirectoryPath : vaultInitDirectory;
+        initDataPath = Path.of(System.getProperty("user.dir") + "/vault-init");
     }
 
     @Provider
@@ -84,6 +96,25 @@ public class SqlVaultExtension implements ServiceExtension {
                 }
             }
         }
-
+        if (Files.isDirectory(initDataPath)) {
+            monitor.debug("Found init data directory: " + initDataPath);
+            try (var stream = Files.newDirectoryStream(initDataPath)) {
+                stream.forEach(path -> {
+                    if (Files.isRegularFile(path)) {
+                        String key = path.getFileName().toString();
+                        try {
+                            String value = Files.readString(path);
+                            sqlVault.storeSecret(key, value);
+                        } catch (Exception ex) {
+                            monitor.warning("Error reading value for key: " + key);
+                        }
+                    }
+                });
+            } catch (Exception e){
+                monitor.warning("Error opening init data directory: " + initDataPath);
+            }
+        } else {
+            monitor.warning("No init data directory found: " + initDataPath);
+        }
     }
 }
