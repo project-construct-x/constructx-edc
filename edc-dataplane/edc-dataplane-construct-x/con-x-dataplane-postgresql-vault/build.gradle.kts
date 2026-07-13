@@ -46,7 +46,7 @@ dependencies {
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     mergeServiceFiles()
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    archiveFileName.set("con-x-dataplane-postgresql-hashicorp-vault.jar")
+    archiveFileName.set("con-x-dataplane-postgresql-vault.jar")
     transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer())
 }
 

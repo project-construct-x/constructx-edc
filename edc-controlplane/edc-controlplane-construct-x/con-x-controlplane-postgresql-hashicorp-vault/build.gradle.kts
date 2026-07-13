@@ -31,8 +31,7 @@ dependencies {
     implementation("org.eclipse.edc:controlplane-dcp-bom:$edcVersion")
     implementation("org.eclipse.edc:controlplane-feature-sql-bom:$edcVersion")
 
-//    implementation("org.eclipse.edc:vault-hashicorp:$edcVersion")
-    implementation(project(":edc-extensions:sql-vault"))
+    implementation("org.eclipse.edc:vault-hashicorp:$edcVersion")
 
     implementation("org.eclipse.tractusx.edc:agreements:$txVersion")
     implementation("org.eclipse.tractusx.edc:retirement-evaluation-store-sql:$txVersion")

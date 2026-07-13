@@ -165,12 +165,14 @@ include(":edc-controlplane:edc-controlplane-base")
 include(":edc-controlplane:edc-runtime-memory")
 include(":edc-controlplane:edc-controlplane-postgresql-hashicorp-vault")
 include(":edc-controlplane:edc-controlplane-construct-x:con-x-controlplane-postgresql-hashicorp-vault")
+include(":edc-controlplane:edc-controlplane-construct-x:con-x-controlplane-postgresql-vault")
 
 // modules for dataplane artifacts
 include(":edc-dataplane")
 include(":edc-dataplane:edc-dataplane-base")
 include(":edc-dataplane:edc-dataplane-hashicorp-vault")
 include(":edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-hashicorp-vault")
+include(":edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-vault")
 
 include(":samples:testing-with-mocked-connector")
 
