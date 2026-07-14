@@ -115,9 +115,10 @@ public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPo
 
     @Override
     public boolean canHandle(Object leftOperand) {
-        int nameSpaceKeySeparatorIndex = leftOperand.toString().lastIndexOf("/") + 1;
-        String namespace = leftOperand.toString().substring(0, nameSpaceKeySeparatorIndex);
-        String key = leftOperand.toString().substring(nameSpaceKeySeparatorIndex);
+        int namespaceKeySeparatorIndex = leftOperand.toString().lastIndexOf("/");
+        String namespace = leftOperand.toString().substring(0, namespaceKeySeparatorIndex);
+        namespace = namespace.substring(0, namespace.lastIndexOf("/") + 1);
+        String key = leftOperand.toString().substring(namespaceKeySeparatorIndex + 1);
         String[] keyArray = key.split("\\.");
         return
             namespace.equals(CONSTRUCTX_POLICY_NS) &&
