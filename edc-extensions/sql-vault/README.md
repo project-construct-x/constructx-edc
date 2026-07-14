@@ -1,7 +1,7 @@
 ## SqlVaultExtension
 
 This extension is meant to be used as a light-weight alternative to the EDC's HashiCorp Vault extension. It will store 
-all secrets, that the EDC reads from or writes to the vault, on your postgres databank. For this purpose, a table named 
+all secrets, that the EDC reads from or writes to the vault, on your postgres database. For this purpose, a table named 
 [sql_vault](./src/main/resources/sql-vault.sql) will be created.
 
 I.e. if you want to use this extension, you also need to use the EDC's regular postgres related extensions. 

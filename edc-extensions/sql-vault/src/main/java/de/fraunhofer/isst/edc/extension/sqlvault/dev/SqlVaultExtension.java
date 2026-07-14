@@ -1,5 +1,8 @@
 /*
- * Copyright (c) 2026. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
+ * Copyright (c) 2026 Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -32,7 +35,6 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 
 @Extension("Sql Vault Extension")
@@ -59,7 +61,7 @@ public class SqlVaultExtension implements ServiceExtension {
 
 
     private Path initDataPath;
-    static final String defaultDirectoryPath = System.getProperty("user.dir") + "/vault-init";
+    static final String DEFAULT_DIRECTORY_PATH = System.getProperty("user.dir") + "/vault-init";
     @Setting(description = "Path to directory containing initial vault data", key = "edc.sql.store.vault.directory", required = false)
     private String vaultInitDirectory;
 
@@ -72,19 +74,19 @@ public class SqlVaultExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         this.monitor = context.getMonitor().withPrefix(this.getClass().getSimpleName());
         sqlSchemaBootstrapper.addStatementFromResource(dataSourceName, "sql-vault.sql");
-        vaultInitDirectory = vaultInitDirectory == null || vaultInitDirectory.isBlank() ? defaultDirectoryPath : vaultInitDirectory;
-        initDataPath = Path.of(System.getProperty("user.dir") + "/vault-init");
+        vaultInitDirectory = vaultInitDirectory == null || vaultInitDirectory.isBlank() ? DEFAULT_DIRECTORY_PATH : vaultInitDirectory;
+        initDataPath = Path.of(vaultInitDirectory);
     }
 
     @Provider
-    public Vault provideSQLVault(ServiceExtensionContext context) {
+    public Vault provideSqlVault(ServiceExtensionContext context) {
         sqlVault = new SqlVault(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
                 queryExecutor, context.getMonitor());
         return sqlVault;
     }
 
     @Override
-    public void start(){
+    public void start() {
         if (initData != null && !initData.isEmpty()) {
             String[] kvPairs = initData.split(";;;");
             for (String kvPair : kvPairs) {
@@ -110,7 +112,7 @@ public class SqlVaultExtension implements ServiceExtension {
                         }
                     }
                 });
-            } catch (Exception e){
+            } catch (Exception e) {
                 monitor.warning("Error opening init data directory: " + initDataPath);
             }
         } else {
