@@ -115,13 +115,23 @@ public class MembershipCredentialConstraintFunction<C extends ParticipantAgentPo
 
     @Override
     public boolean canHandle(Object leftOperand) {
+        String namespace;
+        String credType; 
+        String key;
+        String customNamespace;
+        String namespaceCredType;
+
         int namespaceKeySeparatorIndex = leftOperand.toString().lastIndexOf("/");
-        String namespace = leftOperand.toString().substring(0, namespaceKeySeparatorIndex);
-        namespace = namespace.substring(0, namespace.lastIndexOf("/") + 1);
-        String key = leftOperand.toString().substring(namespaceKeySeparatorIndex + 1);
+        namespaceCredType = leftOperand.toString().substring(0, namespaceKeySeparatorIndex);
+        key = leftOperand.toString().substring(namespaceKeySeparatorIndex + 1);
+        namespace = namespaceCredType.substring(0, namespaceCredType.lastIndexOf("/"));
+        credType = namespaceCredType.substring(namespaceCredType.lastIndexOf("/") + 1);
+        customNamespace = namespace.replace(CONSTRUCTX_POLICY_NS, "");
+        namespace = namespace.replace(customNamespace, "");
+
         String[] keyArray = key.split("\\.");
         return
-            namespace.equals(CONSTRUCTX_POLICY_NS) &&
+            namespace.equals(CONSTRUCTX_POLICY_NS) && !customNamespace.isEmpty() && !credType.isEmpty() &&
                 keyArray.length > 1 && keyArray[0].matches("^\\d+$") && !keyArray[1].isEmpty();
     }
 
