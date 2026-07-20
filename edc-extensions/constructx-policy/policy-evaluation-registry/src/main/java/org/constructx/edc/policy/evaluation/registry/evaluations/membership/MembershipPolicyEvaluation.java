@@ -31,7 +31,6 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static org.constructx.edc.policy.evaluation.registry.common.ConstructxPolicyEvalConstants.CONSTRUCTX_POLICY_NS;
 import static org.eclipse.edc.policy.model.OdrlNamespace.ODRL_SCHEMA;
 
 /**
@@ -62,7 +61,7 @@ public class MembershipPolicyEvaluation implements ConstructxPolicyEvaluation {
     public List<PolicyEvaluationBinding> bindings() {
         return List.of(
             new PolicyEvaluationBinding.DynamicPrefix(
-                    CONSTRUCTX_POLICY_NS,
+                    Pattern.compile("^[a-zA-Z0-9/:]+$"),
                     Pattern.compile("^\\d+\\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$"),
                     PolicyEvaluationScopes.ALL_RULE_SCOPES
             ),

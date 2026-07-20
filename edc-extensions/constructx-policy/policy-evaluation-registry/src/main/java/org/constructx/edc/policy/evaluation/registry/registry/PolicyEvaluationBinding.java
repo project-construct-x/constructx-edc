@@ -30,7 +30,7 @@ public sealed interface PolicyEvaluationBinding {
     /**
      * Binds left operand that starts with {@code namespace + pattern} to the given DSP scopes.
      */
-    record DynamicPrefix(String namespace, Pattern credSubKeyPattern, Set<String> scopes) implements PolicyEvaluationBinding {
+    record DynamicPrefix(Pattern namespace, Pattern credSubKeyPattern, Set<String> scopes) implements PolicyEvaluationBinding {
     }
 
     /**

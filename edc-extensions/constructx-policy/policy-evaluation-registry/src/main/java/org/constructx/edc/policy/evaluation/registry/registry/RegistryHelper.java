@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static org.constructx.edc.policy.evaluation.registry.common.ConstructxPolicyEvalConstants.CONSTRUCTX_POLICY_NS;
+
 /**
  * Applies contributed policy evaluation functions and bindings to the EDC policy engine.
  */
@@ -73,8 +75,11 @@ public class RegistryHelper {
     private void applyBinding(RuleBindingRegistry registry, PolicyEvaluationBinding binding) {
         if (binding instanceof PolicyEvaluationBinding.DynamicPrefix dynamicPrefix) {
             registry.dynamicBind(constraintKey -> {
-                if (constraintKey.startsWith(dynamicPrefix.namespace())) {
-                    String credSubKey = constraintKey.substring(constraintKey.lastIndexOf("/") + 1);
+                String realValue = constraintKey.replace(CONSTRUCTX_POLICY_NS, "");
+                String namespaceType = realValue.substring(0, realValue.lastIndexOf("/"));
+                String namespace = namespaceType.substring(0, namespaceType.lastIndexOf("/"));
+                String credSubKey = realValue.substring(realValue.lastIndexOf("/") + 1);
+                if (dynamicPrefix.namespace().matcher(namespace).matches()) {                   
                     if (dynamicPrefix.credSubKeyPattern().matcher(credSubKey).matches()) {
                         return dynamicPrefix.scopes();
                     }
