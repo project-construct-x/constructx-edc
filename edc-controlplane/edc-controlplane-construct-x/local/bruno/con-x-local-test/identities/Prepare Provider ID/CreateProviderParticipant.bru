@@ -16,37 +16,30 @@ headers {
 
 body:json {
   {
-    "roles": [],
-    "serviceEndpoints": [
-      {
-        "id": "ProviderCredentialService-ID",
-        "type": "CredentialService",
-        "serviceEndpoint": "http://provider-wallet:13131/api/credentials/v1/participants/{{PROV_PART_CONT}}"
-      },
-      {
-        "id": "ProviderIssuerService-ID",
-        "type": "IssuerService",
-        "serviceEndpoint": "http://provider-wallet:13132/api/issuance/v1alpha/participants/{{PROV_PART_CONT}}"
+      "roles":[],
+      "serviceEndpoints":[{
+        "id": "ConsumerCredentialService-ID",
+        "type": "CredentialService", 
+        "serviceEndpoint": "http://provider-idhub:13131/api/credentials/v1/participants/{{B64_PROV_ID}}"
+      }],
+      "active": true,
+      "participantContextId": "{{PROV_ID}}",
+      "did": "{{PROV_ID}}",
+      "key":{
+          "keyId": "{{PROV_ID}}#key-1",
+          "privateKeyAlias": "{{PROV_ID}}-alias",
+          "keyGeneratorParams":{
+              "algorithm": "EdDSA",
+              "curve": "Ed25519"
+          }
       }
-    ],
-    "active": true,
-    "participantContextId": "{{PROV_PART_CONT}}",
-    "did": "{{PROV_ID}}",
-    "key": {
-      "keyId": "{{PROV_ID}}#key-1",
-      "privateKeyAlias": "{{PROV_ID}}-alias",
-      "keyGeneratorParams": {
-        "algorithm": "EdDSA",
-        "curve": "Ed25519"
-      }
-    }
   }
 }
 
 script:pre-request {
+  const btoa = require("btoa");
   const prov_id = bru.getEnvVar("PROV_ID");
-  const participantContext = prov_id.split(":").slice(3).join(":").replace(/:/g, "-");
-  bru.setEnvVar("PROV_PART_CONT", participantContext);
+  bru.setEnvVar("B64_PROV_ID", btoa(prov_id));
 }
 
 script:post-response {

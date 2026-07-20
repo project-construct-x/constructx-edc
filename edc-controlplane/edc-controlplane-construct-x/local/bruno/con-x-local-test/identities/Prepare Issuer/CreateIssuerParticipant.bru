@@ -19,18 +19,13 @@ body:json {
     "roles": [],
     "serviceEndpoints": [
       {
-        "id": "IssuerIssuerService-ID",
-        "type": "IssuerService",
-        "serviceEndpoint": "http://local-issuer-wallet:13132/api/issuance/v1alpha/participants/{{ISS_PART_CONT}}"
-      },
-      {
-        "id": "IssuerCredentialService-ID",
-        "type": "CredentialService",
-        "serviceEndpoint": "http://local-issuer-wallet:13131/api/credentials/v1/participants/{{ISS_PART_CONT}}"
+        "id": "Issuer-IssuerService", 
+        "type": "IssuerService", 
+        "serviceEndpoint": "http://local-issuer-service:13132/api/issuance/v1alpha/participants/{{B64_ISS_ID}}"
       }
     ],
     "active": true,
-    "participantContextId": "{{ISS_PART_CONT}}",
+    "participantContextId": "{{ISS_ID}}",
     "did": "{{ISS_ID}}",
     "key": {
       "keyId": "{{ISS_ID}}#key-1",
@@ -44,9 +39,9 @@ body:json {
 }
 
 script:pre-request {
+  const btoa = require("btoa");
   const iss_id = bru.getEnvVar("ISS_ID");
-  const participantContext = iss_id.split(":").slice(3).join(":").replace(/:/g, "-");
-  bru.setEnvVar("ISS_PART_CONT", participantContext);
+  bru.setEnvVar("B64_ISS_ID", btoa(iss_id));
 }
 
 script:post-response {

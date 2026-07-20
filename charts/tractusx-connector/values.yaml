@@ -270,7 +270,6 @@ controlplane:
     # -- Extra environment variables that will be passed onto deployment pods
     env:
         EDC_IAM_DID_WEB_USE_HTTPS: true
-        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
         TX_EDC_POSTGRESQL_MIGRATION_ASSET_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_AGREEMENTBPNS_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_BPN_ENABLED: false
@@ -283,8 +282,10 @@ controlplane:
         TX_EDC_POSTGRESQL_MIGRATION_POLICY-MONITOR_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_POLICY_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_TRANSFERPROCESS_ENABLED: false
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
         EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_ALIAS: org.eclipse.dspace.dcp.vc.type
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_TYPE: MembershipCredential
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_OPERATION: read
 
     # -- "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
     # ref: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envvarsource-v1-core
@@ -576,9 +577,6 @@ dataplane:
         EDC_IAM_DID_WEB_USE_HTTPS: true
         EDC_DATA_PLANE_SELF_UNREGISTRATION: true
         EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
-        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
-        EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: did:web:issuer-wallet.staging.construct-x.net:issuer
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
 
     # -- "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
     # ref: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envvarsource-v1-core
@@ -701,20 +699,30 @@ dataplane:
         public: ""
 
 postgresql:
-    image:
-        repository: "bitnamilegacy/postgresql"
-        tag: "16.2.0-debian-12-r10"
+    # JDBC connection URL passed to the edc runtime.
     jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-postgresql:5432/edc"
-    primary:
-        persistence:
-            enabled: false
-    readReplicas:
-        persistence:
-            enabled: false
     auth:
+        # Name of the PostgreSQL database created on first start. Must match with postgresql.jdbcUrl path.
         database: "edc"
+        # PostgreSQL user that the issuer-wallet connects as.
         username: "user"
+        # Password for the PostgreSQL user. Change before production use.
         password: "password"
+    persistence:
+        # Persist data across pod restarts.
+        enabled: true
+        size: 10Gi
+        storageClass: ""
+    # Initialization scripts ConfigMap
+    initdb:
+        scriptsConfigMap: ""         # Optional: ConfigMap with init scripts
+    resources:
+        limits:
+            cpu: 500m
+            memory: 1Gi
+        requests:
+            cpu: 250m
+            memory: 256Mi
 
 vault:
     injector:
@@ -735,6 +743,9 @@ vault:
             secret: /v1/secret
             health: /v1/sys/health
             folder: ""
+        init:
+            # Whether to run the post-install vault-init job that seeds required secrets. Creates RSA Keys for dataplane.token.signer and dataplane.token.verifier.
+            enabled: false
 
 networkPolicy:
     # -- If `true` network policy will be created to restrict access to control- and dataplane

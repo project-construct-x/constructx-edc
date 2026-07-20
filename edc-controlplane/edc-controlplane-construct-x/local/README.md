@@ -5,8 +5,9 @@ This `docker-compose.yaml` provides you a minimal environment for testing a pair
 
 It will start the following containers on your local machine: 
 
-- two instances of con-x wallets (one for a con-x issuer and one for a consumer and a provider each)
-- two instances of our current Construct-X controlplanes (one for a consumer and a provider each)
+- one instance of an issuer-service 
+- two instances of identity-hubs (for consumer and provider each)
+- two instances of our current Construct-X controlplanes (as above)
 - two instances of our current Construct-X dataplanes (as above)
 - one Postgres DB (which is, for the sake of saving you resources on your local machine, shared by all aforementioned containers)
 - one HashiCorp Vault (also shared)
@@ -16,11 +17,8 @@ It will start the following containers on your local machine:
 
 Before anything else, please make sure you have the docker images for con-x-controlplane-postgresql-hashicorp-vault in your local docker repository, see [here](../con-x-controlplane-postgresql-hashicorp-vault/README.md) and [here](../../../edc-dataplane/edc-dataplane-construct-x/con-x-dataplane-postgresql-hashicorp-vault/README.md). 
 
-Beyond that, you need to obtain the docker image needed to run the wallets. The image is hosted on ghcr.io and should 
-be downloaded automatically as soon as you start the docker-compose (see below). If the image download fails, the most 
-likely reason is that you need to do a docker login first. Please use a GitHub account, that is a member of the project-construct-x GitHub organization. If you don't already have one, you will need to create a Personal Access Token (classic) on your GitHub account. This token should minimally have the 'read:packages' privilege. 
-
-Then please open a shell and do a docker login with that token as described [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
+Beyond that, you need to obtain the docker images needed to run the identity hub and the issuer services. In order to do so, please check out this [repository](https://github.com/FraunhoferISST/dev-identity-services) and clone it onto your local machine. The upper section of this [README](https://github.com/FraunhoferISST/dev-identity-services/blob/main/runtimes/dev/README.md) informs 
+you about the steps necessary to create the docker images. 
 
 
 ### Start the environment
@@ -61,10 +59,11 @@ The issuer-participant will act as the dataspaces' trusted issuer. This issuer i
 out verifiable credentials, which the members of the dataspace can use to prove their membership (or potentially other
 relevant properties of themselves) to other partners in the same dataspace. After the registration of the issuer we are
 also providing the basic definition of the credential that shall be issued. And we also need register the expected (
-user-) members of the dataspace at the issuer service as holders at the trusted issuer's participant context.
+user-) members of the dataspace at the issuer service as holders at the trusted issuer's participant context. 
 
-The `createAttestation` and the `createCredentialDef` requests are technically necessary to prepare the issuer to handle 
-incoming credential requests from the consumer and provider wallet. If you're an average user, you just need to know that 
+Assuming that the majority of users does not (at least in the beginning) want to get into the details of designing credentials, you can most probably skip the `Optionalconfig` folder (though it does no harm, if you run these requests, as long as you don't edit these requests in any way). If you're interested in the (rather advanced) topic of using customized credential subject contents in your credentials, you can take a further look at this [README](https://github.com/FraunhoferISST/dev-identity-services/blob/main/runtimes/dev/README.md). 
+
+Pretty much the same goes for the `createAttestation` and the `createCredentialDef` requests. If you're an average user, you just need to know that 
 they are a technical necessity at this point and you just to need to run them to ensure that rest of the requests in this collection can be executed properly. 
 
 ### Create a consumer and a provider identity
@@ -79,6 +78,15 @@ When this is done, we can have a look at the credentials, that the issuer hopefu
 respectively. And we can also do some kind of a simulated DCP flow with the just created credentials. Please see the
 documentation in the Bruno collection if you are interested in learning some more details (though that is directed at
 the more advanced members of the audience here, beginners can definitely skip that part).
+
+#### Known issue / validating the identity setup
+In rare cases (chances seem to be below 0.5 %) there is currently a possibility, that one of the `CreateParticipant` calls may (silently) fail. We assume that this is something that needs to be fixed on the upstream EDC identity hub project. See this [issue](https://github.com/eclipse-edc/IdentityHub/issues/913) for details. If you are unfortunate enough encounter this bug, you should notice that one of the calls in the `InspectOutcome` folder shows an empty response and that (at least) the last call of `Simulated DCP Flow` shows a negative test result. 
+
+If one encounter one these symptoms, we would suggest that you cleanly restart the entire docker compose (see below). Chances 
+are near 99 % that on your next attempt, you won't encounter this problem again. 
+
+Also, if you're interested in some more details 
+
 
 ### Do a transaction between provider and consumer
 

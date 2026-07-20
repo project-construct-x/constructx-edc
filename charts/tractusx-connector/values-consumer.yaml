@@ -33,9 +33,6 @@ controlplane:
     hostname: consumer-edc-controlplane
     imagePullSecrets:
         - name: *imagePullSecret
-    env:
-        EDC_IAM_ISSUER_ID: *connectorId
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
     ingresses:
         ## Public / Internet facing Ingress
         - enabled: true
@@ -80,10 +77,6 @@ dataplane:
             privatekey_alias: cons_priv
         verifier:
             publickey_alias: cons_pub
-    env:
-        EDC_IAM_ISSUER_ID: *connectorId
-        EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: *trustedIssuerId
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: *secretAlias
     ingresses:
         ## Public / Internet facing Ingress
         - enabled: true
@@ -120,9 +113,12 @@ dataplane:
               clusterIssuer: *clusterIssuer
 
 postgresql:
-    primary:
-        persistence:
-            enabled: true
-    readReplicas:
-        persistence:
+    persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: ""
+
+vault:
+    hashicorp:
+        init:
             enabled: true

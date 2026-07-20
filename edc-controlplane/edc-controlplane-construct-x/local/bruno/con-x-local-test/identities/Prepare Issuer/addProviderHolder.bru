@@ -1,11 +1,11 @@
 meta {
   name: addProviderHolder
   type: http
-  seq: 4
+  seq: 3
 }
 
 post {
-  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/holders
+  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{B64_ISS_ID}}/holders
   body: json
   auth: inherit
 }
@@ -14,14 +14,16 @@ body:json {
   {
     "holderId" : "{{PROV_ID}}", 
     "did" : "{{PROV_ID}}",  
-    "name" : "{{PROV_PART_CONT}}"
+    "name" : "{{PROV_ID}}"
   }
 }
 
 script:pre-request {
+  const btoa = require("btoa");
+  const iss_id = bru.getEnvVar("ISS_ID");
+  bru.setEnvVar("B64_ISS_ID", btoa(iss_id));
   const prov_id = bru.getEnvVar("PROV_ID");
-  const participantContext = prov_id.split(":").slice(3).join(":").replace(/:/g, "-");
-  bru.setEnvVar("PROV_PART_CONT", participantContext);
+  bru.setEnvVar("B64_PROV_ID", btoa(prov_id));
   
   req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
 }

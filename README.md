@@ -1,75 +1,93 @@
-# Construct-X EDC
+# Tractus-X EDC (Eclipse Dataspace Connector)
 
+[![Contributors][contributors-shield]][contributors-url]
+[![Stargazers][stars-shield]][stars-url]
 [![Apache 2.0 License][license-shield]][license-url]
 
-[Construct-X](https://www.construct-x.org/) specific Eclipse Dataspace Connector distributions and extensions, based on the [Eclipse Tractus-X EDC](https://github.com/eclipse-tractusx/tractusx-edc).
+[![Latest Release][release-shield]][release-url]
+[![Latest Snapshot][snapshot-shield]]()
 
-## Overview
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eclipse-tractusx_tractusx-edc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eclipse-tractusx_tractusx-edc)
 
-The Construct-X EDC extends the Eclipse Tractus-X EDC with
-Construct-X specific policies, extensions and configurations.
+Container images and deployments of the Eclipse Dataspace Components for the Tractus-X project.
 
-This repository provides:
-- Construct-X specific EDC extensions
-- Control-Plane and Data-Plane distributions
-- Helm charts and docker compose
-- Local development and testing environments
+Please also refer to:
+
+- [Our docs](https://github.com/eclipse-tractusx/tractusx-edc/tree/main/docs)
+- [Our Releases](https://github.com/eclipse-tractusx/tractusx-edc/releases)
+- [Eclipse Dataspace Components](https://github.com/eclipse-edc/Connector)
+- [Report Bug / Request Feature](https://github.com/eclipse-tractusx/tractusx-edc/issues)
+
+## About The Project
+
+The project provides pre-built control- and data-plane [docker](https://www.docker.com/) images
+and [helm](https://helm.sh/) charts of
+the [Eclipse DataSpaceConnector Project](https://github.com/eclipse-edc/Connector).
 
 ## Inventory
 
-The Construct-X EDC is split into a Control Plane and a Data Plane.
+The eclipse data space connector is split up into Control-Plane and Data-Plane, whereas the Control-Plane functions as
+administration layer and has responsibility of resource management, contract negotiation and administer data transfer.
+The Data-Plane does the heavy lifting of transferring and receiving data streams.
 
-The Control Plane is responsible for resource management,
-contract negotiation and transfer orchestration.
+Control-Plane distribution:
 
-The Data Plane handles the actual transfer of data streams.
-
-### Control Plane distributions
-
-- [edc-controlplane-postgresql-hashicorp-vault](edc-controlplane/edc-controlplane-construct-x/con-x-controlplane-postgresql-hashicorp-vault) with
-  dependencies on
+- [edc-controlplane-postgresql-hashicorp-vault](edc-controlplane/edc-controlplane-postgresql-hashicorp-vault) with
+  dependency onto
   - [Hashicorp Vault](https://www.vaultproject.io/)
   - [PostgreSQL 8.2 or newer](https://www.postgresql.org/)
-- [edc-runtime-memory](edc-controlplane/edc-runtime-memory)
 
-### Data Plane distributions
+Data-Plane distribution:
 
-- [edc-dataplane-hashicorp-vault](edc-dataplane/edc-dataplane-construct-x/con-x-dataplane-postgresql-hashicorp-vault) with dependencies on
+- [edc-dataplane-hashicorp-vault](edc-dataplane/edc-dataplane-hashicorp-vault) with dependency onto
   - [Hashicorp Vault](https://www.vaultproject.io/)
 
-## Upstream References
+For testing/development purposes:
 
-- [Eclipse Tractus-X EDC](https://github.com/eclipse-tractusx/tractusx-edc)
-- [Eclipse Dataspace Components](https://github.com/eclipse-edc/Connector)
-
-## Construct-X Extensions
-
-Construct-X adds custom integrations and runtime extensions
-on top of the Eclipse Tractus-X EDC.
-
-This includes:
-- Construct-X specific policy extensions
-- Custom credential handling
-- Wallet integration support
-- Local testbed environments
+- [edc-runtime-memory](edc-controlplane/edc-runtime-memory)
 
 ## Getting Started
 
-The local testbed provides a lightweight environment for local Construct-X EDC development and integration testing.
-It is the recommended starting point for developers getting started with the Construct-X EDC.
+### Build
 
-- [Construct-X Local Testbed](https://github.com/project-construct-x/constructx-edc/blob/develop/edc-controlplane/edc-controlplane-construct-x/local/README.md)
+Build Tractus-X EDC together with its Container Images
+
+```shell
+./gradlew dockerize
+```
+
+## Known Incompatibilities
+
+- Hashicorp Vault 1.18.1 is not compatible with the EDC due to a bug in the vault concerning path handling
+  - [Internal Issue](https://github.com/eclipse-tractusx/tractusx-edc/issues/1772)
+  - [Hashicorp Vault Issue](https://github.com/hashicorp/vault/issues/29357)
+
 
 ## Contributing
-See [CONTRIBUTING](https://github.com/project-construct-x/constructx-edc/blob/develop/CONTRIBUTING.md).
+See [CONTRIBUTING](https://github.com/eclipse-tractusx/tractusx-edc/blob/main/CONTRIBUTING.md).
 
 ## License
 
 Distributed under the Apache 2.0 License.
-See [LICENSE](https://github.com/project-construct-x/constructx-edc/blob/develop/LICENSE) for more information.
+See [LICENSE](https://github.com/eclipse-tractusx/tractusx-edc/blob/main/LICENSE) for more information.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[license-shield]: https://img.shields.io/github/license/project-construct-x/constructx-edc.svg?style=for-the-badge
-[license-url]: https://github.com/project-construct-x/constructx-edc/blob/develop/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/eclipse-tractusx/tractusx-edc.svg?style=for-the-badge
+
+[contributors-url]: https://github.com/eclipse-tractusx/tractusx-edc/graphs/contributors
+
+[stars-shield]: https://img.shields.io/github/stars/eclipse-tractusx/tractusx-edc.svg?style=for-the-badge
+
+[stars-url]: https://github.com/eclipse-tractusx/tractusx-edc/stargazers
+
+[license-shield]: https://img.shields.io/github/license/eclipse-tractusx/tractusx-edc.svg?style=for-the-badge
+
+[license-url]: https://github.com/eclipse-tractusx/tractusx-edc/blob/main/LICENSE
+
+[release-shield]: https://img.shields.io/github/v/release/eclipse-tractusx/tractusx-edc.svg?style=for-the-badge
+
+[release-url]: https://github.com/eclipse-tractusx/tractusx-edc/releases
+
+[snapshot-shield]: https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Feclipse-tractusx%2Ftractusx-edc%2Frefs%2Fheads%2Fgh-pages%2Fmisc%2Flatest-versioned-snapshot.txt&search=.*&style=for-the-badge&label=Latest-Snapshot
