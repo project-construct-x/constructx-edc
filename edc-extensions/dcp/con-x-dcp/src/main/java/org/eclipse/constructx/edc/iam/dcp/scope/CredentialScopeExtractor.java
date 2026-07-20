@@ -35,8 +35,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.Collections.emptySet;
-import static org.eclipse.constructx.edc.iam.dcp.DcpConstants.CREDENTIAL_TYPE_NAMESPACE;
-import static org.eclipse.constructx.edc.iam.dcp.DcpConstants.POLICY_2025_09_NS;
 import static org.eclipse.constructx.edc.iam.dcp.DcpConstants.POLICY_NS;
 
 /**
@@ -68,18 +66,14 @@ public class CredentialScopeExtractor implements ScopeExtractor {
 
             if (leftValue instanceof String leftOperand && this.isMessageSupported(requestContext)) {
                 String namespace = "";
-                if (leftOperand.startsWith(POLICY_2025_09_NS)) {
-                    namespace = CREDENTIAL_TYPE_NAMESPACE;
-                    leftOperand = leftOperand.replace(POLICY_2025_09_NS, "").split("/")[0];
-                } else if (leftOperand.startsWith(POLICY_NS)) {
-                    namespace = CREDENTIAL_TYPE_NAMESPACE;
-                    leftOperand = leftOperand.replace(POLICY_NS, "").split("/")[0];
-                } else if (leftOperand.split("/").length > 2) {
-                    String namespaceCredType = leftOperand.substring(0, leftOperand.lastIndexOf("/"));
-                    int namespaceKeySeparatorIndex = namespaceCredType.lastIndexOf("/") + 1;
-                    namespace = CREDENTIAL_TYPE_NAMESPACE; // What namespace to use for the credential type?
-                    leftOperand = namespaceCredType.substring(namespaceKeySeparatorIndex);
-                }
+                if (leftOperand.startsWith(POLICY_NS)) {
+                    String realValue = leftOperand.replace(POLICY_NS, "");
+                    String namespaceCredType = realValue.substring(0, realValue.lastIndexOf("/"));
+                    namespace = namespaceCredType.substring(0, namespaceCredType.lastIndexOf("/"));
+                    leftOperand = namespaceCredType.substring(realValue.lastIndexOf("/") + 1);
+                } else {
+                    return emptySet();
+                } 
 
                 var credentialType = leftOperand;
                 var scope = SCOPE_FORMAT.formatted(namespace, CREDENTIAL_FORMAT.formatted(capitalize(credentialType)));
