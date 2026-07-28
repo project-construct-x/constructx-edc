@@ -59,7 +59,7 @@ public class DynamicTrustedIssuerRegistry implements TrustedIssuerRegistry {
     private final Monitor monitor;
     private final URI trustedIssuerServer;
     private final long defaultInterval;
-    boolean completedInitialCall = false;
+    private boolean completedInitialCall = false;
 
     public DynamicTrustedIssuerRegistry(URI trustedIssuerServer, Monitor monitor, long defaultInterval) {
         this.defaultInterval = defaultInterval;
