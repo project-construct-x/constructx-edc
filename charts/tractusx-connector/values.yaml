@@ -22,6 +22,16 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+shared:
+    connectorId: &connectorId did:web:provider-wallet.int.construct-x.net:provider
+    secretAlias: &secretAlias providersecret
+    trustedIssuerId: &trustedIssuerId did:web:issuer.int.construct-x.net:issuer
+    clusterIssuer: &clusterIssuer letsencrypt-serv
+    ingressClass: &ingressClass nginx
+    imagePullSecret: &imagePullSecret registry-creds
+    controlplaneFqdn: &controlplaneFqdn provider-edc-controlplane.services.construct-x.net
+    dataplaneFqdn: &dataplaneFqdn provider-edc-dataplane.services.construct-x.net
+
 install:
     # -- Deploying a PostgreSQL instance
     postgresql: true
