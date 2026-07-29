@@ -19,7 +19,7 @@
 
 ---
 # Default values for eclipse-dataspace-connector.
-# This is a YAML-formatted file.
+# This is a YAML-formatted file.               
 # Declare variables to be passed into your templates.
 
 shared:
@@ -31,6 +31,7 @@ shared:
     imagePullSecret: &imagePullSecret registry-creds
     controlplaneFqdn: &controlplaneFqdn provider-edc-controlplane.services.construct-x.net
     dataplaneFqdn: &dataplaneFqdn provider-edc-dataplane.services.construct-x.net
+    
 
 nameOverride: provider-edc
 fullnameOverride: provider-edc
@@ -77,7 +78,7 @@ controlplane:
           certManager:
               clusterIssuer: *clusterIssuer
         ## Private / Intranet facing Ingress
-        - enabled: false
+        - enabled: true                         # enabled for API testing
           hostname: *controlplaneFqdn
           annotations:
               cert-manager.io/cluster-issuer: *clusterIssuer
@@ -126,7 +127,7 @@ dataplane:
           certManager:
               clusterIssuer: *clusterIssuer
         ## Private / Intranet facing Ingress
-        - enabled: false
+        - enabled: true                         # enabled for API testing
           hostname: *dataplaneFqdn
           annotations:
               cert-manager.io/cluster-issuer: *clusterIssuer
