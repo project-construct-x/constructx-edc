@@ -79,7 +79,8 @@ public class RegistryHelper {
                 String namespaceType = realValue.substring(0, realValue.lastIndexOf("/"));
                 String namespace = namespaceType.substring(0, namespaceType.lastIndexOf("/"));
                 String credSubKey = realValue.substring(realValue.lastIndexOf("/") + 1);
-                if (dynamicPrefix.namespace().matcher(namespace).matches()) {                   
+
+                if (dynamicPrefix.namespace().matcher(namespace).matches()) {
                     if (dynamicPrefix.credSubKeyPattern().matcher(credSubKey).matches()) {
                         return dynamicPrefix.scopes();
                     }

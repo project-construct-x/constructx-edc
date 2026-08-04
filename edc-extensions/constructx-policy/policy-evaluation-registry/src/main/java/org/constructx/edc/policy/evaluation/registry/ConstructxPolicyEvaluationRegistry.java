@@ -45,7 +45,7 @@ public class ConstructxPolicyEvaluationRegistry implements ServiceExtension {
     public static final String NAME = "Construct-X Policy Evaluation Registry";
 
     /**
-     * Add new Construct-X policies here.
+     * Add new Construct-X policy evaluations here.
      */
     private static final List<ConstructxPolicyEvaluation> POLICY_EVALUATIONS = List.of(
         new MembershipPolicyEvaluation()

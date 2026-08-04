@@ -25,7 +25,7 @@ import static java.lang.String.format;
 
 public final class DcpConstants {
 
-    public static final String POLICY_NS = "https://w3id.org/constractx/policy/v1.0/";
+    public static final String POLICY_NS = "https://w3id.org/constructx/policy/v1.0/";
 
     public static final String CREDENTIAL_TYPE_NAMESPACE = "org.constructx.dspace.dcp.vc.type";
     public static final String MEMBERSHIP_CREDENTIAL = "MembershipCredential";

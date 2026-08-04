@@ -70,7 +70,7 @@ public class CredentialScopeExtractor implements ScopeExtractor {
                     String realValue = leftOperand.replace(POLICY_NS, "");
                     String namespaceCredType = realValue.substring(0, realValue.lastIndexOf("/"));
                     namespace = namespaceCredType.substring(0, namespaceCredType.lastIndexOf("/"));
-                    leftOperand = namespaceCredType.substring(realValue.lastIndexOf("/") + 1);
+                    leftOperand = namespaceCredType.substring(namespaceCredType.lastIndexOf("/") + 1);
                 } else {
                     return emptySet();
                 } 
