@@ -61,7 +61,7 @@ public class MembershipPolicyEvaluation implements ConstructxPolicyEvaluation {
     public List<PolicyEvaluationBinding> bindings() {
         return List.of(
             new PolicyEvaluationBinding.DynamicPrefix(
-                    Pattern.compile("^[a-zA-Z0-9/:]+$"),
+                    Pattern.compile("^[a-zA-Z0-9/:.]+$"),
                     Pattern.compile("^\\d+\\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$"),
                     PolicyEvaluationScopes.ALL_RULE_SCOPES
             ),
