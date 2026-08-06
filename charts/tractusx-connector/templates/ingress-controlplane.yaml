@@ -26,10 +26,19 @@
 {{- $controlEdcEndpoints := .Values.controlplane.endpoints }}
 {{- $namespace := .Release.Namespace }}
 
-{{- range .Values.controlplane.ingresses }}
-{{- if and .enabled .endpoints }}
-{{- $controlIngressName := printf "%s-controlplane-%s" $fullName .hostname }}
-{{- $annotations := .annotations | default dict }}
+{{- range $i, $ingress := .Values.controlplane.ingresses }}
+{{- if and $ingress.enabled $ingress.endpoints }}
+{{- /* Derive a unique hostname from the single controlplane.fqdn: first ingress = fqdn, the rest are prefixed "internal-". A per-ingress hostname still overrides. */}}
+{{- $hostname := $ingress.hostname }}
+{{- if not $hostname }}
+{{- $hostname = $.Values.controlplane.fqdn | required "Set controlplane.fqdn (or a per-ingress hostname)" }}
+{{- if eq $i 1 }}{{- $hostname = printf "internal-%s" $hostname }}{{- else if gt $i 1 }}{{- $hostname = printf "internal%d-%s" $i $hostname }}{{- end }}
+{{- end }}
+{{- $controlIngressName := printf "%s-controlplane-%s" $fullName $hostname }}
+{{- $annotations := $ingress.annotations | default dict }}
+{{- if not (hasKey $annotations "external-dns.alpha.kubernetes.io/hostname") }}
+{{- $_ := set $annotations "external-dns.alpha.kubernetes.io/hostname" $hostname }}
+{{- end }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -39,37 +48,37 @@ metadata:
   labels:
     {{- $controlLabels | nindent 4 }}
   annotations:
-    {{- if .certManager }}
-    {{- if .certManager.issuer }}
-    {{- $_ := set $annotations "cert-manager.io/issuer" .certManager.issuer}}
+    {{- if $ingress.certManager }}
+    {{- if $ingress.certManager.issuer }}
+    {{- $_ := set $annotations "cert-manager.io/issuer" $ingress.certManager.issuer}}
     {{- end }}
-    {{- if .certManager.clusterIssuer }}
-    {{- $_ := set $annotations "cert-manager.io/cluster-issuer" .certManager.clusterIssuer}}
+    {{- if $ingress.certManager.clusterIssuer }}
+    {{- $_ := set $annotations "cert-manager.io/cluster-issuer" $ingress.certManager.clusterIssuer}}
     {{- end }}
     {{- end }}
     {{- with $annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  {{- if .className }}
-  ingressClassName: {{ .className }}
+  {{- if $ingress.className }}
+  ingressClassName: {{ $ingress.className }}
   {{- end }}
-  {{- if .hostname }}
-  {{- if .tls.enabled }}
+  {{- if $hostname }}
+  {{- if $ingress.tls.enabled }}
   tls:
     - hosts:
-        - {{ .hostname }}
-      {{- if .tls.secretName }}
-      secretName: {{ .tls.secretName }}
+        - {{ $hostname }}
+      {{- if $ingress.tls.secretName }}
+      secretName: {{ $ingress.tls.secretName }}
       {{- else }}
       secretName: {{ $controlIngressName }}-tls
       {{- end }}
   {{- end }}
   rules:
-    - host: {{ .hostname }}
+    - host: {{ $hostname }}
       http:
         paths:
-          {{- $ingressEdcEndpoints := .endpoints }}
+          {{- $ingressEdcEndpoints := $ingress.endpoints }}
           {{- range  $name, $mapping := $controlEdcEndpoints }}
           {{- if (has $name $ingressEdcEndpoints) }}
           - path: {{ $mapping.path }}

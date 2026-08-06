@@ -153,7 +153,7 @@ spec:
             - name: EDC_PARTICIPANT_ID
               value: {{ .Values.participant.id | required ".Values.participant.id is required" | quote }}
             - name: "EDC_IAM_ISSUER_ID"
-              value: {{ .Values.iatp.id | required ".Values.iatp.id is required" | quote}}
+              value: {{ .Values.iatp.id | default .Values.participant.id | required ".Values.iatp.id or participant.id is required" | quote}}
             - name: "EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID"
               value: {{ .Values.iatp.trustedIssuerId | required ".Values.iatp.trustedIssuerId is required" | quote}}
 
@@ -237,7 +237,7 @@ spec:
             - name: "EDC_IAM_STS_OAUTH_TOKEN_URL"
               value: {{ .Values.iatp.sts.oauth.token_url | required ".Values.iatp.sts.oauth.token_url is required" | quote}}
             - name: "EDC_IAM_STS_OAUTH_CLIENT_ID"
-              value: {{ .Values.iatp.sts.oauth.client.id | required ".Values.iatp.sts.oauth.client.id is required" | quote}}
+              value: {{ .Values.iatp.sts.oauth.client.id | default .Values.participant.id | required ".Values.iatp.sts.oauth.client.id or participant.id is required" | quote}}
             - name: "EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS"
               value: {{ .Values.iatp.sts.oauth.client.secret_alias | required ".Values.iatp.sts.oauth.client.secret_alias is required" | quote}}
             {{- if .Values.iatp.sts.div.url }}

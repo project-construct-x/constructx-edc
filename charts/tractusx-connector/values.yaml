@@ -22,16 +22,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-shared:
-    connectorId: &connectorId did:web:wallet.int.construct-x.net:user
-    secretAlias: &secretAlias usersecret
-    trustedIssuerId: &trustedIssuerId did:web:issuer.int.construct-x.net:issuer
-    clusterIssuer: &clusterIssuer letsencrypt-serv
-    ingressClass: &ingressClass nginx
-    imagePullSecret: &imagePullSecret registry-creds
-    controlplaneFqdn: &controlplaneFqdn edc-controlplane.services.construct-x.net
-    dataplaneFqdn: &dataplaneFqdn edc-dataplane.services.construct-x.net
-
 install:
     # -- Deploying a PostgreSQL instance
     postgresql: true
@@ -47,13 +37,13 @@ imagePullSecrets: []
 customLabels: {}
 
 participant:
-    id: "did:web:changeme"
+    id: "did:web:wallet.int.construct-x.net:user"
 
 iatp:
     # -- Decentralized IDentifier (DID) of the connector
-    id: "did:web:changeme"
+    id: "did:web:wallet.int.construct-x.net:user"
     # -- ID of the trusted issuer that is used for SI token validation (maps to EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID)
-    trustedIssuerId: "change-me"
+    trustedIssuerId: "did:web:issuer.int.construct-x.net:issuer"
     # -- Configures the trusted issuers for this runtime. If no supportedTypes are specified, the value defaults to "*" for that issuer
     trustedIssuers: []
     # - id: "did:web:example1.com"
@@ -69,15 +59,15 @@ iatp:
             token_url: "https://change-me"
             client:
                 # -- Client ID for requesting OAuth2 access token for DIV access
-                id: "change-me"
+                id: "did:web:wallet.int.construct-x.net:user"
                 # -- Alias under which the client secret is stored in the vault for requesting OAuth2 access token for DIV access
-                secret_alias: "change-me"
+                secret_alias: "usersecret"
     didService:
         selfRegistration:
             # -- Whether Service Self Registration is enabled
             enabled: false
             # -- Unique id of connector to be used for register / unregister service inside did document (must be valid URI)
-            id: "did:web:changeme"
+            id: "did:web:wallet.int.construct-x.net:user"
     # - Configures the Verifiable Presentation cache
     cache:
         # -- Whether the Verifiable Presentation cache is enabled
@@ -131,6 +121,9 @@ controlplane:
     fullnameOverride: ""
     # -- hostname where the controlplane is reachable
     hostname: ""
+    # -- Single public URL for the control plane. Ingresses without an explicit hostname derive theirs
+    #    from this: the first ingress uses fqdn, the rest are prefixed "internal-" (kept unique).
+    fqdn: ""
     image:
         # -- Which derivate of the control plane to use. When left empty the deployment will select the correct image automatically
         repository: "ghcr.io/project-construct-x/con-x-controlplane-postgresql-hashicorp-vault"
@@ -140,7 +133,7 @@ controlplane:
         tag: "latest"
     # -- Configure ghcr credentials to pull the control plane image
     imagePullSecrets:
-        - name: ghcr-creds
+        - name: registry-creds
     initContainers: []
     debug:
         # -- Enables java debugging mode.
@@ -280,7 +273,7 @@ controlplane:
     # -- Extra environment variables that will be passed onto deployment pods
     env:
         EDC_IAM_DID_WEB_USE_HTTPS: true
-        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
+        # EDC_IAM_ISSUER_ID is derived from iatp.id (which defaults to participant.id) — do not set it here.
         TX_EDC_POSTGRESQL_MIGRATION_ASSET_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_AGREEMENTBPNS_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_BPN_ENABLED: false
@@ -293,7 +286,6 @@ controlplane:
         TX_EDC_POSTGRESQL_MIGRATION_POLICY-MONITOR_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_POLICY_ENABLED: false
         TX_EDC_POSTGRESQL_MIGRATION_TRANSFERPROCESS_ENABLED: false
-        EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
         EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
 
     # -- "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
@@ -333,7 +325,7 @@ controlplane:
           endpoints:
               - protocol
           # -- Defines the [ingress class](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class)  to use
-          className: ""
+          className: "nginx"
           # -- TLS [tls class](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) applied to the ingress resource
           tls:
               # -- Enables TLS on the ingress resource
@@ -345,7 +337,7 @@ controlplane:
               # -- If preset enables certificate generation via cert-manager namespace scoped issuer
               issuer: ""
               # -- If preset enables certificate generation via cert-manager cluster-wide issuer
-              clusterIssuer: ""
+              clusterIssuer: "letsencrypt-serv"
         ## Private / Intranet facing Ingress
         - enabled: true
           # -- The hostname to be used to precisely map incoming traffic onto the underlying network service
@@ -359,7 +351,7 @@ controlplane:
               - validation
               - metrics
           # -- Defines the [ingress class](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class)  to use
-          className: ""
+          className: "nginx"
           # -- TLS [tls class](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) applied to the ingress resource
           tls:
               # -- Enables TLS on the ingress resource
@@ -371,7 +363,7 @@ controlplane:
               # -- If preset enables certificate generation via cert-manager namespace scoped issuer
               issuer: ""
               # -- If preset enables certificate generation via cert-manager cluster-wide issuer
-              clusterIssuer: ""
+              clusterIssuer: "letsencrypt-serv"
 
     # -- declare where to mount [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) into the container
     volumeMounts:
@@ -426,6 +418,9 @@ dataplane:
     fullnameOverride: ""
     # -- hostname where the dataplane is reachable
     hostname: ""
+    # -- Single public URL for the data plane. Ingresses without an explicit hostname derive theirs
+    #    from this: the first ingress uses fqdn, the rest are prefixed "internal-" (kept unique).
+    fqdn: ""
     image:
         # -- Which derivate of the data plane to use. when left empty the deployment will select the correct image automatically
         repository: "ghcr.io/project-construct-x/con-x-dataplane-postgresql-hashicorp-vault"
@@ -435,7 +430,7 @@ dataplane:
         tag: "latest"
     # -- Configure ghcr credentials to pull the control plane image
     imagePullSecrets:
-        - name: ghcr-creds
+        - name: registry-creds
     initContainers: []
     debug:
         # -- Enables java debugging mode.
@@ -586,7 +581,7 @@ dataplane:
         EDC_IAM_DID_WEB_USE_HTTPS: true
         EDC_DATA_PLANE_SELF_UNREGISTRATION: true
         EDC_IAM_CREDENTIAL_REVOCATION_MIMETYPE: application/json
-        EDC_IAM_ISSUER_ID: did:web:wallet.staging.construct-x.net:user
+        # EDC_IAM_ISSUER_ID is derived from iatp.id (which defaults to participant.id) — do not set it here.
         EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: did:web:issuer-wallet.staging.construct-x.net:issuer
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
 
@@ -624,7 +619,7 @@ dataplane:
               - public
               - proxy
           # -- Defines the [ingress class](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class)  to use
-          className: ""
+          className: "nginx"
           # -- TLS [tls class](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) applied to the ingress resource
           tls:
               # -- Enables TLS on the ingress resource
@@ -636,7 +631,7 @@ dataplane:
               # -- If preset enables certificate generation via cert-manager namespace scoped issuer
               issuer: ""
               # -- If preset enables certificate generation via cert-manager cluster-wide issuer
-              clusterIssuer: ""
+              clusterIssuer: "letsencrypt-serv"
         ## Private / Intranet facing Ingress
         - enabled: true
           # -- The hostname to be used to precisely map incoming traffic onto the underlying network service
@@ -649,7 +644,7 @@ dataplane:
               - control
               - metrics
           # -- Defines the [ingress class](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class)  to use
-          className: ""
+          className: "nginx"
           # -- TLS [tls class](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) applied to the ingress resource
           tls:
               # -- Enables TLS on the ingress resource
@@ -661,7 +656,7 @@ dataplane:
               # -- If preset enables certificate generation via cert-manager namespace scoped issuer
               issuer: ""
               # -- If preset enables certificate generation via cert-manager cluster-wide issuer
-              clusterIssuer: ""
+              clusterIssuer: "letsencrypt-serv"
 
     # -- declare where to mount [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) into the container
     volumeMounts:
