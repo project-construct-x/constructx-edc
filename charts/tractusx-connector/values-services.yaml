@@ -36,11 +36,11 @@ fullnameOverride: "edc"
 nameOverride: "edc"
 
 participant:
-    id: *connectorId
+    id: &connectorId did:web:wallet.int.construct-x.net:user
 
 iatp:
     id: *connectorId
-    trustedIssuerId: *trustedIssuerId
+    trustedIssuerId: &trustedIssuerId did:web:issuer.int.construct-x.net:issuer
     trustedIssuers:
         - id: *trustedIssuerId
     sts:
