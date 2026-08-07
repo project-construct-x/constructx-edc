@@ -15,7 +15,7 @@ body:form-urlencoded {
   client_secret: {{CONSUMER_STS_SECRET}}
   client_id: {{CONS_ID}}
   audience: {{PROV_ID}}
-  bearer_access_scope: org.eclipse.dspace.dcp.vc.type:MembershipCredential:read
+  bearer_access_scope: org.eclipse.dspace.dcp.vc.type:{{MEM_CRED_ID}}:read
 }
 
 script:post-response {

@@ -28,9 +28,10 @@ body:json {
       "@context": "http://www.w3.org/ns/odrl.jsonld",
       "@id": "{{offerId}}",
       "@type": "Offer",
+      "permission": {{catalogPermission}},
       "assigner": "{{PROV_ID}}",
       "assignee": "{{CONS_ID}}",
-      "target": "assetId"
+      "target": "{{TARGET_ASSET_ID}}"
     }
   }
 }

@@ -1,7 +1,7 @@
 meta {
-  name: createDevAttestation
+  name: createCustomAttestation
   type: http
-  seq: 5
+  seq: 7
 }
 
 post {
@@ -17,10 +17,13 @@ headers {
 body:json {
   {
     "attestationType": "dev",
-    "id": "dev-def-1",
+    "id": "customAttestationID",
     "configuration": {
       "default": {
-        "isMember": "true"
+        "accessLevels": {
+          "fooLevel": "3",
+          "barLevel" : "1"
+        }
       },
       "blackList": []
     }
