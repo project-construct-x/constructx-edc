@@ -43,13 +43,6 @@ body:json {
   }
 }
 
-script:pre-request {
-  const cons_id = bru.getEnvVar("CONS_ID");
-  //const participantContext = cons_id.split(":").slice(3).join(":").replace(/:/g, "-");
-  const participantContext = cons_id
-  bru.setEnvVar("CONS_PART_CONT", participantContext);
-}
-
 script:post-response {
   const apiKey = res.getBody().apiKey.trim();
   if (apiKey) {
