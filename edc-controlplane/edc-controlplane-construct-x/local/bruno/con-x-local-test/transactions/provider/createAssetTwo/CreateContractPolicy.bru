@@ -26,14 +26,9 @@ body:json {
           "constraint": {
             "and": [
               {
-                "leftOperand": "{{MEM_CRED_ID}}.isMember",
-                "operator": "eq",
-                "rightOperand": "true"
-              },
-              {
-                "leftOperand": "{{CUSTOM_CRED_ID}}.accessLevels.fooLevel",
-                "operator": "gteq",
-                "rightOperand": "4"
+                "leftOperand": "{{CUSTOM_CRED_ID}}.accessLevels.barLevel.role",
+                "operator": "isAnyOf",
+                "rightOperand": "[\"Sheriff\", \"Marshal\"]"
               }
             ]
           }

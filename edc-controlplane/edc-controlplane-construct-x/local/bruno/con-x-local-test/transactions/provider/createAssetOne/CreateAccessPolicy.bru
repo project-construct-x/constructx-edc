@@ -27,8 +27,8 @@ body:json {
               "and": [
                 {
                   "leftOperand": "{{MEM_CRED_ID}}.isMember",
-                  "operator": "eq",
-                  "rightOperand": "true"
+                  "operator": "isAnyOf",
+                  "rightOperand": "[true]"
                 }
               ]
             }
