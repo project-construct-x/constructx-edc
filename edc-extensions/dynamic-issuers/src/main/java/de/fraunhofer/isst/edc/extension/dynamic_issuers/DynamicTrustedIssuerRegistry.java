@@ -65,7 +65,12 @@ public class DynamicTrustedIssuerRegistry implements TrustedIssuerRegistry {
         this.defaultInterval = defaultInterval;
         this.monitor = monitor.withPrefix(this.getClass().getSimpleName());
         this.trustedIssuerServer = trustedIssuerServer;
-        SCHEDULER.schedule(this::fetchUpdateFromServer, 0, TimeUnit.SECONDS);
+        if (trustedIssuerServer != null) {
+            SCHEDULER.schedule(this::fetchUpdateFromServer, 0, TimeUnit.SECONDS);
+        } else {
+            monitor.warning("Trust Server URL is null, no updates will be fetched.");
+        }
+
     }
 
     @Override

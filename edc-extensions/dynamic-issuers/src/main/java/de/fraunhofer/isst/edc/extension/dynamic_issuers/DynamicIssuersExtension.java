@@ -31,7 +31,6 @@ import java.net.URI;
 @Extension("Dynamic Issuers Registry Extension")
 public class DynamicIssuersExtension implements ServiceExtension {
 
-    public static final String DEFAULT_CON_X_TRUSTSERVER = "https://con-x.org/trustedissuers";
     public static final long DEFAULT_UPDATE_INTERVAL = 7200L; // 2 hours
 
     @Setting(description = "The trust server URL to be used", required = false, key = "edc.iam.trustserver.url")
@@ -48,7 +47,7 @@ public class DynamicIssuersExtension implements ServiceExtension {
             serverUri = URI.create(trustServerUrl);
         } catch (Exception e) {
             localMonitor.warning("Could not parse value of edc.iam.trustserver.url: " + trustServerUrl);
-            serverUri = URI.create(DEFAULT_CON_X_TRUSTSERVER);
+            serverUri = null;
         }
         localMonitor.info("Using Trust Server: " + trustServerUrl);
 
