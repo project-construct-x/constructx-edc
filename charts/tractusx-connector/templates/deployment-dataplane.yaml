@@ -261,7 +261,7 @@ spec:
             ## DATA PLANE PUBLIC API
             ########################
             - name: "EDC_DATAPLANE_API_PUBLIC_BASEURL"
-              value: {{ include "txdc.dataplane.url.public" . }}
+              value: {{ printf "%s%s" (include "txdc.dataplane.url.public" .) .Values.dataplane.endpoints.public.path | quote }}
 
 
             ##################

@@ -132,7 +132,8 @@ dataplane:
               secretName: ""
           certManager:
               clusterIssuer: letsencrypt-serv
-
+    url:
+        public: ""
 postgresql:
     primary:
         persistence:
