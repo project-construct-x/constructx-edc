@@ -51,6 +51,9 @@ controlplane:
         - name: registry-creds
     env:
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_ALIAS: org.eclipse.dspace.dcp.vc.type
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_OPERATION : read
+        TX_EDC_IAM_IATP_DEFAULT-SCOPES_TEST_TYPE : MembershipCredential
     ingresses:
         ## Public / Internet facing Ingress -> hostname = controlplane.fqdn
         - enabled: true
@@ -81,6 +84,8 @@ controlplane:
               secretName: ""
           certManager:
               clusterIssuer: letsencrypt-serv
+    url:
+        protocol: ""
 
 dataplane:
     hostname: dataplane
@@ -96,6 +101,7 @@ dataplane:
     env:
         EDC_IAM_TRUSTED-ISSUER_EXAMPLE_ID: did:web:issuer.int.construct-x.net:issuer
         EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS: usersecret
+
     ingresses:
         ## Public / Internet facing Ingress -> hostname = dataplane.fqdn
         - enabled: true
