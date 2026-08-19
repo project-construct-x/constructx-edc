@@ -54,12 +54,30 @@ services:
       - con-x-test-network
       - proxy
 
+
+  # Uncomment this block and comment out the HashiCorp Vault service above
+  # to use Vault Mock for local development and testing.
+  # Note: When using Vault Mock, change the `vault-init` dependency from
+  # `condition: service_healthy` to `condition: service_started`.
+
+  # shared-vault:
+  #   container_name: shared-vault
+  #   image: ghcr.io/project-construct-x/vault-mock:sha-efcc804
+  #   environment:
+  #     HASHIMOCK_TOKEN: vaultsecret0123456789
+  #   ports:
+  #     - "8200:8200"
+  #   networks:
+  #     - con-x-test-network
+  #     - proxy
+
   vault-init:
     container_name: vault-init
     image: alpine:3.19
     depends_on:
       shared-vault:
-        condition: service_healthy
+        # condition: service_healthy
+        condition: service_started
     environment:
       VAULT_ADDR: http://shared-vault:8200
       VAULT_TOKEN: vaultsecret0123456789
@@ -137,13 +155,13 @@ services:
       - tx.edc.postgresql.migration.policy-monitor.enabled=false
       - tx.edc.postgresql.migration.policy.enabled=false
       - tx.edc.postgresql.migration.transferprocess.enabled=false
-      - edc.iam.trusted-issuer.example.id=did:web:${ISSUER_DOMAIN}
+      - edc.iam.trusted-issuer.example.id=${ISSUER_DID}
       - edc.iam.did.web.use.https=true
-      - edc.iam.sts.oauth.client.secret.alias=providersecret
+      - edc.iam.sts.oauth.client.secret.alias=consumersecret
       - edc.iam.credential.revocation.mimetype=application/json
       - edc.iam.sts.oauth.token.url=http://provider-wallet:9292/api/sts/token
-      - edc.iam.sts.oauth.client.id=did:web:${DOMAIN}
-      - edc.iam.issuer.id=did:web:${DOMAIN}
+      - edc.iam.sts.oauth.client.id=${DID}
+      - edc.iam.issuer.id=${DID}
       - web.http.port=9000
       - web.http.path=/api
       - web.http.management.port=9010
@@ -157,7 +175,7 @@ services:
       - web.http.control.port=9050
       - web.http.control.path=/cpcontrol
       - edc.hostname=${DOMAIN}
-      - edc.participant.id=did:web:${DOMAIN}
+      - edc.participant.id=${DID}
       - edc.dsp.callback.address=https://${DOMAIN}/dsp
       - edc.sql.schema.autocreate=true
       - edc.datasource.default.url=jdbc:postgresql://shared-postgres:5432/prov_cpl
@@ -213,13 +231,13 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - edc.iam.trusted-issuer.example.id=did:web:${ISSUER_DOMAIN}
+      - edc.iam.trusted-issuer.example.id=${ISSUER_DID}
       - edc.iam.did.web.use.https=true
-      - edc.iam.sts.oauth.client.secret.alias=providersecret
+      - edc.iam.sts.oauth.client.secret.alias=consumersecret
       - edc.iam.credential.revocation.mimetype=application/json
       - edc.iam.sts.oauth.token.url=http://provider-wallet:9292/api/sts/token
-      - edc.iam.sts.oauth.client.id=did:web:${DOMAIN}
-      - edc.iam.issuer.id=did:web:${DOMAIN}
+      - edc.iam.sts.oauth.client.id=${DID}
+      - edc.iam.issuer.id=${DID}
       - edc.dataplane.api.public.baseurl=https://${DOMAIN}/public
     depends_on:
       provider-controlplane:

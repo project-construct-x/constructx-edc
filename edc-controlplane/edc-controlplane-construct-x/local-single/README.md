@@ -12,12 +12,13 @@ Make sure you have...
     - HashiCorp Vault
 
 
-The domain and a valid email must be set in the [.env-file](./.env):
+The domain, did and a valid email must be set in the [.env-file](./.env):
 
 ```
 EMAIL=<YOUR-VALID-EMAIL>
 DOMAIN=<YOUR-DOMAIN>
-ISSUER_DOMAIN=<YOUR_ISSUER_DOMAIN>
+DID=<YOUR-DID>
+ISSUER_DID=<ISSUER-DID>
 ```
 
 

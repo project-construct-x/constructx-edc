@@ -58,7 +58,7 @@ http:
       entrypoints:
         - web
         - websecure
-      rule: Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/.well-known/did.json`)
+      rule: Host(`{{ env "DOMAIN" }}`) && PathRegexp(`^/.+/did\.json$`)
       service: idhub-did-api-svc
       tls:
         certresolver: edc-resolver
