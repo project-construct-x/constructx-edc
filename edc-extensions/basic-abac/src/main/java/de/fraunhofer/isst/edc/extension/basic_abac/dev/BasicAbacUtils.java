@@ -34,10 +34,12 @@ import java.util.regex.Pattern;
 public class BasicAbacUtils {
 
     public static final String BASIC_ABAC_REGEX =
-            "^(?=.*/credentials)https://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::[0-9]+)?/.*/[A-Z][^\\s/.]*(?:\\.[^\\s/.]+)+$";
+        "^https://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::[0-9]+)?(?:/[^\\s/]+)*/[A-Z][^\\s/.]*\\.credentialSubject(?:\\.[^\\s/.]+)+$";
     public static final Pattern BASIC_ABAC_PATTERN = Pattern.compile(BASIC_ABAC_REGEX);
 
-    public static final String CONX_MEMBERSHIP_SCOPE = "org.eclipse.dspace.dcp.vc.type:https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential:read";
+    public static final String DCP_PREFIX = "org.eclipse.dspace.dcp.vc.type:";
+    public static final String READ_SUFFIX = ":read";
+    static String DEFAULT_MEMBERSHIP_SCOPE; // get initialized by the extension class
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -48,7 +50,7 @@ public class BasicAbacUtils {
      * <p>
      * - the credential subject of a verifiable credential (as processed by the edc framework, i.e. as a java.util.Map)
      * <p>
-     * The leftValue is expected to have matched the BASIC_ABAC_REGEX, containing a pointer suffix at the end.
+     * The leftValue is expected to have matched the BASIC_ABAC_REGEX, containing a JSONPath at the end.
      * That suffix will be interpreted by this method to navigate through the credential subject (also see the readme).
      * If the found value is numeric, then -for the sake of normalization- it will be converted to a Double value.
      *
@@ -57,7 +59,7 @@ public class BasicAbacUtils {
      * @return the object (which might be a string, a list, a map or a Double) or null if nothing could be found
      */
     public static Object getPathObject(Object leftValue, Map<?, ?> map) {
-        String jsonPath = leftValue.toString().replace(truncateLastPathSegment(leftValue) + ".", "");
+        String jsonPath = leftValue.toString().replace(truncateLastPathSegment(leftValue) + ".credentialSubject.", "");
         if (jsonPath.isBlank()) return null;
         Object current = map;
         String[] segments = jsonPath.split("\\.");
@@ -71,8 +73,12 @@ public class BasicAbacUtils {
                 fieldName = fieldName.substring(0, bracketStart);
                 arrayIndex = Integer.parseInt(indexString);
             }
-            if (!fieldName.isBlank() && current instanceof Map<?, ?> nestedMap) {
-                current = nestedMap.get(fieldName);
+            if (!fieldName.isBlank()) {
+                if (current instanceof Map<?, ?> nestedMap) {
+                    current = nestedMap.get(fieldName);
+                } else {
+                    return null;
+                }
             }
             if (current == null) {
                 return null;
@@ -96,7 +102,7 @@ public class BasicAbacUtils {
         try {
             return Double.parseDouble(current.toString());
         } catch (Exception e) {
-            return current;
+            return normalizeToBoolean(current);
         }
 
     }
@@ -105,22 +111,22 @@ public class BasicAbacUtils {
      * This method expects the leftValue Parameter of the evaluate method from the DynamicAtomicConstraintRuleFunction
      * interface as input. It is also expected that the left expression was matched by the BASIC_ABAC_REGEX.
      * <p>
-     * It will remove the pointer suffix, effectively returning the fully qualified name of the credential.
+     * It will remove the JSONPath, effectively returning the fully qualified name of the credential.
      *
      * @param leftExpression
-     * @return the fully qualified name of the credential
+     * @return the fully qualified name of the credential or null if the leftExpression was invalid
      */
     public static String truncateLastPathSegment(Object leftExpression) {
         if (leftExpression instanceof String url) {
             int lastSlashIndex = url.lastIndexOf('/');
             if (lastSlashIndex == -1) {
-                return url;
+                return null;
             }
             String beforeLastSegment = url.substring(0, lastSlashIndex + 1);
             String lastSegment = url.substring(lastSlashIndex + 1);
             int firstDotIndex = lastSegment.indexOf('.');
             if (firstDotIndex == -1) {
-                return url;
+                return null;
             }
             return beforeLastSegment + lastSegment.substring(0, firstDotIndex);
         }
@@ -203,8 +209,8 @@ public class BasicAbacUtils {
                 }).toList();
     }
 
-    public static Object normalizeToBoolean(Object value) {
-        if ("true".equalsIgnoreCase(value.toString()) || "false".equalsIgnoreCase(value.toString())) {
+    public static @Nullable Object normalizeToBoolean(@Nullable Object value) {
+        if (value != null && ("true".equalsIgnoreCase(value.toString()) || "false".equalsIgnoreCase(value.toString()))) {
             return Boolean.valueOf(value.toString());
         }
         return value;

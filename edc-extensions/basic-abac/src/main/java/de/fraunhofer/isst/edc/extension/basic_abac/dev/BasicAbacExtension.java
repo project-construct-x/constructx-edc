@@ -30,12 +30,13 @@ import org.eclipse.edc.policy.engine.spi.RuleBindingRegistry;
 import org.eclipse.edc.policy.model.Permission;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
 import java.util.Set;
 
-import static de.fraunhofer.isst.edc.extension.basic_abac.dev.BasicAbacUtils.BASIC_ABAC_PATTERN;
+import static de.fraunhofer.isst.edc.extension.basic_abac.dev.BasicAbacUtils.*;
 import static org.eclipse.edc.connector.controlplane.catalog.spi.policy.CatalogPolicyContext.CATALOG_SCOPE;
 import static org.eclipse.edc.connector.controlplane.contract.spi.policy.ContractNegotiationPolicyContext.NEGOTIATION_SCOPE;
 import static org.eclipse.edc.connector.controlplane.contract.spi.policy.TransferProcessPolicyContext.TRANSFER_SCOPE;
@@ -47,6 +48,11 @@ import static org.eclipse.edc.policy.model.OdrlNamespace.ODRL_SCHEMA;
 
 @Extension("Basic Abac Extension")
 public class BasicAbacExtension implements ServiceExtension {
+
+    @Setting(description = "The default credential type to be used",
+            defaultValue = "https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential",
+            key = "edc.abac.defaultcredential")
+    private String defaultCredential;
 
     @Inject
     private PolicyEngine policyEngine;
@@ -63,6 +69,11 @@ public class BasicAbacExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var monitor = context.getMonitor();
+
+        BasicAbacUtils.DEFAULT_MEMBERSHIP_SCOPE = DCP_PREFIX + defaultCredential + READ_SUFFIX;
+        monitor.withPrefix(this.getClass().getSimpleName())
+                .info("Using default as default scope: " + BasicAbacUtils.DEFAULT_MEMBERSHIP_SCOPE);
+
         policyEngine.registerPostValidator(RequestCatalogPolicyContext.class, new BasicAbacPolicyPostValidator<>(monitor));
         policyEngine.registerPostValidator(RequestContractNegotiationPolicyContext.class, new BasicAbacPolicyPostValidator<>(monitor));
         policyEngine.registerPostValidator(RequestTransferProcessPolicyContext.class, new BasicAbacPolicyPostValidator<>(monitor));

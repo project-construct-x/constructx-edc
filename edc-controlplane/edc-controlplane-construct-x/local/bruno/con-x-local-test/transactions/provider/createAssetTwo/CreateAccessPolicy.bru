@@ -26,7 +26,7 @@ body:json {
             "constraint": {
               "and": [
                 {
-                  "leftOperand": "{{MEM_CRED_ID}}.isMember",
+                  "leftOperand": "{{MEM_CRED_ID}}.credentialSubject.isMember",
                   "operator": "eq",
                   "rightOperand": true
                 }

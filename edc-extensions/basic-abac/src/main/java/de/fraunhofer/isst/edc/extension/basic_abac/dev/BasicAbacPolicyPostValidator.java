@@ -24,8 +24,8 @@ public class BasicAbacPolicyPostValidator<C extends RequestPolicyContext> implem
         requestPolicyContext.requestScopeBuilder().scopes(foundAbacCredentialTypeIdentifiers);
         monitor.debug("Found credential type identifiers " + foundAbacCredentialTypeIdentifiers);
 
-        // Minimally require CON-X Membership Credential
-        requestPolicyContext.requestScopeBuilder().scope(CONX_MEMBERSHIP_SCOPE);
+        // Minimally require the default credential
+        requestPolicyContext.requestScopeBuilder().scope(DEFAULT_MEMBERSHIP_SCOPE);
         return true;
     }
 
@@ -48,7 +48,7 @@ public class BasicAbacPolicyPostValidator<C extends RequestPolicyContext> implem
         } else if (constraint instanceof AtomicConstraint atomicConstraint) {
             if (atomicConstraint.getLeftExpression() instanceof LiteralExpression literalExpression) {
                 if (isCredentialConstraint(literalExpression.getValue())) {
-                    output.add("org.eclipse.dspace.dcp.vc.type:" + truncateLastPathSegment(literalExpression.getValue()) + ":read");
+                    output.add(DCP_PREFIX + truncateLastPathSegment(literalExpression.getValue()) + READ_SUFFIX);
                 }
             }
         }

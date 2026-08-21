@@ -26,7 +26,7 @@ body:json {
           "constraint": {
             "and": [
               {
-                "leftOperand": "{{CUSTOM_CRED_ID}}.accessLevels.fooLevel",
+                "leftOperand": "{{CUSTOM_CRED_ID}}.credentialSubject.accessLevels.fooLevel",
                 "operator": "isAnyOf",
                 "rightOperand": "[2, 3, 4, 5]"
               }

@@ -82,7 +82,6 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
     private boolean handleRightValueList(Object leftValue, Operator operator, List<?> rightValueList, Permission rule, C context) {
         Object claimValue = extractValueFromCredentialSubject(context, leftValue);
         if (claimValue == null) return false;
-
         return switch (operator) {
             case IN -> !(claimValue instanceof List<?>) && rightValueList.contains(claimValue);
 
