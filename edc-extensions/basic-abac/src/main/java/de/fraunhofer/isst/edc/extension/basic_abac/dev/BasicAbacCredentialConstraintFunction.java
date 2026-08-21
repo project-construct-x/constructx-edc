@@ -42,7 +42,7 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
         // case: is rightValue a list?
         List<?> rightValueList;
         if (rightValue instanceof List<?> list) {
-            rightValueList = normalizeNumericToDouble(list);
+            rightValueList = normalizeNumericToDoubleOrBoolean(list);
         } else {
             rightValueList = convertJsonToList(rightValue.toString());
         }
@@ -59,9 +59,12 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
         }
 
         // case: rightValue is neither list nor numeric, but could be e.g. a Boolean or non-numeric String value
-        // or some unexpected type...
         Object claimValue = extractValueFromCredentialSubject(context, leftValue);
         if (claimValue == null) return false;
+
+        // try to normalize Boolean values
+        claimValue = normalizeToBoolean(claimValue);
+        rightValue = normalizeToBoolean(claimValue);
 
         return switch (operator) {
             case EQ -> rightValue.equals(claimValue);
@@ -131,7 +134,7 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
         Object valueFromCredentialClaims = extractValueFromCredentialSubject(context, leftValue);
         try {
             if (valueFromCredentialClaims instanceof List<?> claimList && operator.equals(Operator.HAS_PART)) {
-                return normalizeNumericToDouble(claimList).contains(expectedNumber);
+                return normalizeNumericToDoubleOrBoolean(claimList).contains(expectedNumber);
             }
 
             double numericFromCredentialClaims = Double.parseDouble(valueFromCredentialClaims.toString());
@@ -152,7 +155,7 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
     private @Nullable Object extractValueFromCredentialSubject(C context, Object leftValue) {
         var verifiableCredentialList = getVerifiableCredentialList(context);
         if (verifiableCredentialList == null) return null;
-        String requiredCredentialType = truncateLastPathSegment(leftValue);
+        String requiredCredentialType = truncatePrefixAndLastPathSegment(leftValue);
         for (var credential : verifiableCredentialList) {
             if (credential.getType() == null || !credential.getType().contains(requiredCredentialType)) {
                 continue;

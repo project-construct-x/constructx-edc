@@ -90,7 +90,7 @@ public class BasicAbacUtils {
             }
         }
         if (current instanceof List<?> foundList) {
-            return normalizeNumericToDouble(foundList);
+            return normalizeNumericToDoubleOrBoolean(foundList);
         }
 
         try {
@@ -188,18 +188,26 @@ public class BasicAbacUtils {
      * @param list
      * @return a new list
      */
-    public static List<?> normalizeNumericToDouble(List<?> list) {
+    public static List<?> normalizeNumericToDoubleOrBoolean(List<?> list) {
         return list.stream()
                 .map(it -> {
                     if (it instanceof List<?> nestedList) {
-                        return normalizeNumericToDouble(nestedList);
+                        return normalizeNumericToDoubleOrBoolean(nestedList);
                     }
                     // Note: Nested maps unsupported, doubtful if it's needed
                     try {
                         return Double.parseDouble(it.toString());
                     } catch (NumberFormatException e) {
-                        return it;
+                        return normalizeToBoolean(it);
                     }
                 }).toList();
+    }
+
+    public static Object normalizeToBoolean(Object value) {
+        if ("true".equalsIgnoreCase(value.toString()) || "false".equalsIgnoreCase(value.toString())) {
+            return Boolean.valueOf(value.toString());
+        }
+        return value;
+
     }
 }

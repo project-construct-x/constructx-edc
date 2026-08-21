@@ -48,7 +48,7 @@ public class BasicAbacPolicyPostValidator<C extends RequestPolicyContext> implem
         } else if (constraint instanceof AtomicConstraint atomicConstraint) {
             if (atomicConstraint.getLeftExpression() instanceof LiteralExpression literalExpression) {
                 if (isCredentialConstraint(literalExpression.getValue())) {
-                    output.add("org.eclipse.dspace.dcp.vc.type:" + truncateLastPathSegment(literalExpression.getValue()) + ":read");
+                    output.add("org.eclipse.dspace.dcp.vc.type:" + truncatePrefixAndLastPathSegment(literalExpression.getValue()) + ":read");
                 }
             }
         }
