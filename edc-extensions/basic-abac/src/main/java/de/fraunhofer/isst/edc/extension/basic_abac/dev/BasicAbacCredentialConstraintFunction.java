@@ -155,7 +155,7 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
     private @Nullable Object extractValueFromCredentialSubject(C context, Object leftValue) {
         var verifiableCredentialList = getVerifiableCredentialList(context);
         if (verifiableCredentialList == null) return null;
-        String requiredCredentialType = truncatePrefixAndLastPathSegment(leftValue);
+        String requiredCredentialType = truncateLastPathSegment(leftValue);
         for (var credential : verifiableCredentialList) {
             if (credential.getType() == null || !credential.getType().contains(requiredCredentialType)) {
                 continue;
