@@ -54,6 +54,10 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
         // case: is rightValue a (single) numeric?
         try {
             double numericValue = Double.parseDouble(rightValue.toString());
+            if (!Double.isFinite(numericValue)) {
+                // always reject "NaN" or "Infinity"
+                return false;
+            }
             return handleRightValueNumeric(leftValue, operator, numericValue, rule, context);
         } catch (NumberFormatException e) {
         }
@@ -64,7 +68,7 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
 
         // try to normalize Boolean values
         claimValue = normalizeToBoolean(claimValue);
-        rightValue = normalizeToBoolean(claimValue);
+        rightValue = normalizeToBoolean(rightValue);
 
         return switch (operator) {
             case EQ -> rightValue.equals(claimValue);
@@ -83,8 +87,12 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
         Object claimValue = extractValueFromCredentialSubject(context, leftValue);
         if (claimValue == null) return false;
         return switch (operator) {
-            case IN -> !(claimValue instanceof List<?>) && rightValueList.contains(claimValue);
-
+            case IN -> {
+                if (claimValue instanceof List<?> claimList) {
+                    yield !claimList.isEmpty() && rightValueList.containsAll(claimList);
+                }
+                yield rightValueList.contains(claimValue);
+            }
             case IS_ANY_OF -> {
                 if (claimValue instanceof List<?> claimList) {
                     yield !Collections.disjoint(claimList, rightValueList);
@@ -114,7 +122,8 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
                 if (claimValue instanceof List<?> claimList) {
                     yield claimList.containsAll(rightValueList);
                 }
-                yield false;
+                yield rightValueList.size() == 1
+                        && rightValueList.contains(claimValue);
             }
 
             case EQ -> claimValue instanceof List<?> claimList && listsEqualAsSets(claimList, rightValueList);
