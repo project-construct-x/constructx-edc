@@ -136,6 +136,32 @@ That means for example
 - a string containing five, i.e. `"5"` is equal to a numeric `5`. And both are equal to a decimal `5.0`. 
 - a string whose content sort of looks like a boolean, e.g. `"true"`, `"FaLSE"` or `"TRUE"` will be interpreted as the corresponding boolean values `true` or `false` respectively. I.e. there is no case-sensitivity here. 
 
+#### Constraints with set-operators
+
+This extension can also handle odrl set operators, like for instance `isPartOf`, `isNoneOf`, etc. In these cases, the rightOperand is expected to be structured as a JSON list. However, due to some technical reasons, it is not possible to write such a list like a normal JSON list in the context of a "create policy-definition call" at the EDC-management API. I.e. something like this 
+
+```json
+            {
+              "leftOperand": "https://w3id.org/constructx/credentials/v1.0/Baustelle123Credential.credentialSubject.accessLevels.barLevel.role",
+              "operator": "isAnyOf",
+              "rightOperand": ["Sheriff", "Marshal"]
+            }
+```
+
+should always be avoided. Note that in such cases, the EDC-management API will NOT react with a status code 400. But any policy that was created in such a way, will almost certainly not work as intended.   
+
+Instead, you need to use the "stringified" version of such a JSON list like this: 
+
+```json
+            {
+              "leftOperand": "https://w3id.org/constructx/credentials/v1.0/Baustelle123Credential.credentialSubject.accessLevels.barLevel.role",
+              "operator": "isAnyOf",
+              "rightOperand": "[\"Sheriff\", \"Marshal\"]"
+            }
+```
+
+I.e. the rightOperand formally is always a JSON string, whose content can be parsed as a JSON list. Note that "internal" quotation marks need to be escaped like in the example above. 
+
 #### Default Credential
 
 There is a technical necessity that the controlplane minimally needs at least one credential type it will expect or show to external partners. This is especially relevant when there is no credential-specific policy context, from which any credential types could possibly get extracted, i.e. when someone is trying to request someone else's EDC catalog. It can be defined with a property:  
