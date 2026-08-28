@@ -64,6 +64,7 @@ include(":core:json-ld-cx")
 include(":core:core-utils")
 
 include(":edc-extensions:sql-vault")
+include(":edc-extensions:policy-hub-client")
 
 // extensions - control plane
 include(":edc-extensions:bpn-validation")

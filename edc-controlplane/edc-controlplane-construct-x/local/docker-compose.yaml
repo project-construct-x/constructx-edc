@@ -251,6 +251,10 @@ services:
       - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
       - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
       - tx.edc.iam.iatp.default-scopes.test.operation=read
+      # Required by BdrsClientExtension, which now ships with the image because cx-policy needs
+      # a BdrsClient. Never called for DID-based participant ids. The consumer intentionally gets
+      # no constructx.policyhub.* settings - the Policy Hub import is provider-side only.
+      - tx.edc.iam.iatp.bdrs.server.url=http://localhost:9999/api/directory
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1"]
       start_period: 10s
@@ -361,6 +365,17 @@ services:
       - tx.edc.iam.iatp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
       - tx.edc.iam.iatp.default-scopes.test.type=MembershipCredential
       - tx.edc.iam.iatp.default-scopes.test.operation=read
+      # BdrsClientExtension declares this setting as required. Construct-X uses DIDs as
+      # participant ids and BdrsClientAudienceMapper passes those through untouched, so this
+      # dummy is never actually called. It only exists so cx-policy can be loaded.
+      - tx.edc.iam.iatp.bdrs.server.url=http://localhost:9999/api/directory
+      # Construct-X Policy Hub. Reachable via host.docker.internal because the hub runs in its
+      # own compose project. If you attach its backend to con-x-test-network instead, use
+      # http://policyhub-backend:8080 here.
+      - constructx.policyhub.url=http://host.docker.internal:8080
+      - constructx.policyhub.credentials.alias=policy-hub-credentials
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1" ]
       start_period: 10s

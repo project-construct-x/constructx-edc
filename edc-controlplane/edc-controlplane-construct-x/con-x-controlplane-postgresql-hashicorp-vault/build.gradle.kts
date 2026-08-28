@@ -33,10 +33,21 @@ dependencies {
 
     implementation("org.eclipse.edc:vault-hashicorp:$edcVersion")
 
+    implementation(project(":edc-extensions:policy-hub-client"))
+
     implementation("org.eclipse.tractusx.edc:agreements:$txVersion")
     implementation("org.eclipse.tractusx.edc:retirement-evaluation-store-sql:$txVersion")
     implementation("org.eclipse.tractusx.edc:control-plane-migration:$txVersion")
     implementation("org.eclipse.tractusx.edc:tx-dcp:$txVersion")
+
+    // Catena-X ODRL policy functions. Required so the control plane knows the left operands
+    // (Membership, UsagePurpose, FrameworkAgreement, ...) emitted by the Construct-X Policy Hub.
+    // Without them edc.policy.validation.enabled=true already rejects the policy on creation.
+    implementation("org.eclipse.tractusx.edc:cx-policy:$txVersion")
+    // CxPolicyExtension injects BusinessPartnerStore (in-mem default) and BdrsClient; both are
+    // mandatory injects, so the runtime does not boot without these two.
+    implementation("org.eclipse.tractusx.edc:bpn-validation-core:$txVersion")
+    implementation("org.eclipse.tractusx.edc:bdrs-client:$txVersion")
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {

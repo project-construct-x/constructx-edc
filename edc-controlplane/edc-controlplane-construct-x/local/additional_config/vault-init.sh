@@ -75,3 +75,24 @@ create_and_store_aes_key() {
 create_and_store_aes_key "issuer-wallet"
 create_and_store_aes_key "consumer-wallet"
 create_and_store_aes_key "provider-wallet"
+
+# Basic-auth credentials the provider control plane uses to read policies from the
+# Construct-X Policy Hub. Format is "user:password"; the connector base64-encodes it itself.
+# These are the dev-profile defaults of the Policy Hub (application-dev.yaml).
+store_policy_hub_credentials() {
+  local alias="policy-hub-credentials"
+  local credentials="${POLICY_HUB_CREDENTIALS:-admin:admin}"
+
+  jq -n --arg content "$credentials" '{data:{content:$content}}' | \
+    curl -sSf \
+      -H "X-Vault-Token: $TOKEN" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      --data-binary @- \
+      "$VAULT/v1/secret/data/${alias}" \
+    || { echo "Failed to create policy hub credentials entry"; exit 1; }
+
+  echo "Policy Hub credentials stored at secret/data/${alias}"
+}
+
+store_policy_hub_credentials

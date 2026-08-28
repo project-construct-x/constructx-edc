@@ -1,0 +1,30 @@
+meta {
+  name: ImportPolicyFromHub
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{PROVIDER_MANAGEMENT}}/v1alpha/policyhub/policies/{{HUB_POLICY_ID}}/import
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  Pulls a policy from the Construct-X Policy Hub into the provider control plane. The control
+  plane fetches GET {hub}/api/v1/policies/{{HUB_POLICY_ID}}/odrl itself (URL and vault-based
+  basic-auth credentials are configured via constructx.policyhub.* in the docker-compose.yaml)
+  and stores it as a local policy definition. Repeating the request updates the definition.
+
+  The default HUB_POLICY_ID points at the seed policy "zugriff-konsortium-mitglieder"
+  (ACCESS + Membership constraint), which matches the MembershipCredential the local testbed
+  wallets issue. The returned @id ("zugriff-konsortium-mitglieder") is what
+  CreateContractDefinition references as accessPolicyId/contractPolicyId.
+
+  Prerequisite: the Policy Hub stack (policy-hub/docker-compose.yml) is running on port 8080.
+}

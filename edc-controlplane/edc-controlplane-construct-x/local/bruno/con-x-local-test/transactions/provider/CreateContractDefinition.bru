@@ -1,7 +1,7 @@
 meta {
   name: CreateContractDefinition
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
@@ -16,8 +16,8 @@ body:json {
       "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
     },
     "@id": "1",
-    "accessPolicyId": "aPolicy",
-    "contractPolicyId": "aPolicy",
+    "accessPolicyId": "zugriff-konsortium-mitglieder",
+    "contractPolicyId": "zugriff-konsortium-mitglieder",
     "assetsSelector": []
   }
 }
@@ -25,4 +25,13 @@ body:json {
 settings {
   encodeUrl: true
   timeout: 0
+}
+
+docs {
+  References the policy imported from the Construct-X Policy Hub via ImportPolicyFromHub
+  (id "zugriff-konsortium-mitglieder": ACCESS policy with a Membership constraint that the
+  testbed's MembershipCredential satisfies).
+
+  If you are running without the Policy Hub, run CreatePolicy instead and set
+  accessPolicyId/contractPolicyId back to "aPolicy".
 }

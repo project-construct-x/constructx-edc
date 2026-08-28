@@ -90,6 +90,20 @@ are interested
 in a more detailed explanation of these interactions, please see
 the [EDC Samples](https://github.com/eclipse-edc/Samples/tree/main/transfer).
 
+#### Importing policies from the Construct-X Policy Hub (optional)
+
+The provider control plane can pull policies directly from a locally running
+[Construct-X Policy Hub](https://github.com/project-construct-x/policy-hub) instead of you creating them by hand.
+Start the Policy Hub stack (its own `docker-compose.yml`, backend on port 8080) and then run the
+`ImportPolicyFromHub` request in the `transactions/provider` folder. It calls
+`POST /management/v1alpha/policyhub/policies/{id}/import` on the provider control plane, which fetches the ODRL
+rendering from the hub (URL and vault-stored basic-auth credentials are configured via the `constructx.policyhub.*`
+settings in the `docker-compose.yaml`) and stores it as a policy definition. The default
+`HUB_POLICY_ID` targets the hub's seed policy `zugriff-konsortium-mitglieder` (ACCESS + Membership constraint),
+which the testbed's `MembershipCredential` satisfies — `CreateContractDefinition` references exactly this policy id.
+If you run without the Policy Hub, use the `CreatePolicy` request instead and point the contract definition back at
+`aPolicy` (see the docs on those requests).
+
 NOTE: The requests in the `transactions/consumer` folder are definitely not suited for being run in batch mode. Instead, 
 especially before you run the `InitiateNegotiation` or the `Get EDR` requests, it is strongly recommended that you make sure 
 that a healthy timespan (like 2 seconds) lies between them and the respective previous request. This is because the 
