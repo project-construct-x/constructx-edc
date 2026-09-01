@@ -14,26 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-plugins {
-    id("java")
-    id("application")
+import static org.mockito.Mockito.mock;
+
+public class SqlVaultTest {
+
+
 }
-
-repositories { mavenCentral() }
-
-val edcVersion = "0.17.0"
-
-dependencies {
-    implementation("org.eclipse.edc:sql-lib:${edcVersion}")
-    implementation("org.eclipse.edc:sql-lease:${edcVersion}")
-    implementation("org.eclipse.edc:sql-bootstrapper:${edcVersion}")
-    implementation("org.eclipse.edc:transaction-datasource-spi:${edcVersion}")
-    implementation("org.eclipse.edc:core-spi:${edcVersion}")
-
-    testImplementation("org.eclipse.edc:junit:${edcVersion}") {
-        exclude(group = "org.junit.jupiter")
-        exclude(group = "org.junit.platform")
-        exclude(group = "org.junit")
-    }
-}
-
