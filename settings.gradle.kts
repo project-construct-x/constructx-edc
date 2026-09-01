@@ -20,23 +20,16 @@
 
 rootProject.name = "tractusx-edc"
 
-// this is needed to have access to snapshot builds of plugins
 pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        maven {
-            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
-        }
     }
 }
 
 dependencyResolutionManagement {
     repositories {
         mavenLocal()
-        maven {
-            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
-        }
         mavenCentral()
     }
     versionCatalogs {
@@ -55,6 +48,7 @@ include(":spi:bdrs-client-spi")
 include(":spi:dataflow-spi")
 include(":spi:dcp-spi")
 include(":spi:did-document-service-spi")
+include(":spi:dsp-spi-08")
 
 
 // core modules
@@ -77,7 +71,6 @@ include(":edc-extensions:migrations:control-plane-migration")
 include(":edc-extensions:migrations:data-plane-migration")
 include(":edc-extensions:tokenrefresh-handler")
 include(":edc-extensions:bdrs-client")
-include(":edc-extensions:provision-additional-headers")
 include(":edc-extensions:event-subscriber")
 include(":edc-extensions:edr:edr-api-v2")
 include(":edc-extensions:edr:edr-callback")
@@ -88,7 +81,19 @@ include(":edc-extensions:dcp:cx-dcp")
 include(":edc-extensions:dcp:tx-dcp")
 include(":edc-extensions:dcp:tx-dcp-sts-div")
 include(":edc-extensions:dcp:verifiable-presentation-cache")
+include(":edc-extensions:dsp:dsp-catalog-08")
+include(":edc-extensions:dsp:dsp-catalog-08:dsp-catalog-http-api-08")
+include(":edc-extensions:dsp:dsp-catalog-08:dsp-catalog-transform-08")
+include(":edc-extensions:dsp:dsp-http-api-configuration-08")
+include(":edc-extensions:dsp:dsp-http-dispatcher-08")
+include(":edc-extensions:dsp:dsp-negotiation-08")
+include(":edc-extensions:dsp:dsp-negotiation-08:dsp-negotiation-http-api-08")
+include(":edc-extensions:dsp:dsp-negotiation-08:dsp-negotiation-transform-08")
+include(":edc-extensions:dsp:dsp-transfer-process-08")
+include(":edc-extensions:dsp:dsp-transfer-process-08:dsp-transfer-process-http-api-08")
+include(":edc-extensions:dsp:dsp-transfer-process-08:dsp-transfer-process-transform-08")
 include(":edc-extensions:data-flow-properties-provider")
+include(":edc-extensions:validators:contract-definition-policies")
 include(":edc-extensions:validators:empty-asset-selector")
 include(":edc-extensions:log4j2-monitor")
 include(":edc-extensions:connector-discovery:connector-discovery-api")
@@ -114,6 +119,9 @@ include(":edc-extensions:dataplane:dataplane-token-refresh:token-refresh-api")
 include(":edc-extensions:dataplane:dataplane-proxy:dataplane-public-api-v2")
 include(":edc-extensions:dataplane:dataflow:dataflow-api")
 include(":edc-extensions:dataplane:dataflow:dataflow-service")
+include(":edc-extensions:dataplane:kafka:data-address-kafka")
+include(":edc-extensions:dataplane:kafka:validator-data-address-kafka")
+include(":edc-extensions:dataplane:kafka:kafka-broker-extension")
 
 include(":edc-extensions:non-finite-provider-push:non-finite-provider-push-spi")
 include(":edc-extensions:non-finite-provider-push:non-finite-provider-push-core")
@@ -133,21 +141,21 @@ include(":edc-tests:e2e:cloud-transfer-tests")
 include(":edc-tests:e2e:edc-dataplane-tokenrefresh-tests")
 include(":edc-tests:e2e:edr-api-tests")
 include(":edc-tests:e2e:end2end-transfer-cloud")
+include(":edc-tests:e2e:kafka-transfer-tests")
 include(":edc-tests:e2e:management-tests")
-include(":edc-tests:e2e:iatp-tests")
+include(":edc-tests:e2e:dcp-tests")
 include(":edc-tests:e2e:policy-tests")
 include(":edc-tests:e2e:transfer-tests")
 include("edc-tests:e2e:discovery-tests")
 include(":edc-tests:e2e:dcp-tck-tests")
-include(":edc-tests:e2e:dsp-compatibility-tests")
+include(":edc-tests:e2e:dsp-tck-tests")
 include(":edc-tests:compatibility-tests")
 include(":edc-tests:runtime:dataplane-cloud")
 include(":edc-tests:runtime:runtime-dsp")
-include(":edc-tests:runtime:iatp:iatp-extensions")
-include(":edc-tests:runtime:iatp:runtime-memory-iatp-div-ih")
-include(":edc-tests:runtime:iatp:runtime-memory-iatp-ih")
-include(":edc-tests:runtime:iatp:runtime-memory-sts")
-include(":edc-tests:runtime:mock-connector")
+include(":edc-tests:runtime:dcp:dcp-extensions")
+include(":edc-tests:runtime:dcp:runtime-memory-dcp-div-ih")
+include(":edc-tests:runtime:dcp:runtime-memory-dcp-ih")
+include(":edc-tests:runtime:dcp:runtime-memory-sts")
 include(":edc-tests:runtime:runtime-postgresql")
 include(":edc-tests:runtime:runtime-dcp-tck")
 include("edc-tests:runtime:runtime-discovery:runtime-discovery-base")
@@ -156,8 +164,6 @@ include("edc-tests:runtime:runtime-discovery:runtime-discovery-with-dsp-v08")
 include("edc-tests:runtime:runtime-compatibility:stable:extensions")
 include("edc-tests:runtime:runtime-compatibility:stable:connector-stable")
 include("edc-tests:runtime:runtime-compatibility:snapshot:connector-snapshot")
-
-
 
 // modules for controlplane artifacts
 include(":edc-controlplane")
@@ -173,6 +179,4 @@ include(":edc-dataplane:edc-dataplane-base")
 include(":edc-dataplane:edc-dataplane-hashicorp-vault")
 include(":edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-hashicorp-vault")
 include(":edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-vault")
-
-include(":samples:testing-with-mocked-connector")
 

@@ -25,9 +25,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.connector.controlplane.test.system.utils.Participant;
 import org.eclipse.edc.connector.controlplane.transfer.spi.types.TransferProcessStates;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.junit.utils.LazySupplier;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
+import org.eclipse.tractusx.edc.cx.CxCachedDocumentRegistry;
+import org.eclipse.tractusx.edc.jsonld.TxCachedDocumentRegistry;
 import org.eclipse.tractusx.edc.tests.ParticipantConsumerDataPlaneApi;
 import org.eclipse.tractusx.edc.tests.ParticipantDataApi;
 import org.eclipse.tractusx.edc.tests.ParticipantEdrApi;
@@ -38,6 +41,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.json.Json.createObjectBuilder;
@@ -56,6 +60,10 @@ import static org.eclipse.tractusx.edc.agreements.retirement.spi.types.Agreement
 import static org.eclipse.tractusx.edc.agreements.retirement.spi.types.AgreementsRetirementEntry.AR_ENTRY_TYPE;
 import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.TX_NAMESPACE;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.BPN_SUFFIX;
+import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.DSP_08;
+import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.DSP_08_PATH;
+import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.DSP_2025;
+import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.DSP_2025_PATH;
 
 
 /**
@@ -75,11 +83,36 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
     protected ParticipantConsumerDataPlaneApi dataPlane;
     protected String bpn;
     protected String did;
+    protected String participantContextId;
 
     public void createAsset(String id) {
         createAsset(id, new HashMap<>(), Map.of("type", "test-type"));
     }
-    
+
+    /**
+     * Overrides the upstream variant to set an id with a random UUID
+     */
+    @Override
+    public String createPolicyDefinition(JsonObject policy) {
+        var body = createObjectBuilder()
+                .add(CONTEXT, createObjectBuilder().add(VOCAB, EDC_NAMESPACE))
+                .add(TYPE, "PolicyDefinition")
+                .add(ID, UUID.randomUUID().toString())
+                .add("policy", policy)
+                .build();
+
+        return baseManagementRequest()
+                .contentType(JSON)
+                .body(body)
+                .when()
+                .post("/policydefinitions")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .contentType(JSON)
+                .extract().jsonPath().getString("@id");
+    }
+
     @NotNull
     public String getBpn() {
         return bpn;
@@ -89,7 +122,12 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
     public String getDid() {
         return did;
     }
-    
+
+    @NotNull
+    public String getParticipantContextId() {
+        return participantContextId;
+    }
+
     /**
      * Allows overriding the participant id, as for DSP 0.8 tests the provider's BPN has to be used.
      *
@@ -128,13 +166,14 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
                 put("edc.iam.sts.oauth.token.url", "http://sts.example.com/token");
                 put("edc.iam.sts.oauth.client.id", "test-clientid");
                 put("edc.iam.sts.oauth.client.secret.alias", "test-clientid-alias");
-                put("tx.edc.iam.iatp.bdrs.server.url", "http://sts.example.com");
+                put("tx.edc.iam.dcp.bdrs.server.url", "http://sts.example.com");
                 put("edc.dataplane.api.public.baseurl", "%s/v2/data".formatted(dataPlanePublic.get()));
                 put("edc.policy.validation.enabled", "true");
-                put("edc.iam.did.web.use.https", "false");
-                put("edc.participant.context.id", "general-test-id");
+                put("edc.participant.context.id", participantContextId);
                 put("tractusx.edc.participant.bpn", getBpn());
                 put("edc.iam.did.web.use.https", "false");
+                put("edc.encryption.strict", "false");
+                put("edc.policy.monitor.period", "PT5S");
             }
         };
 
@@ -172,10 +211,11 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
                 .add(TX_NAMESPACE + "groups", Json.createArrayBuilder(Arrays.asList(groups)))
                 .build();
         baseManagementRequest()
+                .basePath("/v3")
                 .contentType(JSON)
                 .body(body)
                 .when()
-                .post("/v3/business-partner-groups")
+                .post("/business-partner-groups")
                 .then()
                 .statusCode(204);
     }
@@ -189,10 +229,11 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
                 .add(TX_NAMESPACE + "groups", Json.createArrayBuilder(Arrays.asList(groups)))
                 .build();
         baseManagementRequest()
+                .basePath("/v3")
                 .contentType(JSON)
                 .body(body)
                 .when()
-                .put("/v3/business-partner-groups")
+                .put("/business-partner-groups")
                 .then()
                 .statusCode(204);
     }
@@ -202,8 +243,9 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
      */
     public void deleteBusinessPartner(String bpn) {
         baseManagementRequest()
+                .basePath("/v3")
                 .when()
-                .delete("/v3/business-partner-groups/{bpn}", bpn)
+                .delete("/business-partner-groups/{bpn}", bpn)
                 .then()
                 .statusCode(204);
     }
@@ -215,10 +257,11 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
                 .add(AR_ENTRY_REASON, "long-reason")
                 .build();
         return baseManagementRequest()
+                .basePath("/v3")
                 .contentType(JSON)
                 .body(body)
                 .when()
-                .post("/v3/contractagreements/retirements")
+                .post("/contractagreements/retirements")
                 .then();
     }
 
@@ -249,23 +292,25 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
                 .add(TYPE, "CatalogRequest")
                 .add("counterPartyId", provider.id)
                 .add("counterPartyAddress", provider.getProtocolUrl())
-                .add("protocol", protocol);
+                .add("protocol", protocol.name());
 
         return baseManagementRequest()
                 .header("x-api-key", MANAGEMENT_API_KEY)
+                .basePath("/v3")
                 .contentType(JSON)
                 .when()
                 .body(requestBodyBuilder.build())
-                .post("/v3/catalog/request")
+                .post("/catalog/request")
                 .then();
 
     }
     
     public String getTransferProcessField(String transferProcessId, String fieldName) {
         return baseManagementRequest()
+                .basePath("/v3")
                 .contentType(JSON)
                 .when()
-                .get("/v3/transferprocesses/{id}", transferProcessId)
+                .get("/transferprocesses/{id}", transferProcessId)
                 .then()
                 .statusCode(200)
                 .extract().body().jsonPath()
@@ -274,9 +319,10 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
 
     public void triggerDataTransfer(String dataFlowId) {
         baseManagementRequest()
+                .basePath("v3")
                 .contentType(JSON)
                 .when()
-                .post("/v4alpha/dataflows/{id}/trigger", dataFlowId)
+                .post("/dataflows/{id}/trigger", dataFlowId)
                 .then()
                 .log().ifError()
                 .statusCode(204);
@@ -284,21 +330,42 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
 
     public ValidatableResponse discoverDspParameters(JsonObject requestBody) {
         return baseManagementRequest()
+                .basePath("v3")
                 .contentType(JSON)
                 .body(requestBody)
                 .when()
-                .post("/v4alpha/connectordiscovery/dspversionparams")
+                .post("/connectordiscovery/dspversionparams")
                 .then();
     }
 
     public ValidatableResponse discoverConnectorServices(JsonObject requestBody) {
         return baseManagementRequest()
+                .basePath("v3")
                 .contentType(JSON)
                 .body(requestBody)
                 .when()
-                .post("/v4alpha/connectordiscovery/connectors")
+                .post("/connectordiscovery/connectors")
                 .then();
     }
+
+    // The following functions have been implemented, because these helper methods were removed upstream
+    // They are needed for support of DSP version v0.8
+    public void setProtocol(String protocol) {
+        if (DSP_2025.equals(protocol)) {
+            this.protocol = new Protocol(DSP_2025, DSP_2025_PATH);
+        } else {
+            this.protocol = new Protocol(DSP_08, DSP_08_PATH);
+        }
+    }
+
+    public void setJsonLd(JsonLd jsonLd) {
+        this.jsonLd = jsonLd;
+    }
+
+    public String getBaseUrl() {
+        return controlPlaneProtocol.get().toString();
+    }
+    // End of section with helper functions removed from upstream
 
     public static class Builder<P extends TractusxParticipantBase, B extends Builder<P, B>> extends Participant.Builder<P, B> {
         protected Builder(P participant) {
@@ -316,7 +383,7 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
         }
         
         public B protocolVersionPath(String path) {
-            this.participant.protocolVersionPath = path;
+            this.participant.protocol = new Protocol(this.participant.protocol.name(), path);
             return self();
         }
 
@@ -330,6 +397,8 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
                 participant.bpn = participant.name.toLowerCase() + BPN_SUFFIX;
             }
 
+            participant.participantContextId = UUID.randomUUID().toString();
+
             participant.enrichManagementRequest = requestSpecification -> requestSpecification.headers(Map.of(API_KEY_HEADER_NAME, MANAGEMENT_API_KEY));
             super.timeout(ASYNC_TIMEOUT);
             super.build();
@@ -337,6 +406,15 @@ public abstract class TractusxParticipantBase extends IdentityParticipant {
             this.participant.edrs = new ParticipantEdrApi(participant);
             this.participant.data = new ParticipantDataApi();
             this.participant.dataPlane = new ParticipantConsumerDataPlaneApi(this.participant.dataPlaneProxy, Map.of("x-api-key", CONSUMER_PROXY_API_KEY));
+
+            TxCachedDocumentRegistry.getDocuments().forEach(result -> result
+                    .onSuccess(c -> this.participant.jsonLd.registerCachedDocument(c.url(), c.resource()))
+            );
+
+            CxCachedDocumentRegistry.getDocuments().forEach(result -> result
+                    .onSuccess(c -> this.participant.jsonLd.registerCachedDocument(c.url(), c.resource()))
+            );
+
             return participant;
         }
     }

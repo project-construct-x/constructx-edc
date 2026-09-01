@@ -29,38 +29,17 @@ configurations.all {
 
     // decentralized-claims-sts-remote-client excluded because we have the tx-dcp-sts-div that takes care to define the correct client in case of DIV
     exclude("org.eclipse.edc", "decentralized-claims-sts-remote-client")
+
+    // We decided to not provide the federated catalog feature with this runtime
+    exclude("org.eclipse.edc", "federated-catalog-api")
+    exclude("org.eclipse.edc", "federated-catalog-spi")
+    exclude("org.eclipse.edc", "federated-catalog-core")
+    exclude("org.eclipse.edc", "federated-catalog-core-2025")
+    exclude("org.eclipse.edc", "federated-catalog-cache-sql")
 }
 
 dependencies {
-    constraints {
-        runtimeOnly("tools.jackson.core:jackson-core:3.1.0") {
-            because("older version has vulnerability")
-        }
-        runtimeOnly("com.fasterxml.jackson.core:jackson-core:2.21.1") {
-            because("older version has vulnerability")
-        }
-        runtimeOnly("org.eclipse.jetty:jetty-server:12.1.7") {
-            because("older version has vulnerability")
-        }
-        runtimeOnly("org.eclipse.jetty:jetty-http:12.1.7") {
-            because("older version has vulnerability")
-        }
-        runtimeOnly("org.eclipse.jetty:jetty-security:12.1.7") {
-            because("older version has vulnerability")
-        }
-        runtimeOnly("org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.7") {
-            because("older version has vulnerability")
-        }
-        runtimeOnly("org.eclipse.jetty.websocket:jetty-websocket:12.1.7") {
-            because("older version has vulnerability")
-        }
-        runtimeOnly("org.eclipse.jetty:jetty-session:12.1.7") {
-            because("older version has vulnerability")
-        }
-    }
-    runtimeOnly(libs.edc.bom.controlplane.base) {
-        exclude(module = "dsp-2024")
-    }
+    runtimeOnly(libs.edc.bom.controlplane.base)
     runtimeOnly(libs.edc.bom.controlplane.dcp)
 
     implementation(project(":core:edr-core"))
@@ -78,10 +57,15 @@ dependencies {
     implementation(project(":edc-extensions:dcp:tx-dcp"))
     implementation(project(":edc-extensions:dcp:tx-dcp-sts-div"))
     implementation(project(":edc-extensions:dcp:verifiable-presentation-cache"))
+    implementation(project(":edc-extensions:dsp:dsp-catalog-08"))
+    implementation(project(":edc-extensions:dsp:dsp-http-api-configuration-08"))
+    implementation(project(":edc-extensions:dsp:dsp-http-dispatcher-08"))
+    implementation(project(":edc-extensions:dsp:dsp-negotiation-08"))
+    implementation(project(":edc-extensions:dsp:dsp-transfer-process-08"))
     implementation(project(":edc-extensions:edr:edr-api-v2"))
     implementation(project(":edc-extensions:edr:edr-callback"))
-    implementation(project(":edc-extensions:provision-additional-headers"))
     implementation(project(":edc-extensions:tokenrefresh-handler"))
+    implementation(project(":edc-extensions:validators:contract-definition-policies"))
     implementation(project(":edc-extensions:validators:empty-asset-selector"))
     implementation(project(":edc-extensions:connector-discovery:connector-discovery-api"))
     implementation(project(":edc-extensions:connector-discovery:cx-connector-discovery"))
