@@ -21,7 +21,7 @@
 services:
   local-issuer-wallet:
     container_name: local-issuer-wallet
-    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    image: ghcr.io/project-construct-x/wallet-sql-vault:0.18.0-1
     pull_policy: missing
     depends_on:
       shared-postgres:
@@ -121,7 +121,7 @@ services:
 
   consumer-wallet:
     container_name: consumer-wallet
-    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    image: ghcr.io/project-construct-x/wallet-sql-vault:0.18.0-1
     pull_policy: missing
     depends_on:
       shared-postgres:
@@ -162,7 +162,7 @@ services:
 
   provider-wallet:
     container_name: provider-wallet
-    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    image: ghcr.io/project-construct-x/wallet-sql-vault:0.18.0-1
     pull_policy: missing
     depends_on:
       shared-postgres:

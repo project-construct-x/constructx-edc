@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{ISSUER_ID_API}}/v1alpha/participants
+  url: {{ISSUER_ID_API}}/v1beta/participants
   body: json
   auth: inherit
 }
@@ -21,7 +21,7 @@ body:json {
       {
         "id": "IssuerIssuerService-ID",
         "type": "IssuerService",
-        "serviceEndpoint": "http://local-issuer-wallet:13132/api/issuance/v1alpha/participants/{{ISS_PART_CONT}}"
+        "serviceEndpoint": "http://local-issuer-wallet:13132/api/issuance/v1beta/participants/{{ISS_PART_CONT}}"
       },
       {
         "id": "IssuerCredentialService-ID",

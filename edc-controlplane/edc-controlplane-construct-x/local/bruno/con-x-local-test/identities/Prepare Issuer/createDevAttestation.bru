@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/attestations
+  url: {{ISSUER_ISS_API}}/v1beta/participants/{{ISS_PART_CONT}}/attestations
   body: json
   auth: none
 }
@@ -28,7 +28,7 @@ body:json {
 }
 
 script:pre-request {
-  req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
+  req.setHeader("x-api-key", bru.getVar("ISSUER_APIKEY"));
 }
 
 settings {

@@ -16,7 +16,7 @@ headers {
 
 script:post-response {
   const authToken = res.getBody().authorization; 
-  bru.setEnvVar("pullSecret", authToken);
+  bru.setVar("pullSecret", authToken);
 }
 
 settings {

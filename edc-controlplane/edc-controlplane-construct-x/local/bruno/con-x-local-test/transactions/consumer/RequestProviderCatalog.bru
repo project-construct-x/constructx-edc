@@ -46,8 +46,8 @@ script:post-response {
       offerId = "";
       permissionArray = [];
     }
-    bru.setEnvVar("offerId", offerId);
-    bru.setEnvVar("catalogPermission", JSON.stringify(permissionArray));
+    bru.setVar("offerId", offerId);
+    bru.setVar("catalogPermission", JSON.stringify(permissionArray));
 }
 
 settings {

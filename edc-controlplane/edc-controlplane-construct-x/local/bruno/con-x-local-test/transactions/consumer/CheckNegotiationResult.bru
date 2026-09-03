@@ -16,7 +16,7 @@ headers {
 
 script:post-response {
   const contractId = res.getBody()['contractAgreementId']; 
-  bru.setEnvVar("contractId", contractId);
+  bru.setVar("contractId", contractId);
 }
 
 settings {

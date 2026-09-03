@@ -39,7 +39,7 @@ body:json {
 script:post-response {
   var x = res.getBody()['@id'];
   console.log("id " + x);
-  bru.setEnvVar("negotiation-id", res.getBody()['@id']);
+  bru.setVar("negotiation-id", res.getBody()['@id']);
 }
 
 settings {
