@@ -63,22 +63,25 @@ allprojects {
     apply(plugin = "jacoco")
 
     dependencies {
+        implementation("org.slf4j:slf4j-api:2.0.18")
 
-        implementation("org.slf4j:slf4j-api:2.0.17")
+        implementation(platform("io.netty:netty-bom:4.1.137.Final")) {
+            because("CVE-2026-56819/56745/55833/55831/59901/50010/47691/45674/45416/44249/42587/42584/42579/42583: netty fixed in 4.1.136; CVE-2026-59903 (CorsHandler Vary header cache poisoning) backported to 4.1.137")
+        }
+        implementation(platform("org.eclipse.jetty:jetty-bom:12.1.10")) {
+            because("CVE-2026-10050: jetty-security Digest auth bypass, fixed in 12.1.10")
+        }
+        implementation(platform("org.eclipse.jetty.ee10:jetty-ee10-bom:12.1.10")) {
+            because("CVE-2026-10050: aligns Jetty ee10 modules with jetty-bom 12.1.10")
+        }
+        implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.4")) {
+            because("CVE-2026-54513/54512 + GHSA-r7wm-3cxj-wff9: jackson-databind/core fixed in 2.21.4")
+        }
 
         constraints {
             plugins.apply("org.gradle.java-test-fixtures")
-            implementation("org.yaml:snakeyaml:2.6") {
-                because("version 1.33 has vulnerabilities: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-1471.")
-            }
-            implementation("net.minidev:json-smart:2.6.0") {
-                because("version 2.4.8 has vulnerabilities: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-1370.")
-            }
-            implementation("com.azure:azure-core-http-netty:1.16.3") {
-                because("Version 1.15.12 depends on netty libs that have two vulnerabilities: https://mvnrepository.com/artifact/com.azure/azure-core-http-netty/1.15.12")
-            }
-            implementation("io.netty:netty-codec-http2:4.2.9.Final") {
-                because("Version 4.1.123.Final vulnerability: https://www.cve.org/CVERecord?id=CVE-2025-8916")
+            implementation("org.eclipse.jetty.websocket:jetty-websocket:12.1.10") {
+                because("CVE-2026-10050: align jetty-websocket aggregator (not in jetty-bom) with jetty 12.1.10")
             }
         }
     }
@@ -97,10 +100,6 @@ allprojects {
             scmUrl.set(txScmUrl)
         }
         swagger {
-            title.set((project.findProperty("apiTitle") ?: "Tractus-X REST API") as String)
-            description =
-                (project.findProperty("apiDescription")
-                    ?: "Tractus-X REST APIs - merged by OpenApiMerger") as String
             outputFilename.set(project.name)
             outputDirectory.set(file("${rootProject.projectDir.path}/resources/openapi/yaml"))
             resourcePackages = setOf("org.eclipse.tractusx.edc")

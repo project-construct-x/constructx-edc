@@ -22,20 +22,21 @@ package org.eclipse.tractusx.edc.compatibility.tests.fixtures;
 
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.tractusx.edc.tests.participant.DataspaceIssuer;
-import org.eclipse.tractusx.edc.tests.participant.TractusxIatpParticipantBase;
+import org.eclipse.tractusx.edc.tests.participant.TractusxDcpParticipantBase;
 
 import java.util.Base64;
 
 public class DcpHelperFunctions {
     public static void configureParticipantContext(DataspaceIssuer issuer, IdentityHubParticipant identityHubParticipant, RuntimeExtension identityHubRuntime) {
-        var participantContextService = identityHubRuntime.getService(ParticipantContextService.class);
+        var participantContextService = identityHubRuntime.getService(IdentityHubParticipantContextService.class);
 
         var participantKey = issuer.getKeyPairAsJwk();
         var key = KeyDescriptor.Builder.newInstance()
@@ -57,30 +58,31 @@ public class DcpHelperFunctions {
                 .active(true)
                 .build();
 
-        participantContextService.createParticipantContext(participantManifest);
+        participantContextService.createParticipantContext(participantManifest)
+                .orElseThrow(f -> new EdcException("Cannot create participant context: " + f.getFailureDetail()));
 
         var vault = identityHubRuntime.getService(Vault.class);
         vault.storeSecret(issuer.getPrivateKeyAlias(), issuer.getPrivateKeyAsString());
     }
 
-    public static void configureParticipant(TractusxIatpParticipantBase participant, DataspaceIssuer issuer, IdentityHubParticipant identityHubParticipant, RuntimeExtension identityHubRuntime) {
+    public static void configureParticipant(TractusxDcpParticipantBase participant, DataspaceIssuer issuer, IdentityHubParticipant identityHubParticipant, RuntimeExtension identityHubRuntime) {
         configureParticipantContext(participant, identityHubParticipant, identityHubRuntime);
 
         var accountService = identityHubRuntime.getService(StsAccountService.class);
         var vault = identityHubRuntime.getService(Vault.class);
         var credentialStore = identityHubRuntime.getService(CredentialStore.class);
 
-        var credentials = issuer.issueCredentials(participant.getDid(), participant.getId());
+        var credentials = issuer.issueCredentials(participant.getDid(), participant.getId(), participant.getParticipantContextId());
 
         credentials.forEach(credentialStore::create);
 
-        accountService.findById(participant.getDid())
+        accountService.findById(participant.getParticipantContextId())
                 .onSuccess(account -> vault.storeSecret(account.getSecretAlias(), "clientSecret"));
 
     }
 
-    public static void configureParticipantContext(TractusxIatpParticipantBase participant, IdentityHubParticipant identityHubParticipant, RuntimeExtension identityHubRuntime) {
-        var participantContextService = identityHubRuntime.getService(ParticipantContextService.class);
+    public static void configureParticipantContext(TractusxDcpParticipantBase participant, IdentityHubParticipant identityHubParticipant, RuntimeExtension identityHubRuntime) {
+        var participantContextService = identityHubRuntime.getService(IdentityHubParticipantContextService.class);
 
         var participantKey = participant.getKeyPairAsJwk();
         var key = KeyDescriptor.Builder.newInstance()
@@ -92,10 +94,10 @@ public class DcpHelperFunctions {
         var service = new Service();
         service.setId("#credential-service");
         service.setType("CredentialService");
-        service.setServiceEndpoint(identityHubParticipant.getResolutionApi() + "/v1/participants/" + toBase64(participant.getDid()));
+        service.setServiceEndpoint(identityHubParticipant.getResolutionApi() + "/v1/participants/" + participant.getParticipantContextId());
 
         var participantManifest = ParticipantManifest.Builder.newInstance()
-                .participantContextId(participant.getDid())
+                .participantContextId(participant.getParticipantContextId())
                 .did(participant.getDid())
                 .key(key)
                 .serviceEndpoint(service)

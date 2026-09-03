@@ -207,18 +207,6 @@ services:
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
-      - tx.edc.postgresql.migration.asset.enabled=false
-      - tx.edc.postgresql.migration.agreementbpns.enabled=false
-      - tx.edc.postgresql.migration.bpn.enabled=false
-      - tx.edc.postgresql.migration.contractdefinition.enabled=false
-      - tx.edc.postgresql.migration.contractnegotiation.enabled=false
-      - tx.edc.postgresql.migration.dataplaneinstance.enabled=false
-      - tx.edc.postgresql.migration.edr.enabled=false
-      - tx.edc.postgresql.migration.federatedcatalog.enabled=false
-      - tx.edc.postgresql.migration.jti-validation.enabled=false
-      - tx.edc.postgresql.migration.policy-monitor.enabled=false
-      - tx.edc.postgresql.migration.policy.enabled=false
-      - tx.edc.postgresql.migration.transferprocess.enabled=false
       - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=consumersecret
@@ -315,18 +303,6 @@ services:
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
-      - tx.edc.postgresql.migration.asset.enabled=false
-      - tx.edc.postgresql.migration.agreementbpns.enabled=false
-      - tx.edc.postgresql.migration.bpn.enabled=false
-      - tx.edc.postgresql.migration.contractdefinition.enabled=false
-      - tx.edc.postgresql.migration.contractnegotiation.enabled=false
-      - tx.edc.postgresql.migration.dataplaneinstance.enabled=false
-      - tx.edc.postgresql.migration.edr.enabled=false
-      - tx.edc.postgresql.migration.federatedcatalog.enabled=false
-      - tx.edc.postgresql.migration.jti-validation.enabled=false
-      - tx.edc.postgresql.migration.policy-monitor.enabled=false
-      - tx.edc.postgresql.migration.policy.enabled=false
-      - tx.edc.postgresql.migration.transferprocess.enabled=false
       - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=providersecret

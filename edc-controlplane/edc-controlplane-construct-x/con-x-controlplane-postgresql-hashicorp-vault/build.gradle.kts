@@ -25,9 +25,10 @@ plugins {
     alias(libs.plugins.shadow)
 }
 
+val edcVersion = project.property("con-x-edcVersion") as String
+val txVersion = project.property("version") as String
+
 dependencies {
-    val edcVersion = "0.15.1"
-    val txVersion = "0.12.0"
     implementation("org.eclipse.edc:controlplane-dcp-bom:$edcVersion")
     implementation("org.eclipse.edc:controlplane-feature-sql-bom:$edcVersion")
 
@@ -35,7 +36,9 @@ dependencies {
 
     implementation("org.eclipse.tractusx.edc:agreements:$txVersion")
     implementation("org.eclipse.tractusx.edc:retirement-evaluation-store-sql:$txVersion")
-    implementation("org.eclipse.tractusx.edc:control-plane-migration:$txVersion")
+    implementation(project(":edc-extensions:agreements:retirement-evaluation-bootstrapping"))
+    implementation("org.eclipse.tractusx.edc:tx-dcp:$txVersion")
+
     implementation(project(":edc-extensions:basic-abac"))
 }
 
