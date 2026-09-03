@@ -21,7 +21,7 @@ plugins {
 
 repositories { mavenCentral() }
 
-val edcVersion = "0.15.1"
+val edcVersion = project.property("con-x-edcVersion") as String
 
 dependencies {
     implementation("org.eclipse.edc:core-spi:${edcVersion}")
