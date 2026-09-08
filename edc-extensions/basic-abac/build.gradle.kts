@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2026 Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+plugins {
+    id("java")
+    id("application")
+}
+
+repositories { mavenCentral() }
+
+val edcVersion = project.property("con-x-edcVersion") as String
+
+dependencies {
+    implementation("org.eclipse.edc:core-spi:${edcVersion}")
+    implementation("org.eclipse.edc:policy-engine-spi:${edcVersion}")
+    implementation("org.eclipse.edc:policy-spi:${edcVersion}")
+    implementation("org.eclipse.edc:participant-spi:${edcVersion}")
+    implementation("org.eclipse.edc:request-policy-context-spi:${edcVersion}")
+    implementation("org.eclipse.edc:catalog-spi:${edcVersion}")
+    implementation("org.eclipse.edc:contract-spi:${edcVersion}")
+    implementation("org.eclipse.edc:verifiable-credentials-spi:${edcVersion}")
+
+    testImplementation("org.eclipse.edc:junit:${edcVersion}") {
+        exclude(group = "org.junit.jupiter")
+        exclude(group = "org.junit.platform")
+        exclude(group = "org.junit")
+    }
+}
+

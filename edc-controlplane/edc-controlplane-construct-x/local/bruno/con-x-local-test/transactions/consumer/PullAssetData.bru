@@ -11,7 +11,7 @@ get {
 }
 
 script:pre-request {
-  req.setHeader("Authorization", bru.getEnvVar("pullSecret"));
+  req.setHeader("Authorization", bru.getVar("pullSecret"));
 }
 
 settings {

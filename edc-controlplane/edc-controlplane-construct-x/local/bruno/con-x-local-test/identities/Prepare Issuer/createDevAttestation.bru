@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/attestations
+  url: {{ISSUER_ISS_API}}/v1beta/participants/{{ISS_PART_CONT}}/attestations
   body: json
   auth: none
 }
@@ -19,26 +19,8 @@ body:json {
     "attestationType": "dev",
     "id": "dev-def-1",
     "configuration": {
-      "{{CONS_ID}}": {
-        "isConsumer": true,
-        "isProvider": false,
-        "foo": {
-          "bar": 123
-        }
-      },
-      "{{PROV_ID}}": {
-        "isConsumer": false,
-        "isProvider": true,
-        "foo": {
-          "bar": 789
-        }
-      },
       "default": {
-        "isConsumer": false,
-        "isProvider": false,
-        "foo": {
-          "bar": 0
-        }
+        "isMember": true
       },
       "blackList": []
     }
@@ -46,7 +28,7 @@ body:json {
 }
 
 script:pre-request {
-  req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
+  req.setHeader("x-api-key", bru.getVar("ISSUER_APIKEY"));
 }
 
 settings {

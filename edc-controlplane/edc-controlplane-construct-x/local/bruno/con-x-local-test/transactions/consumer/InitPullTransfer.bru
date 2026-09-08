@@ -26,7 +26,7 @@ body:json {
 
 script:post-response {
   const transferId = res.getBody()['@id'];
-  bru.setEnvVar("transferId", transferId);
+  bru.setVar("transferId", transferId);
 }
 
 settings {

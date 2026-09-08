@@ -28,9 +28,10 @@ body:json {
       "@context": "http://www.w3.org/ns/odrl.jsonld",
       "@id": "{{offerId}}",
       "@type": "Offer",
+      "permission": {{catalogPermission}},
       "assigner": "{{PROV_ID}}",
       "assignee": "{{CONS_ID}}",
-      "target": "assetId"
+      "target": "{{TARGET_ASSET_ID}}"
     }
   }
 }
@@ -38,7 +39,7 @@ body:json {
 script:post-response {
   var x = res.getBody()['@id'];
   console.log("id " + x);
-  bru.setEnvVar("negotiation-id", res.getBody()['@id']);
+  bru.setVar("negotiation-id", res.getBody()['@id']);
 }
 
 settings {
