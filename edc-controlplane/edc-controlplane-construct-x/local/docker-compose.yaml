@@ -207,7 +207,7 @@ services:
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
+      - edc.iam.trustedissuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=consumersecret
       - edc.iam.credential.revocation.mimetype=application/json
@@ -303,7 +303,7 @@ services:
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
+      - edc.iam.trustedissuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=providersecret
       - edc.iam.credential.revocation.mimetype=application/json
