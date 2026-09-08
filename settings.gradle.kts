@@ -111,6 +111,8 @@ include(":edc-extensions:agreements:retirement-evaluation-spi")
 include(":edc-extensions:agreements:retirement-evaluation-store-sql")
 include(":edc-extensions:agreements:retirement-evaluation-bootstrapping")
 
+include(":edc-extensions:dynamic-issuers")
+
 // extensions - data plane
 include(":edc-extensions:dataplane:dataplane-proxy:edc-dataplane-proxy-consumer-api")
 include(":edc-extensions:dataplane:dataplane-util")

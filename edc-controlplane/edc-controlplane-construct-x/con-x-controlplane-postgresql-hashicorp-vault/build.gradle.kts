@@ -38,6 +38,7 @@ dependencies {
     implementation("org.eclipse.tractusx.edc:retirement-evaluation-store-sql:$txVersion")
     implementation(project(":edc-extensions:agreements:retirement-evaluation-bootstrapping"))
     implementation("org.eclipse.tractusx.edc:tx-dcp:$txVersion")
+    implementation(project(":edc-extensions:dynamic-issuers"))
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
