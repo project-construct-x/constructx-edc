@@ -21,7 +21,6 @@ package org.eclipse.tractusx.edc.vault.memory;
 
 import org.eclipse.edc.participantcontext.single.spi.SingleParticipantContextSupplier;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
-import org.eclipse.edc.runtime.metamodel.annotation.BaseExtension;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -29,16 +28,20 @@ import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
-import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
 import java.util.stream.Stream;
 
 @Extension(value = "Vault seed extension: adds secrets to the vault", categories = { "vault", "security" })
-@BaseExtension
 public class VaultSeedExtension implements ServiceExtension {
 
-    @Setting(value = "Secrets with which the vault gets initially populated. Specify as comma-separated list of key:secret pairs.")
-    public static final String VAULT_MEMORY_SECRETS_PROPERTY = "tx.edc.vault.secrets";
+    static final String VAULT_MEMORY_SECRETS_PROPERTY = "tx.edc.vault.secrets";
+
+    @Setting(
+            key = VAULT_MEMORY_SECRETS_PROPERTY,
+            description = "Secrets with which the vault gets initially populated. Specify as comma-separated list of key:secret pairs.",
+            required = false)
+    private String seedSecrets;
+
     public static final String NAME = "Vault Seed Extension";
 
     @Inject
@@ -52,9 +55,8 @@ public class VaultSeedExtension implements ServiceExtension {
     }
 
     @Provider
-    public Vault createInMemVault(ServiceExtensionContext context) {
+    public Vault createInMemVault() {
 
-        var seedSecrets = context.getSetting(VAULT_MEMORY_SECRETS_PROPERTY, null);
         if (seedSecrets != null) {
             singleParticipantContextSupplier.get().map(ParticipantContext::getParticipantContextId)
                             .onSuccess(participantContextId -> {

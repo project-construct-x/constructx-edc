@@ -1,2 +1,2 @@
-FROM postgres:18.3
+FROM postgres:18.6
 USER "Dummy"

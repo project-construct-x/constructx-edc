@@ -24,7 +24,6 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
-import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
@@ -39,8 +38,10 @@ public class SqlAgreementsBpnsStoreExtension implements ServiceExtension {
 
     protected static final String NAME = "SQL Agreement BPNs Store.";
 
-    @Setting(description = "Datasource name for the SQL AgreementsBpns store", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE)
     private static final String DATASOURCE_SETTING_NAME = "edc.sql.store.contractnegotiation.datasource";
+
+    @Setting(key = DATASOURCE_SETTING_NAME, description = "Datasource name for the SQL AgreementsBpns store", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE)
+    private String dataSourceName;
 
     @Inject
     private DataSourceRegistry dataSourceRegistry;
@@ -58,8 +59,7 @@ public class SqlAgreementsBpnsStoreExtension implements ServiceExtension {
     private SqlAgreementsBpnsStatements statements;
 
     @Provider
-    public AgreementsBpnsStore sqlStore(ServiceExtensionContext context) {
-        var dataSourceName = context.getConfig().getString(DATASOURCE_SETTING_NAME, DataSourceRegistry.DEFAULT_DATASOURCE);
+    public AgreementsBpnsStore sqlStore() {
         return new SqlAgreementsBpnsStore(dataSourceRegistry, dataSourceName, transactionContext,
                 typeManager.getMapper(), queryExecutor, getStatements());
     }

@@ -32,7 +32,7 @@ dependencies {
     api(libs.edc.spi.http)
     api(libs.edc.spi.jsonld)
     api(libs.edc.spi.controlplane)
-    api(libs.dsp.spi.v08)
+    api(project(":spi:dsp-spi-08"))
     api(libs.dsp.spi.v2025)
     api(libs.edc.spi.identity.did)
 
@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.edc.lib.validator)
     implementation(libs.edc.lib.util)
     implementation(libs.edc.boot)
+    implementation(libs.edc.api.core)
     implementation(libs.edc.api.management.config)
     implementation(libs.jakarta.rsApi)
 

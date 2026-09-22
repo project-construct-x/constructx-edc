@@ -60,6 +60,7 @@ public class IdentityHubParticipant {
         settings.put("web.http.did.path", didApi.get().getPath());
         settings.put("edc.iam.did.web.use.https", "false");
         settings.put("edc.api.accounts.key", "password");
+        settings.put("edc.encryption.strict", "false");
 
         return ConfigFactory.fromMap(settings);
     }
@@ -69,12 +70,16 @@ public class IdentityHubParticipant {
     }
 
     public URI getResolutionApi() {
-        return credentialsApi.get();
+        return URI.create(credentialsApi.get().toString());
     }
 
     public String didFor(String participantId) {
         var didUri = didApi.get();
         return "did:web:" + URLEncoder.encode(didUri.getHost() + ":" + didUri.getPort(), StandardCharsets.UTF_8) + ":" + participantId;
+    }
+
+    public String bpnFor(String participant) {
+        return "BPNL0" + participant;
     }
 
     public static class Builder {

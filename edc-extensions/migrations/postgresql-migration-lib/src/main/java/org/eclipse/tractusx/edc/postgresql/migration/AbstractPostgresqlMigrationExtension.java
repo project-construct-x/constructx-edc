@@ -20,7 +20,10 @@
 
 package org.eclipse.tractusx.edc.postgresql.migration;
 
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
+import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -29,7 +32,9 @@ import org.eclipse.edc.sql.datasource.ConnectionFactoryDataSource;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.flywaydb.core.api.output.MigrateResult;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Supplier;
 
@@ -45,13 +50,19 @@ import static org.flywaydb.core.api.MigrationVersion.LATEST;
 @Deprecated(since = "0.12.0")
 public abstract class AbstractPostgresqlMigrationExtension implements ServiceExtension {
 
-    private static final String DEFAULT_MIGRATION_ENABLED_TEMPLATE = "true";
-    @Setting(value = "Enable/disables subsystem schema migration", defaultValue = DEFAULT_MIGRATION_ENABLED_TEMPLATE, type = "boolean")
-    private static final String MIGRATION_ENABLED_TEMPLATE = "tx.edc.postgresql.migration.%s.enabled";
+    private static final Boolean DEFAULT_MIGRATION_ENABLED_VALUE = true;
+    private static final String MIGRATION_ENABLED_PREFIX = "tx.edc.postgresql.migration";
+    private static final String MIGRATION_ENABLED_PROPERTY = "enabled";
+
+    @SettingContext(MIGRATION_ENABLED_PREFIX)
+    @Configuration
+    private Map<String, MigrationSetting> migrationEnablement;
 
     private static final String DEFAULT_MIGRATION_SCHEMA = "public";
-    @Setting(value = "Schema used for the migration", defaultValue = DEFAULT_MIGRATION_SCHEMA)
     private static final String MIGRATION_SCHEMA = "tx.edc.postgresql.migration.schema";
+
+    @Setting(key = MIGRATION_SCHEMA, description = "Schema used for the migration", defaultValue = DEFAULT_MIGRATION_SCHEMA)
+    private String defaultSchema;
 
     private Supplier<MigrateResult> migrationExecutor;
     private boolean enabled;
@@ -66,7 +77,10 @@ public abstract class AbstractPostgresqlMigrationExtension implements ServiceExt
         var config = context.getConfig();
 
         var subSystemName = Objects.requireNonNull(getSubsystemName());
-        enabled = config.getBoolean(MIGRATION_ENABLED_TEMPLATE.formatted(subSystemName), Boolean.valueOf(DEFAULT_MIGRATION_ENABLED_TEMPLATE));
+        enabled = Optional.ofNullable(migrationEnablement)
+                .map(m -> m.get(subSystemName))
+                .map(MigrationSetting::enabled)
+                .orElse(DEFAULT_MIGRATION_ENABLED_VALUE);
 
         if (!enabled) {
             context.getMonitor().info("Migration for subsystem %s disabled".formatted(subSystemName));
@@ -83,7 +97,6 @@ public abstract class AbstractPostgresqlMigrationExtension implements ServiceExt
         jdbcProperties.putAll(datasourceConfig.getRelativeEntries());
         var driverManagerConnectionFactory = new DriverManagerConnectionFactory();
         var dataSource = new ConnectionFactoryDataSource(driverManagerConnectionFactory, jdbcUrl, jdbcProperties);
-        var defaultSchema = config.getString(MIGRATION_SCHEMA, DEFAULT_MIGRATION_SCHEMA);
 
         migrationExecutor = () -> FlywayManager.migrate(dataSource, getMigrationSubsystem(), defaultSchema, LATEST);
     }
@@ -110,4 +123,12 @@ public abstract class AbstractPostgresqlMigrationExtension implements ServiceExt
         return getSubsystemName();
     }
 
+    @Settings
+    private record MigrationSetting(
+            @Setting(
+                    key = MIGRATION_ENABLED_PROPERTY,
+                    description = "Enable/disables subsystem schema migration"
+            )
+            Boolean enabled
+    ) {}
 }
