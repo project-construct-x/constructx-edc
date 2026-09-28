@@ -43,11 +43,14 @@ dependencies {
     // Catena-X ODRL policy functions. Required so the control plane knows the left operands
     // (Membership, UsagePurpose, FrameworkAgreement, ...) emitted by the Construct-X Policy Hub.
     // Without them edc.policy.validation.enabled=true already rejects the policy on creation.
-    implementation("org.eclipse.tractusx.edc:cx-policy:$txVersion")
+    // Local project dependency (not the Maven artifact): cx-policy carries a Construct-X-local
+    // patch (DataUsageStartDate support) on top of the vendored tractusx-edc 0.12.0 source, so
+    // it must be compiled from edc-extensions/cx-policy, matching edc-controlplane-base's wiring.
+    implementation(project(":edc-extensions:cx-policy"))
     // CxPolicyExtension injects BusinessPartnerStore (in-mem default) and BdrsClient; both are
     // mandatory injects, so the runtime does not boot without these two.
-    implementation("org.eclipse.tractusx.edc:bpn-validation-core:$txVersion")
-    implementation("org.eclipse.tractusx.edc:bdrs-client:$txVersion")
+    implementation(project(":edc-extensions:bpn-validation"))
+    implementation(project(":edc-extensions:bdrs-client"))
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
