@@ -201,6 +201,12 @@ public class CxPolicyExtension implements ServiceExtension {
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class,
                 withCxPolicyNsPrefix(CONTRACT_REFERENCE), new ContractReferenceConstraintFunction<>());
 
+        // Construct-X fix: USAGE_PURPOSE is bound to CATALOG_SCOPE below (pre-existing, upstream)
+        // but had no registered function for CatalogPolicyContext. Building a catalog for an
+        // offer whose policy carries a UsagePurpose constraint then throws a NullPointerException
+        // in Constraint.accept(), because the engine finds a scope binding but no evaluator.
+        engine.registerFunction(CatalogPolicyContext.class, Permission.class,
+                withCxPolicyNsPrefix(USAGE_PURPOSE), new UsagePurposeConstraintFunction<>());
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class,
                 withCxPolicyNsPrefix(USAGE_PURPOSE), new UsagePurposeConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class,

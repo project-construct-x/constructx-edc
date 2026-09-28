@@ -99,37 +99,77 @@ control plane, using the Hub's own unmodified ODRL output:
   constraint that uses values cx-policy actually accepts (see the two limitations below — the
   Policy Hub's own example values do not qualify).
 
+## UsagePurpose on ACCESS policies + Construct-X use cases
+
+The Policy Hub's `USE_CASE` constraint maps to `UsagePurpose`, and its own `PolicyValidator`
+allows `USE_CASE` on both `ACCESS` and `CONTRACT` category policies. Upstream cx-policy only
+allowed `UsagePurpose` on `CONTRACT` (usage) policies, and only accepted ~29 real, standardized
+Catena-X identifiers (`cx.core.industrycore:1`, `cx.pcf.base:1`, ...) — none of which match the
+Construct-X Policy Hub's own, closed use-case catalog
+(`UC.bim-coordination`, `UC.quality-assurance`, `UC.material-testing`, `UC.site-documentation`,
+`UC.geodata`, see the hub frontend's `use-case-options.data.ts`). Fixed as a further
+Construct-X-local patch to `edc-extensions/cx-policy`:
+
+1. Added `UsagePurpose` to `ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS`.
+2. Added the hub's 5 `UC.*` values to `UsagePurposeConstraintFunction`'s allowed value set,
+   alongside the real Catena-X identifiers.
+
+**A second, more severe bug was uncovered while verifying this**, entirely independent of the
+above and not previously exercised by anything in this repo: `UsagePurpose` is bound to
+`CATALOG_SCOPE` in `CxPolicyExtension.registerBindings()` (pre-existing, unmodified), but had
+**no registered `AtomicConstraintRuleFunction` for `CatalogPolicyContext`** at all (also
+pre-existing). Building a catalog for *any* offer whose policy carries a `UsagePurpose`
+constraint — `ACCESS` or `CONTRACT`, regardless of this fix — throws
+`NullPointerException: Cannot invoke "Boolean.booleanValue()" because the return value of
+"Constraint.accept(Constraint$Visitor)" is null`, surfacing as a 502 on `POST
+/v3/catalog/request` and taking down catalog generation for the whole contract definition, not
+just the one offer. Fixed by additionally registering `UsagePurposeConstraintFunction` for
+`CatalogPolicyContext` (mirroring how `MembershipCredentialConstraintFunction` /
+`FrameworkAgreementConstraintFunction` already are). Verified end-to-end (catalog → negotiation
+→ transfer, `FINALIZED`) for an `ACCESS`-category policy with only a `UsagePurpose` constraint,
+using the hub's own unmodified ODRL output.
+
+Note that `UsagePurposeConstraintFunction` is a placeholder (see its own class Javadoc):
+`evaluate()` always returns `true`. The value-list check above only applies once, at policy
+*creation* time; it is not re-checked during negotiation or transfer.
+
 ## Known limitations (not fixed, phased approach)
 
-Two further issues were found in cx-policy 0.12.0 while verifying `DATE_RANGE`. Both are
-independent of `DATE_RANGE`/`DataUsageStartDate` and are **not** part of the fix above:
+Found in cx-policy 0.12.0 while verifying `DATE_RANGE` and `UsagePurpose`. All are independent
+of the fixes above and **not** part of them:
 
 1. **`UsagePolicyValidator` requires ALL of `FrameworkAgreement`/`UsagePurpose`, not "at least
    one".** `PermissionContainsRequiredConstraints` fails if *either* is missing from a
    `CONTRACT`-category permission, even though its own error message reads "must include at
    least the following constraints". A `CONTRACT` policy with only `FrameworkAgreement` (no
    `UsagePurpose`), or vice versa, is therefore always rejected — regardless of `DATE_RANGE`.
-2. **`FrameworkAgreementConstraintFunction`/`UsagePurposeConstraintFunction` accept only a
-   closed, hardcoded set of real Catena-X identifiers** (e.g. exactly
-   `"DataExchangeGovernance:1.0"` for framework agreements; a fixed list of ~29 `cx.*` usage
-   purpose IDs). The Policy Hub's own example/seed values (`"DataExchangeGovernance"`,
-   `"UC.quality-assurance"`, `"UC.material-testing"`) match none of these and are always
-   rejected.
+2. **`FrameworkAgreementConstraintFunction` accepts only a single, hardcoded value**,
+   `"DataExchangeGovernance:1.0"`. The Policy Hub's own canonical value (see
+   `FRAMEWORK_AGREEMENT_VALUE` in `use-case-options.data.ts`) is `"DataExchangeGovernance"`
+   (no version) and is always rejected.
+3. **Multi-value right operands (`odrl:isAnyOf`, used by `UsagePurpose` and others) are
+   serialized as a garbled Java `toString()` dump instead of a JSON array** when read back via
+   the Management API or rendered in a DSP catalog — a pre-existing, already publicly reported
+   upstream bug
+   ([tractusx-edc#3043](https://github.com/eclipse-tractusx/tractusx-edc/issues/3043), reported
+   for `BusinessPartnerNumber`, confirmed here to also affect `UsagePurpose`). Harmless for
+   `UsagePurpose` specifically (placeholder, ignores its right operand at evaluate time), but
+   would likely break round-tripping a catalog offer into a negotiation for any constraint that
+   is actually enforced against a multi-value right operand.
 
 **Actually-verified importability of the hub's 7 seed policies** (corrected from an earlier,
-untested assumption in this file — `oeffentlicher-zugriff-projektdokumentation` and
-`zugriff-konsortium-mitglieder` were the only ones ever actually confirmed end-to-end):
+untested assumption in this file):
 
 | Seed policy | Category | Constraints | Importable? |
 |---|---|---|---|
-| `oeffentlicher-zugriff-projektdokumentation` | ACCESS | none | ✅ |
-| `zugriff-konsortium-mitglieder` | ACCESS | Membership | ✅ |
-| `baustellendaten-qualitaetspruefung` | CONTRACT | UsagePurpose | ❌ limitations 1 + 2 |
+| `oeffentlicher-zugriff-projektdokumentation` | ACCESS | none | ✅ verified end-to-end |
+| `zugriff-konsortium-mitglieder` | ACCESS | Membership | ✅ verified end-to-end |
+| `materialpruefberichte-mitglieder` | ACCESS | Membership, UsagePurpose, DATE_RANGE | ✅ import + catalog verified; negotiation not re-confirmed after a later, unrelated DCP credential-scope error in the local environment |
+| `baustellendaten-qualitaetspruefung` | CONTRACT | UsagePurpose | ❌ limitation 1 |
 | `datenaustausch-deg-rahmenvertrag` | CONTRACT | FrameworkAgreement | ❌ limitations 1 + 2 |
 | `geodaten-bis-2027` | CONTRACT | Membership, DATE_RANGE | ❌ limitation 1 (no FA/UP at all) |
 | `bim-koordination-q2-2027` | CONTRACT | Membership, FrameworkAgreement, DATE_RANGE | ❌ limitations 1 + 2 |
-| `materialpruefberichte-mitglieder` | ACCESS | Membership, UsagePurpose, DATE_RANGE | ❌ UsagePurpose is not an allowed `ACCESS` left operand at all (CONTRACT-only) |
 
-Whether to fix limitation 1 (a genuine logic bug, arguably worth reporting upstream), relax
-limitation 2 (either in cx-policy or by changing the Policy Hub's example values to real Catena-X
-identifiers), and/or allow `UsagePurpose` on `ACCESS` policies, are separate, open decisions.
+Whether to fix limitation 1 (a genuine logic bug, arguably worth reporting upstream) and/or
+relax limitation 2 (either in cx-policy or by changing the Policy Hub's example value to
+`"DataExchangeGovernance:1.0"`) are separate, open decisions.

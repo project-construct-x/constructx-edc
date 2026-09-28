@@ -108,7 +108,7 @@ class LeftOperandValidatorTest {
     @Test
     void shouldReturnFailure_whenLeftOperandNotAllowedForAccessPermissionPolicy() {
         JsonObject input = Json.createObjectBuilder()
-                .add(ID, USAGE_PURPOSE_LITERAL)
+                .add(ID, DATA_PROVISIONING_END_DURATION_LITERAL)
                 .build();
 
         ValidationResult result = validateLeftOperand(input, ACTION_ACCESS, ODRL_PERMISSION_ATTRIBUTE);

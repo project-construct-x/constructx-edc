@@ -91,9 +91,10 @@ public final class PolicyValidationConstants {
             BUSINESS_PARTNER_GROUP_LITERAL,
             BUSINESS_PARTNER_NUMBER_LITERAL,
             INFORCE_POLICY_LITERAL,
-            // Construct-X addition: upstream only allows these two on CONTRACT (usage) policies.
+            // Construct-X additions: upstream only allows these on CONTRACT (usage) policies.
             DATA_USAGE_START_DATE_LITERAL,
-            DATA_USAGE_END_DATE_LITERAL
+            DATA_USAGE_END_DATE_LITERAL,
+            USAGE_PURPOSE_LITERAL
     );
     public static final Set<String> ACCESS_PROHIBITION_POLICY_ALLOWED_LEFT_OPERANDS = Set.of();
     public static final Set<String> ACCESS_OBLIGATION_POLICY_ALLOWED_LEFT_OPERANDS = Set.of();

@@ -44,6 +44,8 @@ import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConst
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.BUSINESS_PARTNER_GROUP_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.BUSINESS_PARTNER_NUMBER_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.DATA_PROVISIONING_END_DURATION_LITERAL;
+import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.DATA_USAGE_END_DATE_LITERAL;
+import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.DATA_USAGE_START_DATE_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.FRAMEWORK_AGREEMENT_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.MEMBERSHIP_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.USAGE_PURPOSE_LITERAL;
@@ -130,7 +132,10 @@ class AtomicConstraintValidatorTest {
             FRAMEWORK_AGREEMENT_LITERAL,
             MEMBERSHIP_LITERAL,
             BUSINESS_PARTNER_GROUP_LITERAL,
-            BUSINESS_PARTNER_NUMBER_LITERAL
+            BUSINESS_PARTNER_NUMBER_LITERAL,
+            DATA_USAGE_START_DATE_LITERAL,
+            DATA_USAGE_END_DATE_LITERAL,
+            USAGE_PURPOSE_LITERAL
     })
     void validate_shouldSucceed_whenValidAccessPolicyLeftOperand(String leftOperand) {
         var constraint = atomicConstraint(leftOperand);
@@ -156,13 +161,13 @@ class AtomicConstraintValidatorTest {
 
     @Test
     void validate_shouldFail_whenInvalidLeftOperandForAccessPolicy() {
-        var constraint = atomicConstraint(USAGE_PURPOSE_LITERAL);
+        var constraint = atomicConstraint(DATA_PROVISIONING_END_DURATION_LITERAL);
 
         ValidationResult result = accessPolicyValidator.validate(constraint);
 
         assertThat(result).isFailed();
         FailureAssert.assertThat(result.getFailure()).messages().anyMatch(msg ->
-                msg.contains("UsagePurpose") && msg.contains("not allowed"));
+                msg.contains("DataProvisioningEndDurationDays") && msg.contains("not allowed"));
     }
 
     @Test
