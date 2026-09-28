@@ -26,7 +26,6 @@ import org.eclipse.edc.validator.jsonobject.JsonLdPath;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 
-import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OBLIGATION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PERMISSION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PROHIBITION_ATTRIBUTE;
@@ -74,9 +73,11 @@ public class AtLeastOneRuleExists implements Validator<JsonObject> {
         if (array.isEmpty()) {
             return false;
         }
-        return array.stream()
-                .filter(v -> v.getValueType() == JsonValue.ValueType.OBJECT)
-                .map(v -> (JsonObject) v)
-                .anyMatch(obj -> obj.containsKey(ODRL_CONSTRAINT_ATTRIBUTE));
+        // Construct-X fix: this previously also required at least one entry to carry a
+        // constraint, even though an unconditional rule (e.g. a permission with only an action
+        // and no constraint - "no restrictions") is valid ODRL and must count as a rule too, per
+        // this class's own stated purpose ("at least one permission, obligation, or prohibition",
+        // no mention of constraints).
+        return array.stream().anyMatch(v -> v.getValueType() == JsonValue.ValueType.OBJECT);
     }
 }

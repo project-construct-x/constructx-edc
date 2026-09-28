@@ -153,25 +153,67 @@ of a hardcoded string comparison, for both the new and legacy left-operand notat
 the hub's exact `{"leftOperand": "...FrameworkAgreement", "operator": "eq", "rightOperand":
 "DataExchangeGovernance"}` now imports successfully as an `ACCESS` policy.
 
-## Known limitations (not fixed, phased approach)
+## `UsagePolicyValidator`: "at least one" actually meant "all"
 
-Found in cx-policy 0.12.0 while verifying `DATE_RANGE`, `UsagePurpose` and `FrameworkAgreement`.
-Both are independent of the fixes above and **not** part of them:
+`PermissionContainsRequiredConstraints` required **every** entry of
+`{FrameworkAgreement, UsagePurpose}` to be present on a `CONTRACT`-category permission, even
+though its own failure message already read "must include at least the following constraints".
+A `CONTRACT` policy with only `FrameworkAgreement` (no `UsagePurpose`), or vice versa, was
+therefore always rejected — independent of `DATE_RANGE` and of the two fixes above. Root cause:
+the check iterated the whole required set and failed if it found *any* missing entry, instead of
+succeeding as soon as it found *any* present entry.
 
-1. **`UsagePolicyValidator` requires ALL of `FrameworkAgreement`/`UsagePurpose`, not "at least
-   one".** `PermissionContainsRequiredConstraints` fails if *either* is missing from a
-   `CONTRACT`-category permission, even though its own error message reads "must include at
-   least the following constraints". A `CONTRACT` policy with only `FrameworkAgreement` (no
-   `UsagePurpose`), or vice versa, is therefore always rejected — regardless of `DATE_RANGE`.
-2. **Multi-value right operands (`odrl:isAnyOf`, used by `UsagePurpose` and others) are
-   serialized as a garbled Java `toString()` dump instead of a JSON array** when read back via
-   the Management API or rendered in a DSP catalog — a pre-existing, already publicly reported
-   upstream bug
-   ([tractusx-edc#3043](https://github.com/eclipse-tractusx/tractusx-edc/issues/3043), reported
-   for `BusinessPartnerNumber`, confirmed here to also affect `UsagePurpose`). Harmless for
-   `UsagePurpose` specifically (placeholder, ignores its right operand at evaluate time), but
-   would likely break round-tripping a catalog offer into a negotiation for any constraint that
-   is actually enforced against a multi-value right operand.
+Fixed by inverting the check to genuine "at least one of" semantics (`anyMatch` instead of
+`filter(...).findFirst()`), and reworded the message to match what it now actually enforces
+("must include **at least one of**..."). No test previously covered the specific
+"exactly one of the two present" case — the existing failure-path test only exercised "neither
+present", which is correct under both the old and the new logic and would not have caught this.
+
+Verified end-to-end against the Policy Hub's own unmodified seed policies: 3 of the 4 previously
+blocked `CONTRACT`-category policies now import (and, spot-checked for one of them, generate a
+working catalog) exactly because they carry at least one of `FrameworkAgreement`/`UsagePurpose`.
+
+## Constraint-free `CONTRACT` policies ("no restrictions", `CONTRACT` equivalent)
+
+The Policy Hub can produce a `CONTRACT`-category policy with zero constraints at all — the
+`odrl:use` counterpart of the constraint-free `ACCESS` policy
+(`oeffentlicher-zugriff-projektdokumentation`), which already worked from the start. This was
+blocked by two separate issues, both now fixed:
+
+1. **`AtLeastOneRuleExists` required a `constraint` key to be present**, even though its own
+   class Javadoc states its only job is checking for "at least one permission, obligation, or
+   prohibition" — no mention of constraints. An unconditional permission (action only, no
+   constraint) is valid ODRL and a real shape the Policy Hub produces
+   (`@JsonInclude(NON_NULL)` omits a `null` constraint entirely), but was wrongly rejected as "no
+   rule exists at all". No test caught this because this module's own test fixtures
+   (`rule()`/`policy()`) always emit a `constraint` key, at worst as an empty array — they cannot
+   construct the exact "key absent" shape the real system produces. Fixed by dropping the
+   constraint requirement from the check, matching its documented purpose.
+2. **`PermissionContainsRequiredConstraints` (see above) applied even when a permission had no
+   constraints at all**, forcing every `CONTRACT` policy to carry a `FrameworkAgreement` or
+   `UsagePurpose` even when it imposes no conditions whatsoever. There is nothing to anchor a
+   framework agreement or usage purpose to on an unconditional permission, so — on explicit
+   request — the check is now skipped entirely once a permission carries no constraints (an
+   empty `constraint` array is treated the same as an absent key). It still applies, unchanged,
+   the moment *any* constraint is present.
+
+Verified end-to-end with the exact policy reported as failing
+(`{"odrl:permission": [{"odrl:action": {"@id": "odrl:use"}}], ...}`, no constraint at all):
+imports, and generates a working catalog. Confirmed as a regression check that a `CONTRACT`
+permission that *does* carry a constraint (e.g. `Membership` alone, no `FrameworkAgreement`/
+`UsagePurpose`) is still correctly rejected — the relaxation only applies to genuinely
+constraint-free permissions.
+
+## Known limitation (not fixed)
+
+**Multi-value right operands (`odrl:isAnyOf`, used by `UsagePurpose` and others) are serialized
+as a garbled Java `toString()` dump instead of a JSON array** when read back via the Management
+API or rendered in a DSP catalog — a pre-existing, already publicly reported upstream bug
+([tractusx-edc#3043](https://github.com/eclipse-tractusx/tractusx-edc/issues/3043), reported for
+`BusinessPartnerNumber`, confirmed here to also affect `UsagePurpose`). Harmless for
+`UsagePurpose` specifically (placeholder, ignores its right operand at evaluate time), but would
+likely break round-tripping a catalog offer into a negotiation for any constraint that is
+actually enforced against a multi-value right operand.
 
 **Actually-verified importability of the hub's 7 seed policies** (corrected from an earlier,
 untested assumption in this file):
@@ -181,11 +223,10 @@ untested assumption in this file):
 | `oeffentlicher-zugriff-projektdokumentation` | ACCESS | none | ✅ verified end-to-end |
 | `zugriff-konsortium-mitglieder` | ACCESS | Membership | ✅ verified end-to-end |
 | `materialpruefberichte-mitglieder` | ACCESS | Membership, UsagePurpose, DATE_RANGE | ✅ import + catalog verified; negotiation not re-confirmed after a later, unrelated DCP credential-scope error in the local environment |
-| `datenaustausch-deg-rahmenvertrag` | CONTRACT | FrameworkAgreement | ❌ limitation 1 (no UsagePurpose alongside it) |
-| `baustellendaten-qualitaetspruefung` | CONTRACT | UsagePurpose | ❌ limitation 1 (no FrameworkAgreement alongside it) |
-| `geodaten-bis-2027` | CONTRACT | Membership, DATE_RANGE | ❌ limitation 1 (neither FA nor UP at all) |
-| `bim-koordination-q2-2027` | CONTRACT | Membership, FrameworkAgreement, DATE_RANGE | ❌ limitation 1 (has FA, still missing UP) |
+| `datenaustausch-deg-rahmenvertrag` | CONTRACT | FrameworkAgreement | ✅ import + catalog verified |
+| `baustellendaten-qualitaetspruefung` | CONTRACT | UsagePurpose | ✅ import + catalog verified |
+| `bim-koordination-q2-2027` | CONTRACT | Membership, FrameworkAgreement, DATE_RANGE | ✅ import verified |
+| `geodaten-bis-2027` | CONTRACT | Membership, DATE_RANGE | ❌ **not a bug**: has neither `FrameworkAgreement` nor `UsagePurpose` at all, so it correctly fails the (now-fixed) "at least one of" check. Only fixable by giving this specific seed policy one of the two constraints, in the Policy Hub. |
 
-Every remaining ❌ has the same root cause now: limitation 1. Fixing it (a genuine logic bug in
-`UsagePolicyValidator`, arguably worth reporting upstream) would make all 7 seed policies
-importable.
+6 of 7 seed policies are now importable end-to-end. The remaining one is a data-modeling gap in
+the seed data itself, not a code defect.
