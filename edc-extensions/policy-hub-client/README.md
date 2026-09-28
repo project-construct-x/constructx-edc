@@ -133,21 +133,37 @@ Note that `UsagePurposeConstraintFunction` is a placeholder (see its own class J
 `evaluate()` always returns `true`. The value-list check above only applies once, at policy
 *creation* time; it is not re-checked during negotiation or transfer.
 
+## FrameworkAgreement without a version (`"DataExchangeGovernance"`)
+
+The Policy Hub's canonical `FrameworkAgreement` value (see `FRAMEWORK_AGREEMENT_VALUE` in
+`use-case-options.data.ts`) is `"DataExchangeGovernance"`, with no version suffix.
+`FrameworkAgreementConstraintFunction.validate()` used to accept only a single hardcoded literal,
+`"DataExchangeGovernance:1.0"` — rejecting the hub's value outright, on an `ACCESS` or `CONTRACT`
+policy alike.
+
+This was not a case of a value missing from an allow-list (like `UsagePurpose`'s Construct-X
+use cases above): the function's own class Javadoc documents the grammar as
+`FrameworkAgreement EQ subtype[:version]` with the version **optional**, and `evaluate()`'s own
+parsing (`getFilterPredicate`/`getFilterPredicateLegacy`) already handles a bare subtype with no
+version correctly — provable from the pre-existing test `evaluate_rightOperand_onlySubtype`,
+which asserts `"dataExchangeGovernance"` (no version) evaluates to `true`. `validate()` was
+simply stricter than the function it guards. Fixed by having `validate()` reuse the same
+`getFilterPredicate`/`getFilterPredicateLegacy` parsing `evaluate()` already relies on, instead
+of a hardcoded string comparison, for both the new and legacy left-operand notation. Verified:
+the hub's exact `{"leftOperand": "...FrameworkAgreement", "operator": "eq", "rightOperand":
+"DataExchangeGovernance"}` now imports successfully as an `ACCESS` policy.
+
 ## Known limitations (not fixed, phased approach)
 
-Found in cx-policy 0.12.0 while verifying `DATE_RANGE` and `UsagePurpose`. All are independent
-of the fixes above and **not** part of them:
+Found in cx-policy 0.12.0 while verifying `DATE_RANGE`, `UsagePurpose` and `FrameworkAgreement`.
+Both are independent of the fixes above and **not** part of them:
 
 1. **`UsagePolicyValidator` requires ALL of `FrameworkAgreement`/`UsagePurpose`, not "at least
    one".** `PermissionContainsRequiredConstraints` fails if *either* is missing from a
    `CONTRACT`-category permission, even though its own error message reads "must include at
    least the following constraints". A `CONTRACT` policy with only `FrameworkAgreement` (no
    `UsagePurpose`), or vice versa, is therefore always rejected — regardless of `DATE_RANGE`.
-2. **`FrameworkAgreementConstraintFunction` accepts only a single, hardcoded value**,
-   `"DataExchangeGovernance:1.0"`. The Policy Hub's own canonical value (see
-   `FRAMEWORK_AGREEMENT_VALUE` in `use-case-options.data.ts`) is `"DataExchangeGovernance"`
-   (no version) and is always rejected.
-3. **Multi-value right operands (`odrl:isAnyOf`, used by `UsagePurpose` and others) are
+2. **Multi-value right operands (`odrl:isAnyOf`, used by `UsagePurpose` and others) are
    serialized as a garbled Java `toString()` dump instead of a JSON array** when read back via
    the Management API or rendered in a DSP catalog — a pre-existing, already publicly reported
    upstream bug
@@ -165,11 +181,11 @@ untested assumption in this file):
 | `oeffentlicher-zugriff-projektdokumentation` | ACCESS | none | ✅ verified end-to-end |
 | `zugriff-konsortium-mitglieder` | ACCESS | Membership | ✅ verified end-to-end |
 | `materialpruefberichte-mitglieder` | ACCESS | Membership, UsagePurpose, DATE_RANGE | ✅ import + catalog verified; negotiation not re-confirmed after a later, unrelated DCP credential-scope error in the local environment |
-| `baustellendaten-qualitaetspruefung` | CONTRACT | UsagePurpose | ❌ limitation 1 |
-| `datenaustausch-deg-rahmenvertrag` | CONTRACT | FrameworkAgreement | ❌ limitations 1 + 2 |
-| `geodaten-bis-2027` | CONTRACT | Membership, DATE_RANGE | ❌ limitation 1 (no FA/UP at all) |
-| `bim-koordination-q2-2027` | CONTRACT | Membership, FrameworkAgreement, DATE_RANGE | ❌ limitations 1 + 2 |
+| `datenaustausch-deg-rahmenvertrag` | CONTRACT | FrameworkAgreement | ❌ limitation 1 (no UsagePurpose alongside it) |
+| `baustellendaten-qualitaetspruefung` | CONTRACT | UsagePurpose | ❌ limitation 1 (no FrameworkAgreement alongside it) |
+| `geodaten-bis-2027` | CONTRACT | Membership, DATE_RANGE | ❌ limitation 1 (neither FA nor UP at all) |
+| `bim-koordination-q2-2027` | CONTRACT | Membership, FrameworkAgreement, DATE_RANGE | ❌ limitation 1 (has FA, still missing UP) |
 
-Whether to fix limitation 1 (a genuine logic bug, arguably worth reporting upstream) and/or
-relax limitation 2 (either in cx-policy or by changing the Policy Hub's example value to
-`"DataExchangeGovernance:1.0"`) are separate, open decisions.
+Every remaining ❌ has the same root cause now: limitation 1. Fixing it (a genuine logic bug in
+`UsagePolicyValidator`, arguably worth reporting upstream) would make all 7 seed policies
+importable.

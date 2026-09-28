@@ -129,10 +129,19 @@ public class FrameworkAgreementConstraintFunction<C extends ParticipantAgentPoli
             return Result.failure("Invalid operator: this constraint only allows the following operators: %s, but received '%s'.".formatted(Operator.EQ, operator));
         }
 
-        return rightValue instanceof String s && s.equals("DataExchangeGovernance:1.0") ?
-                Result.success() :
-                Result.failure("Invalid right-operand: allowed values are '%s'."
-                        .formatted("DataExchangeGovernance:1.0"));
+        if (!(leftOperand instanceof String leftOperandValue) || !(rightValue instanceof String rightOperandValue)) {
+            return Result.failure("Both the left- and right-operand must be of type String.");
+        }
+
+        // Construct-X fix: this previously only accepted the single hardcoded value
+        // "DataExchangeGovernance:1.0", stricter than what evaluate() actually parses (see class
+        // Javadoc: "FrameworkAgreement EQ subtype[:version]", version optional). Reuses the same
+        // parsing evaluate() already relies on, for both notations, instead of duplicating it.
+        var predicateResult = leftOperandValue.startsWith(CX_POLICY_2025_09_NS + FRAMEWORK_AGREEMENT_LITERAL + ".")
+                ? getFilterPredicateLegacy(leftOperandValue, rightOperandValue) // legacy notation
+                : getFilterPredicate(rightOperandValue); // new notation
+
+        return predicateResult.succeeded() ? Result.success() : Result.failure(predicateResult.getFailureMessages());
     }
 
     @NotNull
