@@ -105,7 +105,9 @@ class PolicyHubImportServiceTest {
         var captor = ArgumentCaptor.forClass(PolicyDefinition.class);
         verify(policyDefinitionService).create(captor.capture());
         var definition = captor.getValue();
-        assertThat(definition.getId()).isEqualTo("zugriff-konsortium-mitglieder");
+        assertThat(definition.getId()).isEqualTo(HUB_POLICY_ID);
+        assertThat(definition.getPrivateProperty(PolicyHubImportService.POLICY_HUB_NAME_PROPERTY))
+                .isEqualTo("zugriff-konsortium-mitglieder");
         assertThat(definition.getParticipantContextId()).isEqualTo(PARTICIPANT_CONTEXT_ID);
 
         var permissions = definition.getPolicy().getPermissions();

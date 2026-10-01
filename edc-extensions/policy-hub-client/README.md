@@ -17,9 +17,13 @@ POST /management/v1alpha/policyhub/policies/{hubPolicyId}/import
 `hubPolicyId` is the UUID of the policy in the Policy Hub. The control plane fetches
 `GET {hub}/api/v1/policies/{hubPolicyId}/odrl`, runs the response through the same JSON-LD
 expansion, validation and transformation steps as `POST /v3/policydefinitions`, stamps the
-participant context and stores the definition. Repeating the import updates the existing
-definition (idempotent). The response is a standard `IdResponse` carrying the policy id as
-maintained in the hub (e.g. `zugriff-konsortium-mitglieder`).
+participant context and stores the definition **under that same UUID** (not the Policy Hub's own
+human-readable policy id, which the hub's ODRL rendering uses as `@id`). Repeating the import
+updates the existing definition (idempotent). The response is a standard `IdResponse` whose
+`@id` is this UUID, plus a `policyHubName` field carrying the Policy Hub's human-readable policy
+id (e.g. `zugriff-konsortium-mitglieder`) for readability. The same name is also stored on the
+`PolicyDefinition` itself, as `privateProperties.policyHubName`, so it remains visible on
+`GET /v3/policydefinitions/{id}` later too.
 
 ## Configuration
 

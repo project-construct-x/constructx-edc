@@ -19,6 +19,7 @@
 
 package org.constructx.edc.policyhub.api;
 
+import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -59,7 +60,9 @@ public class PolicyHubApiController {
      * updates the existing definition.
      *
      * @param hubPolicyId the id of the policy in the Policy Hub
-     * @return an {@link IdResponse} carrying the id of the imported policy definition
+     * @return an {@link IdResponse} carrying the id of the imported policy definition (the Policy
+     *         Hub's UUID), plus a {@code policyHubName} field carrying the Policy Hub's own
+     *         human-readable policy id
      */
     @POST
     @Path("/policies/{hubPolicyId}/import")
@@ -74,7 +77,12 @@ public class PolicyHubApiController {
                 .createdAt(definition.getCreatedAt())
                 .build();
 
-        return transformerRegistry.transform(response, JsonObject.class)
+        var json = transformerRegistry.transform(response, JsonObject.class)
                 .orElseThrow(f -> new EdcException("Error creating response body: " + f.getFailureDetail()));
+
+        var policyHubName = definition.getPrivateProperty(PolicyHubImportService.POLICY_HUB_NAME_PROPERTY);
+        return Json.createObjectBuilder(json)
+                .add(PolicyHubImportService.POLICY_HUB_NAME_PROPERTY, String.valueOf(policyHubName))
+                .build();
     }
 }

@@ -30,6 +30,7 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 
 import static org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition.EDC_POLICY_DEFINITION_TYPE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 
 /**
  * Imports ODRL policy definitions from the Construct-X Policy Hub into the local
@@ -38,6 +39,17 @@ import static org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition
  * imported policy behaves identically to one created via {@code POST /v3/policydefinitions}.
  */
 public class PolicyHubImportService {
+
+    /**
+     * Private property key under which the Policy Hub's own (human-readable) policy id is
+     * stored, since the local {@link PolicyDefinition#getId()} is set to the Policy Hub's UUID
+     * instead. Namespaced under {@code EDC_NAMESPACE} (rather than a bare "policyHubName") so it
+     * survives the JSON-LD expand/compact round trip the create/update/read paths apply to
+     * private properties - a bare, non-IRI key has no term mapping and is dropped during
+     * expansion. Because the namespace matches the response's own "@vocab", it still compacts
+     * back down to the short form "policyHubName" in the JSON output.
+     */
+    public static final String POLICY_HUB_NAME_PROPERTY = EDC_NAMESPACE + "policyHubName";
 
     private final PolicyHubClient client;
     private final JsonLd jsonLd;
@@ -98,7 +110,10 @@ public class PolicyHubImportService {
                     .formatted(hubPolicyId, transformed.getFailureDetail()));
         }
 
+        var policyHubName = transformed.getContent().getId();
         var definition = transformed.getContent().toBuilder()
+                .id(hubPolicyId)
+                .privateProperty(POLICY_HUB_NAME_PROPERTY, policyHubName)
                 .participantContextId(participantContext.getContent().getParticipantContextId())
                 .build();
 
