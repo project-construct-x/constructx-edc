@@ -24,15 +24,24 @@ body:json {
     "counterPartyAddress": "http://provider-controlplane:9020/dsp/2025-1",
     "connectorId": "{{PROV_ID}}",
     "protocol": "dataspace-protocol-http:2025-1",
-    "policy": {
-      "@context": "http://www.w3.org/ns/odrl.jsonld",
-      "@id": "{{offerId}}",
-      "@type": "Offer",
-      "assigner": "{{PROV_ID}}",
-      "assignee": "{{CONS_ID}}",
-      "target": "assetId"
-    }
+    "policy": {{negotiationPolicy}}
   }
+}
+
+script:pre-request {
+  // Use the real offer from RequestProviderCatalog (incl. permission/constraint) instead of a
+  // hand-written stub, plus the three fields ContractRequest additionally requires. Sending a
+  // policy that doesn't match the actual offer gets the agreement rejected by the consumer once
+  // the offer carries real constraints (see RequestProviderCatalog's post-response script).
+  const offerPolicy = JSON.parse(bru.getEnvVar("offerPolicy"));
+  const negotiationPolicy = {
+    ...offerPolicy,
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "assigner": bru.getEnvVar("PROV_ID"),
+    "assignee": bru.getEnvVar("CONS_ID"),
+    "target": "assetId"
+  };
+  bru.setVar("negotiationPolicy", JSON.stringify(negotiationPolicy));
 }
 
 script:post-response {
