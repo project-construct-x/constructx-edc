@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Contributors to the Eclipse Foundation
+ * Copyright (c) 2026 adesso SE. All rights reserved.
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information regarding copyright ownership.
