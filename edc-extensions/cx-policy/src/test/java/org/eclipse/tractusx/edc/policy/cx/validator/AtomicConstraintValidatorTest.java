@@ -134,8 +134,7 @@ class AtomicConstraintValidatorTest {
             BUSINESS_PARTNER_GROUP_LITERAL,
             BUSINESS_PARTNER_NUMBER_LITERAL,
             DATA_USAGE_START_DATE_LITERAL,
-            DATA_USAGE_END_DATE_LITERAL,
-            USAGE_PURPOSE_LITERAL
+            DATA_USAGE_END_DATE_LITERAL
     })
     void validate_shouldSucceed_whenValidAccessPolicyLeftOperand(String leftOperand) {
         var constraint = atomicConstraint(leftOperand);

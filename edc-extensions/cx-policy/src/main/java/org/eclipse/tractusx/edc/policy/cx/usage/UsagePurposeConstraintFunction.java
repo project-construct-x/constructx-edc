@@ -65,14 +65,7 @@ public class UsagePurposeConstraintFunction<C extends ParticipantAgentPolicyCont
                         "cx.bpdm.vas.nps.download:1",
                         "cx.ccm.base:1",
                         "cx.bpdm.poolAll:1",
-                        "cx.logistics.base:1",
-                        // Construct-X additions: the Construct-X Policy Hub's own, closed use-case
-                        // catalog (frontend use-case-options.data.ts), not part of the Catena-X list above.
-                        "UC.bim-coordination",
-                        "UC.quality-assurance",
-                        "UC.material-testing",
-                        "UC.site-documentation",
-                        "UC.geodata"
+                        "cx.logistics.base:1"
                 ),
                 true
         );
