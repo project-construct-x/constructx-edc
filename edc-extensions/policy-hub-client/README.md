@@ -179,14 +179,3 @@ code" principle. Each class carries its own comments with the exact diff against
 Note that `UsagePurposeConstraintFunction` is a placeholder (see its class Javadoc): `evaluate()`
 always returns `true`, so the value-list check above only applies at policy *creation* time, never
 during negotiation or transfer.
-
-## Known limitation (not fixed)
-
-Multi-value right operands (`odrl:isAnyOf`, used by `UsagePurpose` among others) are serialized as a
-garbled Java `toString()` dump instead of a JSON array when read back via the Management API or
-rendered in a DSP catalog — a pre-existing, publicly reported upstream bug
-([tractusx-edc#3043](https://github.com/eclipse-tractusx/tractusx-edc/issues/3043), reported for
-`BusinessPartnerNumber`, confirmed here to also affect `UsagePurpose`). Harmless for `UsagePurpose`
-specifically, since it ignores its right operand at evaluate time, but it would likely break
-round-tripping a catalog offer into a negotiation for any constraint that *is* actually enforced
-against a multi-value right operand.
