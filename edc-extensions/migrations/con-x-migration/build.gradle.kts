@@ -24,9 +24,13 @@ repositories { mavenCentral() }
 val edcVersion = project.property("con-x-edcVersion") as String
 
 dependencies {
-    implementation("org.eclipse.edc:sql-lib:${edcVersion}")
-    implementation("org.eclipse.edc:sql-bootstrapper:${edcVersion}")
     implementation("org.eclipse.edc:core-spi:${edcVersion}")
+    implementation("org.eclipse.edc:transaction-datasource-spi:${edcVersion}")
+    implementation("org.eclipse.edc:sql-lib:${edcVersion}")
+
+    val flywayVersion = "13.3.0"
+    implementation("org.flywaydb:flyway-core:${flywayVersion}")
+    implementation("org.flywaydb:flyway-database-postgresql:${flywayVersion}")
 
     testImplementation("org.eclipse.edc:junit:${edcVersion}") {
         exclude(group = "org.junit.jupiter")
@@ -34,4 +38,3 @@ dependencies {
         exclude(group = "org.junit")
     }
 }
-

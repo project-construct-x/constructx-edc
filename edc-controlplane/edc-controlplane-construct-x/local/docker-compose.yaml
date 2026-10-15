@@ -203,10 +203,11 @@ services:
 
   consumer-controlplane:
     container_name: consumer-controlplane
-    image: con-x-controlplane-postgresql-hashicorp-vault:latest
+    image: ghcr.io/project-construct-x/con-x-controlplane-postgresql-hashicorp-vault:latest
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
+      - edc.participant.context.id=my-local-consumer-context-id
       - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=consumersecret
@@ -301,10 +302,11 @@ services:
 
   provider-controlplane:
     container_name: provider-controlplane
-    image: con-x-controlplane-postgresql-hashicorp-vault:latest
+    image: ghcr.io/project-construct-x/con-x-controlplane-postgresql-hashicorp-vault:latest
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
+      - edc.participant.context.id=my-local-provider-context-id
       - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=providersecret

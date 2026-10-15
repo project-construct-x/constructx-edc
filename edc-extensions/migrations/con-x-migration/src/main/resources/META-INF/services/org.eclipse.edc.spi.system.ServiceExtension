@@ -17,4 +17,4 @@
 #  SPDX-License-Identifier: Apache-2.0
 #################################################################################
 
-de.fraunhofer.isst.edc.extension.retirement_bootstrapper.dev.AgreementRetirementBootstrappingExtension
+de.fraunhofer.isst.edc.extension.conx_migration.dev.ConstructXMigrationExtension
