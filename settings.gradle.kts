@@ -183,3 +183,5 @@ include(":edc-dataplane:edc-dataplane-hashicorp-vault")
 include(":edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-hashicorp-vault")
 include(":edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-vault")
 
+
+include("edc-extensions:migrations:con-x-migration")

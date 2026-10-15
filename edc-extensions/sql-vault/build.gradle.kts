@@ -21,7 +21,7 @@ plugins {
 
 repositories { mavenCentral() }
 
-val edcVersion = "0.17.0"
+val edcVersion = project.property("con-x-edcVersion") as String
 
 dependencies {
     implementation("org.eclipse.edc:sql-lib:${edcVersion}")
