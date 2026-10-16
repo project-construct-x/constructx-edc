@@ -29,12 +29,12 @@ import org.eclipse.edc.validator.spi.Validator;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.ALLOWED_LOGICAL_CONSTRAINTS;
-import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.NOT_ALLOWED_LOGICAL_CONSTRAINTS;
+import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.ALLOWED_LOGICAL_CONSTRAINTS;
+import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.NOT_ALLOWED_LOGICAL_CONSTRAINTS;
 
 /**
  * Construct-X copy of {@link org.eclipse.tractusx.edc.policy.cx.validator.ConstraintValidator}, routing to
- * {@link ConxLogicalConstraintValidator} and {@link ConxAtomicConstraintValidator}.
+ * {@link ConxLogicalConstraintValidator} (which allows {@code odrl:or}) and {@link ConxAtomicConstraintValidator}.
  */
 public class ConxConstraintValidator implements Validator<JsonObject> {
     private final JsonLdPath path;

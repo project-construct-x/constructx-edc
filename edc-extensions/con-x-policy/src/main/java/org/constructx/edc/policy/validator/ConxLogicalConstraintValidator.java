@@ -30,13 +30,14 @@ import org.eclipse.tractusx.edc.policy.cx.validator.TypedMandatoryArray;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.ALLOWED_LOGICAL_CONSTRAINTS;
+import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.NOT_ALLOWED_LOGICAL_CONSTRAINTS;
 import static org.eclipse.edc.validator.spi.Violation.violation;
-import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.ALLOWED_LOGICAL_CONSTRAINTS;
-import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.NOT_ALLOWED_LOGICAL_CONSTRAINTS;
 
 /**
  * Construct-X copy of {@link org.eclipse.tractusx.edc.policy.cx.validator.LogicalConstraintValidator}, delegating
- * nested constraints to {@link ConxConstraintValidator}.
+ * nested constraints to {@link ConxConstraintValidator}. Allows {@code odrl:or} in addition to {@code odrl:and}
+ * (see {@link ConxPolicyValidationConstants#ALLOWED_LOGICAL_CONSTRAINTS}).
  */
 public class ConxLogicalConstraintValidator implements Validator<JsonObject> {
     private final JsonLdPath path;

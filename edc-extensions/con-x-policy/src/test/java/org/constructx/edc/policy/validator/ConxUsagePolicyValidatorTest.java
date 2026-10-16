@@ -30,12 +30,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_ACTION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OBLIGATION_ATTRIBUTE;
+import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OR_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PERMISSION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PROHIBITION_ATTRIBUTE;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyBuilderFixtures.appendRulesToPolicy;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyBuilderFixtures.atomicConstraint;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyBuilderFixtures.emptyRule;
+import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyBuilderFixtures.logicalConstraint;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyBuilderFixtures.policy;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyBuilderFixtures.rule;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.ACTION_ACCESS;
@@ -115,6 +117,21 @@ class ConxUsagePolicyValidatorTest {
         var permission = rule(ACTION_USAGE,
                 atomicConstraint(USAGE_PURPOSE_LITERAL),
                 atomicConstraint(LIABILITY_LITERAL)
+        );
+        var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void shouldReturnSuccess_whenRequiredPermissionConstraintsCombinedWithOr() {
+        // Construct-X: odrl:or is allowed (upstream allows odrl:and only)
+        var permission = rule(ACTION_USAGE,
+                logicalConstraint(ODRL_OR_CONSTRAINT_ATTRIBUTE,
+                        atomicConstraint(FRAMEWORK_AGREEMENT_LITERAL),
+                        atomicConstraint(USAGE_PURPOSE_LITERAL))
         );
         var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
 

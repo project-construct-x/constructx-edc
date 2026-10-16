@@ -25,6 +25,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_AND_CONSTRAINT_ATTRIBUTE;
+import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_AND_SEQUENCE_CONSTRAINT_ATTRIBUTE;
+import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OR_CONSTRAINT_ATTRIBUTE;
+import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_XONE_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.CX_POLICY_2025_09_NS;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.DATA_USAGE_END_DATE_LITERAL;
 
@@ -39,6 +43,16 @@ public final class ConxPolicyValidationConstants {
     // No DataUsageStartDate exists anywhere upstream (checked up to tractusx-edc 0.13.0), added here to pair with
     // DataUsageEndDate for the Construct-X Policy Hub's DATE_RANGE constraint.
     public static final String DATA_USAGE_START_DATE_LITERAL = CX_POLICY_2025_09_NS + "DataUsageStartDate";
+
+    // Upstream only allows odrl:and; Construct-X additionally allows odrl:or.
+    public static final Set<String> ALLOWED_LOGICAL_CONSTRAINTS = Set.of(
+            ODRL_AND_CONSTRAINT_ATTRIBUTE,
+            ODRL_OR_CONSTRAINT_ATTRIBUTE
+    );
+    public static final Set<String> NOT_ALLOWED_LOGICAL_CONSTRAINTS = Set.of(
+            ODRL_XONE_CONSTRAINT_ATTRIBUTE,
+            ODRL_AND_SEQUENCE_CONSTRAINT_ATTRIBUTE
+    );
 
     // Upstream only allows DataUsageStartDate/DataUsageEndDate on CONTRACT (usage) policies.
     public static final Set<String> ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS = union(

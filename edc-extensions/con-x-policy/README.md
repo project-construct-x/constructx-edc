@@ -52,6 +52,16 @@ also needs `bpn-validation` and `bdrs-client`.
   which the hub omits (`@JsonInclude(NON_NULL)`), and the required-constraints check also applies to
   permissions that have no constraints at all. `ConxAtLeastOneRuleExists` and `ConxUsagePolicyValidator`
   relax both. The required-constraints check still applies as soon as *any* constraint is present.
+- **`odrl:or`**: upstream only allows `odrl:and` as logical constraint. Construct-X also allows `odrl:or`
+  (nesting, e.g. an `and` inside an `or`, works as well). `odrl:xone` and `odrl:andSequence` stay rejected.
+  The EDC policy engine evaluates `or` natively. Two things to keep in mind:
+  - The required-constraints and mutual-exclusion checks still collect left operands across all branches.
+    So `or(DataUsageEndDate, DataUsageEndDurationDays)` is still rejected as mutually exclusive, and a
+    `FrameworkAgreement` in any branch satisfies the "at least one of" requirement.
+  - Before evaluation, EDC drops constraints whose left operand is not bound to the current scope. A branch
+    can therefore disappear: `DataUsageStartDate`/`DataUsageEndDate` are not bound to the `catalog` and
+    `contract.negotiation` scopes, which are the only scopes that evaluate an access policy. In an access
+    policy, an `or` branch that consists only of date constraints never grants access on its own.
 
 `ConxPolicyValidationConstants` holds the Construct-X allowed left-operand sets. The remaining
 `ConxPolicyDefinitionValidator` chain (`ConxAccessPolicyValidator`, `ConxConstraintValidator`,
