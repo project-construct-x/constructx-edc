@@ -21,7 +21,6 @@
 package org.eclipse.tractusx.edc.policy.cx.framework;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
-import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.participant.spi.ParticipantAgent;
 import org.eclipse.edc.participant.spi.ParticipantAgentPolicyContext;
 import org.eclipse.edc.policy.model.Operator;
@@ -220,63 +219,6 @@ class FrameworkAgreementConstraintFunctionTest {
         assertThat(result).isTrue();
     }
 
-
-    @Nested
-    class Validate {
-        @Test
-        void validate_invalidOperator_fails() {
-            var result = function.validate(CX_POLICY_2025_09_NS + "FrameworkAgreement", Operator.HAS_PART, "dataExchangeGovernance", null);
-
-            assertThat(result.failed()).isTrue();
-            assertThat(result.getFailureDetail()).contains("Invalid operator");
-        }
-
-        @Test
-        void validate_newNotation_subtypeOnly_succeeds() {
-            // Construct-X Policy Hub emits exactly this: no version suffix. evaluate() already
-            // treats this as valid (see evaluate_rightOperand_onlySubtype above); validate() must
-            // agree, otherwise a policy that would work at negotiation/transfer time is rejected
-            // at creation.
-            var result = function.validate(CX_POLICY_2025_09_NS + "FrameworkAgreement", Operator.EQ, "DataExchangeGovernance", null);
-
-            AbstractResultAssert.assertThat(result).isSucceeded();
-        }
-
-        @Test
-        void validate_newNotation_subtypeWithVersion_succeeds() {
-            var result = function.validate(CX_POLICY_2025_09_NS + "FrameworkAgreement", Operator.EQ, "DataExchangeGovernance:1.0", null);
-
-            AbstractResultAssert.assertThat(result).isSucceeded();
-        }
-
-        @Test
-        void validate_newNotation_missingSubtype_fails() {
-            var result = function.validate(CX_POLICY_2025_09_NS + "FrameworkAgreement", Operator.EQ, ":1.0", null);
-
-            assertThat(result.failed()).isTrue();
-        }
-
-        @Test
-        void validate_legacyNotation_active_succeeds() {
-            var result = function.validate(CX_POLICY_2025_09_NS + "FrameworkAgreement.dataExchangeGovernance", Operator.EQ, "active", null);
-
-            AbstractResultAssert.assertThat(result).isSucceeded();
-        }
-
-        @Test
-        void validate_legacyNotation_activeWithVersion_succeeds() {
-            var result = function.validate(CX_POLICY_2025_09_NS + "FrameworkAgreement.dataExchangeGovernance", Operator.EQ, "active:1.0.0", null);
-
-            AbstractResultAssert.assertThat(result).isSucceeded();
-        }
-
-        @Test
-        void validate_legacyNotation_notActive_fails() {
-            var result = function.validate(CX_POLICY_2025_09_NS + "FrameworkAgreement.dataExchangeGovernance", Operator.EQ, "violates", null);
-
-            assertThat(result.failed()).isTrue();
-        }
-    }
 
     @Nested
     class LegacyLeftOperand {

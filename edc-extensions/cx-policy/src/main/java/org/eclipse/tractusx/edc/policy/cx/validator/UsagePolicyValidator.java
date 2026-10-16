@@ -20,7 +20,6 @@
 package org.eclipse.tractusx.edc.policy.cx.validator;
 
 import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
 import org.eclipse.edc.validator.jsonobject.JsonLdPath;
 import org.eclipse.edc.validator.jsonobject.JsonObjectValidator;
 import org.eclipse.edc.validator.spi.ValidationResult;
@@ -93,47 +92,12 @@ public class UsagePolicyValidator implements Validator<JsonObject> {
 
         @Override
         public ValidationResult validate(JsonObject input) {
-            // Construct-X fix: an unconditional permission (no constraints at all, e.g. "no
-            // restrictions" - the CONTRACT-category equivalent of a constraint-free ACCESS
-            // policy) has nothing to anchor a FrameworkAgreement/UsagePurpose to. The
-            // requirement only makes sense - and now only applies - once a permission actually
-            // carries constraints.
-            if (!anyPermissionHasConstraints(input)) {
-                return ValidationResult.success();
-            }
-
-            // Construct-X fix: this previously failed if ANY of requiredConstraints was missing
-            // (i.e. required ALL of them), even though the message already said "at least one
-            // of". Correct "at least one" semantics: fail only if NONE of them is present.
-            boolean hasAtLeastOneRequiredConstraint = requiredConstraints.stream()
-                    .anyMatch(encounteredConstraints::contains);
-
-            if (hasAtLeastOneRequiredConstraint) {
-                return ValidationResult.success();
-            }
-            return ValidationResult.failure(
-                    violation(String.format("Usage policy permission must include at least one of the following constraints %s", requiredConstraints.toString()), path.toString()));
-        }
-
-        private boolean anyPermissionHasConstraints(JsonObject input) {
-            if (!input.containsKey(ODRL_PERMISSION_ATTRIBUTE) ||
-                    input.get(ODRL_PERMISSION_ATTRIBUTE).getValueType() != JsonValue.ValueType.ARRAY) {
-                return false;
-            }
-            return input.getJsonArray(ODRL_PERMISSION_ATTRIBUTE).stream()
-                    .filter(v -> v.getValueType() == JsonValue.ValueType.OBJECT)
-                    .map(v -> (JsonObject) v)
-                    .anyMatch(this::hasNonEmptyConstraint);
-        }
-
-        private boolean hasNonEmptyConstraint(JsonObject permission) {
-            if (!permission.containsKey(ODRL_CONSTRAINT_ATTRIBUTE)) {
-                return false;
-            }
-            var constraint = permission.get(ODRL_CONSTRAINT_ATTRIBUTE);
-            // a JSON-LD-expanded "constraint" is array-shaped; treat an empty array the same as
-            // an absent key - test fixtures may produce one, the Policy Hub never does.
-            return constraint.getValueType() != JsonValue.ValueType.ARRAY || !constraint.asJsonArray().isEmpty();
+            return requiredConstraints.stream()
+                    .filter(constraint -> !encounteredConstraints.contains(constraint))
+                    .findFirst()
+                    .map(c -> ValidationResult.failure(
+                            violation(String.format("Usage policy permission must include at least the following constraints %s", requiredConstraints.toString()), path.toString())))
+                    .orElse(ValidationResult.success());
         }
     }
 

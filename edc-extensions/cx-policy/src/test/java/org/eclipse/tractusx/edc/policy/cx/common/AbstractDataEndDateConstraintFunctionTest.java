@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,34 +74,8 @@ public class AbstractDataEndDateConstraintFunctionTest {
     }
 
     @Test
-    void evaluate_whenBareEndDateIsInThePast_thenFalse() {
-        var pastDate = LocalDate.ofInstant(context.now(), ZoneOffset.UTC).minusDays(1).toString();
-        var result = function.evaluate(Operator.LEQ, pastDate, null, context);
-        assertThat(result).isFalse();
-    }
-
-    @Test
-    void evaluate_whenBareEndDateIsInTheFuture_thenTrue() {
-        var futureDate = LocalDate.ofInstant(context.now(), ZoneOffset.UTC).plusDays(1).toString();
-        var result = function.evaluate(Operator.LEQ, futureDate, null, context);
-        assertThat(result).isTrue();
-    }
-
-    @Test
     void validate_whenOperatorAndRightOperandAreValid_thenSuccess() {
         var result = function.validate(Operator.EQ, "2025-06-30T14:30:00Z", null);
-        AbstractResultAssert.assertThat(result).isSucceeded();
-    }
-
-    @Test
-    void validate_whenRightOperandIsBareDate_thenSuccess() {
-        var result = function.validate(Operator.LEQ, "2025-06-30", null);
-        AbstractResultAssert.assertThat(result).isSucceeded();
-    }
-
-    @Test
-    void validate_whenOperatorIsLeq_thenSuccess() {
-        var result = function.validate(Operator.LEQ, "2025-06-30T14:30:00Z", null);
         AbstractResultAssert.assertThat(result).isSucceeded();
     }
 

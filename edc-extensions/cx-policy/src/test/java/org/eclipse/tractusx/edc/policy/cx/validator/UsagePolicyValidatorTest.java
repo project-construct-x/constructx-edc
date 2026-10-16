@@ -27,7 +27,6 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_ACTION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OBLIGATION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PERMISSION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PROHIBITION_ATTRIBUTE;
@@ -77,7 +76,7 @@ class UsagePolicyValidatorTest {
     }
 
     @Test
-    void shouldReturnFailure_whenNoRequiredPermissionConstraintPresent() {
+    void shouldReturnFailure_whenAllRequiredPermissionConstraintsNotPresent() {
         var permission = rule(ACTION_USAGE,
                 atomicConstraint(LIABILITY_LITERAL),
                 atomicConstraint(WARRANTY_DEFINITION_LITERAL),
@@ -89,37 +88,9 @@ class UsagePolicyValidatorTest {
 
         assertThat(result).isFailed();
         FailureAssert.assertThat(result.getFailure()).messages().anyMatch(msg ->
-                msg.contains("Usage policy permission must include at least one of the following constraints") &&
+                msg.contains("Usage policy permission must include at least the following constraints") &&
                         msg.contains(USAGE_PURPOSE_LITERAL) &&
                         msg.contains(FRAMEWORK_AGREEMENT_LITERAL));
-    }
-
-    @Test
-    void shouldReturnSuccess_whenOnlyFrameworkAgreementOfRequiredPermissionConstraintsPresent() {
-        // Construct-X fix: "at least one of FrameworkAgreement/UsagePurpose" used to actually
-        // require BOTH, even though the failure message already said "at least one of".
-        var permission = rule(ACTION_USAGE,
-                atomicConstraint(FRAMEWORK_AGREEMENT_LITERAL),
-                atomicConstraint(LIABILITY_LITERAL)
-        );
-        var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
-
-        var result = validator.validate(input);
-
-        assertThat(result).isSucceeded();
-    }
-
-    @Test
-    void shouldReturnSuccess_whenOnlyUsagePurposeOfRequiredPermissionConstraintsPresent() {
-        var permission = rule(ACTION_USAGE,
-                atomicConstraint(USAGE_PURPOSE_LITERAL),
-                atomicConstraint(LIABILITY_LITERAL)
-        );
-        var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
-
-        var result = validator.validate(input);
-
-        assertThat(result).isSucceeded();
     }
 
     @Test
@@ -231,39 +202,6 @@ class UsagePolicyValidatorTest {
         ValidationResult result = validator.validate(input);
 
         assertThat(result).isFailed();
-    }
-
-    @Test
-    void shouldReturnSuccess_whenPermissionHasActionButNoConstraintKeyAtAll() {
-        // Construct-X fix: the Policy Hub omits the "constraint" key entirely for an
-        // unconditional permission (@JsonInclude.NON_NULL on a null constraint) - unlike this
-        // file's own rule()/emptyRule() fixtures, which always include a "constraint" array (at
-        // worst empty). This exact shape (real, valid ODRL - the CONTRACT-category equivalent of
-        // a constraint-free ACCESS policy) is now accepted end-to-end:
-        // AtLeastOneRuleExists recognizes it as a rule (no longer requires a "constraint" key),
-        // and PermissionContainsRequiredConstraints no longer demands a FrameworkAgreement/
-        // UsagePurpose anchor for a permission that carries no constraints at all.
-        JsonObject permissionWithoutConstraintKey = Json.createObjectBuilder()
-                .add(ODRL_ACTION_ATTRIBUTE, ACTION_USAGE)
-                .build();
-        JsonObject input = policy(ODRL_PERMISSION_ATTRIBUTE, permissionWithoutConstraintKey);
-
-        var result = validator.validate(input);
-
-        assertThat(result).isSucceeded();
-    }
-
-    @Test
-    void shouldReturnSuccess_whenPermissionHasEmptyConstraintArray() {
-        // Same as above, but for the "constraint": [] shape this file's own rule() fixture
-        // produces for zero constraint arguments - an empty array should be treated the same as
-        // an absent key, not as "has constraints".
-        var permission = rule(ACTION_USAGE);
-        var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
-
-        var result = validator.validate(input);
-
-        assertThat(result).isSucceeded();
     }
 
     @Test

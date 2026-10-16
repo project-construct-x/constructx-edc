@@ -50,7 +50,6 @@ import org.eclipse.tractusx.edc.policy.cx.dataprovisioning.DataProvisioningEndDu
 import org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageEndDateConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageEndDefinitionConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageEndDurationDaysConstraintFunction;
-import org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageStartDateConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.dismantler.DismantlerCredentialConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.framework.FrameworkAgreementConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.jurisdictionlocation.JurisdictionLocationConstraintFunction;
@@ -96,7 +95,6 @@ import static org.eclipse.tractusx.edc.policy.cx.dataprovisioning.DataProvisioni
 import static org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageEndDateConstraintFunction.DATA_USAGE_END_DATE;
 import static org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageEndDefinitionConstraintFunction.DATA_USAGE_END_DEFINITION;
 import static org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageEndDurationDaysConstraintFunction.DATA_USAGE_END_DURATION_DAYS;
-import static org.eclipse.tractusx.edc.policy.cx.datausage.DataUsageStartDateConstraintFunction.DATA_USAGE_START_DATE;
 import static org.eclipse.tractusx.edc.policy.cx.dismantler.DismantlerCredentialConstraintFunction.DISMANTLER_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.framework.FrameworkAgreementConstraintFunction.FRAMEWORK_AGREEMENT_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.jurisdictionlocation.JurisdictionLocationConstraintFunction.JURISDICTION_LOCATION;
@@ -201,12 +199,6 @@ public class CxPolicyExtension implements ServiceExtension {
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class,
                 withCxPolicyNsPrefix(CONTRACT_REFERENCE), new ContractReferenceConstraintFunction<>());
 
-        // Construct-X fix: USAGE_PURPOSE is bound to CATALOG_SCOPE below (pre-existing, upstream)
-        // but had no registered function for CatalogPolicyContext. Building a catalog for an
-        // offer whose policy carries a UsagePurpose constraint then throws a NullPointerException
-        // in Constraint.accept(), because the engine finds a scope binding but no evaluator.
-        engine.registerFunction(CatalogPolicyContext.class, Permission.class,
-                withCxPolicyNsPrefix(USAGE_PURPOSE), new UsagePurposeConstraintFunction<>());
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class,
                 withCxPolicyNsPrefix(USAGE_PURPOSE), new UsagePurposeConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class,
@@ -217,10 +209,6 @@ public class CxPolicyExtension implements ServiceExtension {
 
         engine.registerFunction(PolicyMonitorContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_END_DATE), new DataUsageEndDateConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_END_DATE), new DataUsageEndDateConstraintFunction<>());
-
-        // Construct-X addition: DataUsageStartDate does not exist upstream (see PolicyValidationConstants).
-        engine.registerFunction(PolicyMonitorContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_START_DATE), new DataUsageStartDateConstraintFunction<>());
-        engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_START_DATE), new DataUsageStartDateConstraintFunction<>());
 
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_END_DEFINITION), new DataUsageEndDefinitionConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_END_DEFINITION), new DataUsageEndDefinitionConstraintFunction<>());
@@ -346,7 +334,6 @@ public class CxPolicyExtension implements ServiceExtension {
                 withCxPolicyNsPrefix(AFFILIATES_BPNL),
                 withCxPolicyNsPrefix(AFFILIATES_REGION),
                 withCxPolicyNsPrefix(DATA_FREQUENCY),
-                withCxPolicyNsPrefix(DATA_USAGE_START_DATE),
                 withCxPolicyNsPrefix(DATA_USAGE_END_DATE),
                 withCxPolicyNsPrefix(DATA_USAGE_END_DEFINITION),
                 withCxPolicyNsPrefix(DATA_USAGE_END_DURATION_DAYS),
@@ -366,7 +353,6 @@ public class CxPolicyExtension implements ServiceExtension {
         registerBindingSet(registry, namesInTransferProcessScope, TRANSFER_PROCESS_SCOPE);
 
         var namesInPolicyMonitorScope = Set.of(
-                withCxPolicyNsPrefix(DATA_USAGE_START_DATE),
                 withCxPolicyNsPrefix(DATA_USAGE_END_DATE),
                 withCxPolicyNsPrefix(DATA_USAGE_END_DEFINITION),
                 withCxPolicyNsPrefix(DATA_USAGE_END_DURATION_DAYS),

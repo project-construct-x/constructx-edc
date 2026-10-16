@@ -54,9 +54,6 @@ public final class PolicyValidationConstants {
     public static final String DATA_FREQUENCY_LITERAL = CX_POLICY_2025_09_NS + "DataFrequency";
     public static final String DATA_PROVISIONING_END_DATE_LITERAL = CX_POLICY_2025_09_NS + "DataProvisioningEndDate";
     public static final String DATA_PROVISIONING_END_DURATION_LITERAL = CX_POLICY_2025_09_NS + "DataProvisioningEndDurationDays";
-    // Construct-X addition: no DataUsageStartDate exists anywhere upstream (checked up to tractusx-edc 0.13.0),
-    // added here to pair with DataUsageEndDate for the Construct-X Policy Hub's DATE_RANGE constraint.
-    public static final String DATA_USAGE_START_DATE_LITERAL = CX_POLICY_2025_09_NS + "DataUsageStartDate";
     public static final String DATA_USAGE_END_DATE_LITERAL = CX_POLICY_2025_09_NS + "DataUsageEndDate";
     public static final String DATA_USAGE_END_DEFINITION_LITERAL = CX_POLICY_2025_09_NS + "DataUsageEndDefinition";
     public static final String DATA_USAGE_END_DURATION_LITERAL = CX_POLICY_2025_09_NS + "DataUsageEndDurationDays";
@@ -90,10 +87,7 @@ public final class PolicyValidationConstants {
             MEMBERSHIP_LITERAL,
             BUSINESS_PARTNER_GROUP_LITERAL,
             BUSINESS_PARTNER_NUMBER_LITERAL,
-            INFORCE_POLICY_LITERAL,
-            // Construct-X additions: upstream only allows these on CONTRACT (usage) policies.
-            DATA_USAGE_START_DATE_LITERAL,
-            DATA_USAGE_END_DATE_LITERAL
+            INFORCE_POLICY_LITERAL
     );
     public static final Set<String> ACCESS_PROHIBITION_POLICY_ALLOWED_LEFT_OPERANDS = Set.of();
     public static final Set<String> ACCESS_OBLIGATION_POLICY_ALLOWED_LEFT_OPERANDS = Set.of();
@@ -118,8 +112,6 @@ public final class PolicyValidationConstants {
             JURISDICTION_LOCATION_REFERENCE_LITERAL,
             PRECEDENCE_LITERAL,
             DATA_USAGE_END_DURATION_LITERAL,
-            // Construct-X addition: DataUsageStartDate does not exist upstream.
-            DATA_USAGE_START_DATE_LITERAL,
             DATA_USAGE_END_DATE_LITERAL,
             DATA_USAGE_END_DEFINITION_LITERAL
     );
