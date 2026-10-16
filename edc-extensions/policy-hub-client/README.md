@@ -52,21 +52,49 @@ to:
 message — including a hub-side `404`, which surfaces as `400 Could not fetch policy '…' from the
 Policy Hub: Policy Hub returned status 404`.
 
-### Read an imported policy back
+### Read imported policies back
+
+Both endpoints are plain upstream Management API — no extension code involved. They read the
+connector's own database, never the Policy Hub.
+
+**A single policy**
 
 ```
 GET {management}/v3/policydefinitions/{id}
 ```
 
-Plain upstream Management API — no extension code involved. `{id}` is the UUID returned above. The
-hub's human-readable name is also persisted on the definition itself, as
-`privateProperties.policyHubName`, so it remains visible here.
+`{id}` is the UUID returned above. The hub's human-readable name is also persisted on the definition
+itself, as `privateProperties.policyHubName`, so it remains visible here.
+
+**All policies stored in the connector**
+
+```
+POST {management}/v3/policydefinitions/request
+x-api-key: prov-management-api-key
+```
+
+Returns every policy definition in the connector — imported from the Policy Hub as well as any
+created by hand via `POST /v3/policydefinitions`. The body is a standard `QuerySpec`; an empty
+`{}` lists everything, `offset` / `limit` paginate, and `filterExpression` narrows the result:
+
+```json
+{
+  "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
+  "@type": "QuerySpec",
+  "offset": 0,
+  "limit": 50
+}
+```
+
+Imported policies can be told apart by `privateProperties.policyHubName`.
 
 ## How an import runs
 
 Walkthrough along the Bruno collection in
 [`local/bruno/con-x-local-test/transactions/provider`](../../edc-controlplane/edc-controlplane-construct-x/local/bruno/con-x-local-test/transactions/provider).
-Note step 2:
+Step 2 offers **two alternative ways** to get a policy onto the connector — run **either 2A or 2B**,
+not both: 2A creates a policy by hand through the standard Management API, 2B imports it from the
+Policy Hub.
 
 ```
  Bruno: transactions/provider              Provider control plane           Policy Hub (:8080)
@@ -76,52 +104,60 @@ Note step 2:
     POST /v3/assets ──────────────────▶  asset "assetId"
 
 
- 2  CreatePolicy                   ✗  DO NOT RUN
-    POST /v3/policydefinitions         Hand-writes a policy ("@id": "aPolicy") with empty
-    {"@id": "aPolicy", ...}            permission/prohibition/obligation arrays. It does not
-                                       fail — it bypasses the Policy Hub entirely: nothing is
-                                       enforced and no hub policy is exercised. Kept only as a
-                                       fallback for running the testbed with no Policy Hub.
+ 2  Create a policy — choose ONE of the two options:
+
+ ┌─ 2A  CreatePolicy  (manual, standard Management API) ─────────────────────────────────────┐
+ │  POST /v3/policydefinitions        Hand-writes a policy ("@id": "aPolicy") with empty    │
+ │  {"@id": "aPolicy", ...}           permission/prohibition/obligation arrays. Works with  │
+ │                                    no Policy Hub at all (e.g. a testbed without one),    │
+ │                                    but nothing is enforced and no hub policy is          │
+ │                                    exercised. Policy id to use below: "aPolicy".         │
+ └───────────────────────────────────────────────────────────────────────────────────────────┘
+
+ ┌─ 2B  ImportPolicyFromHub  (from the Policy Hub) ──────────────────────────────────────────┐
+ │  POST /v1alpha/policyhub/                                                                 │
+ │       policies/{{HUB_POLICY_ID}}                                                          │
+ │       /import ───────────────────▶  resolve basic auth                                    │
+ │                                     from Vault                                            │
+ │                                       │                                                   │
+ │                                     fetch ODRL ─────────────▶ GET /api/v1/policies/       │
+ │                                                                   {{HUB_POLICY_ID}}/odrl  │
+ │                                                ◀───────────── 200 JSON-LD                 │
+ │                                     expand → validate →                                   │
+ │                                     transform → create (or                                │
+ │                                     update, if it exists)                                 │
+ │                                       │                                                   │
+ │                                     PolicyDefinition                                      │
+ │                                       id = {{HUB_POLICY_ID}}                              │
+ │                          ◀──────────  200 {"@id": …, "policyHubName": …}                  │
+ │  post-response script sets:                                                               │
+ │    importedPolicyId   ← @id                                                               │
+ │    importedPolicyName ← policyHubName                                                     │
+ └───────────────────────────────────────────────────────────────────────────────────────────┘
 
 
- 3  ImportPolicyFromHub
-    POST /v1alpha/policyhub/
-         policies/{{HUB_POLICY_ID}}
-         /import ─────────────────────▶  resolve basic auth
-                                         from Vault
-                                           │
-                                         fetch ODRL ─────────────▶ GET /api/v1/policies/
-                                                                       {{HUB_POLICY_ID}}/odrl
-                                                    ◀───────────── 200 JSON-LD
-                                         expand → validate →
-                                         transform → create (or
-                                         update, if it exists)
-                                           │
-                                         PolicyDefinition
-                                           id = {{HUB_POLICY_ID}}
-                              ◀──────────  200 {"@id": …, "policyHubName": …}
-    post-response script sets:
-      importedPolicyId   ← @id
-      importedPolicyName ← policyHubName
-
-
- 4  Check Imported Policy
+ 3  Check Imported Policy  (or List All Policies)
     GET /v3/policydefinitions/
-        {{importedPolicyId}} ────────────▶  stored definition, incl.
+        {{importedPolicyId}} ────────────▶  stored definition; for 2B incl.
                               ◀──────────   privateProperties.policyHubName
 
 
- 5  CreateContractDefinition
+ 4  CreateContractDefinition
     POST /v3/contractdefinitions
       accessPolicyId   = {{importedPolicyId}} ──▶  contract definition "1"
       contractPolicyId = {{importedPolicyId}}      → catalog serves "assetId" under the
-                                                     policy imported from the hub
+                                                     chosen policy
+                                                     (2A: "aPolicy", 2B: the hub UUID)
 ```
 
-Switching to a different hub policy means changing `HUB_POLICY_ID` and re-running step 3 — its
-post-response script repoints `importedPolicyId`, which step 5 picks up. A stale or unset
-`importedPolicyId` makes the contract definition reference a non-existent policy: no error, the
-dataset just silently drops out of the catalog.
+Which policy ends up in the contract definition is decided by what `accessPolicyId` /
+`contractPolicyId` point at. After **2B** that is `importedPolicyId`, set by the import's
+post-response script; after **2A** set both to `"aPolicy"` instead.
+
+Switching to a different hub policy means changing `HUB_POLICY_ID` and re-running 2B — its
+post-response script repoints `importedPolicyId`, which step 4 picks up. A stale or unset
+`importedPolicyId` (or a policy id that was never created) makes the contract definition reference a
+non-existent policy: no error, the dataset just silently drops out of the catalog.
 
 ## Configuration
 
