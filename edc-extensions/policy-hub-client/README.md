@@ -175,43 +175,11 @@ The Catena-X policy functions must be on the classpath, otherwise `edc.policy.va
 (default `true`) rejects hub policies at creation time because their left operands are unknown to
 the policy engine. Both Construct-X control plane distributions
 (`con-x-controlplane-postgresql-hashicorp-vault`, `con-x-controlplane-postgresql-vault`) therefore
-depend on the **local** `edc-extensions:cx-policy`, `:bpn-validation` and `:bdrs-client` project
-modules, not the `org.eclipse.tractusx.edc:*` Maven artifacts. This is required, not stylistic:
-`cx-policy` carries Construct-X-local patches (below) that exist only in this repository's source.
-There is no Gradle dependency substitution here, so pointing a distribution at the Maven coordinate
-would silently build against the unpatched upstream code.
+depend on the local `edc-extensions:con-x-policy` module (plus `:bpn-validation` and `:bdrs-client`).
 
-## Construct-X-local patches to `cx-policy`
-
-Making the hub's own unmodified ODRL output importable required changes to the vendored
-`edc-extensions/cx-policy` — a deliberate, one-off exception to this repository's "no Java connector
-code" principle. Each class carries its own comments with the exact diff against upstream 0.12.0:
-
-- **`DataUsageStartDate` / `DataUsageEndDate` (`DATE_RANGE`)** — added `DataUsageStartDate` (did not
-  exist upstream at all), allowed both on `ACCESS` policies (were `CONTRACT`-only), widened the
-  accepted operators to `gteq`/`lteq` (were `EQ`-only), and accepted bare ISO dates like
-  `"2026-08-01"` in addition to full date-times (start → 00:00:00 UTC, end → 23:59:59 UTC).
-- **`UsagePurpose` catalog NPE** — `UsagePurpose` was bound to `CATALOG_SCOPE` (pre-existing,
-  `CONTRACT`-only) but had **no** registered function for `CatalogPolicyContext`, so building a
-  catalog for *any* offer carrying a `UsagePurpose` constraint threw an NPE and took down catalog
-  generation for the whole contract definition (502 on `POST /v3/catalog/request`). Fixed by
-  registering the function for that context too. `UsagePurpose` itself (left operand, right-operand
-  values) is otherwise untouched from upstream: it remains `CONTRACT`-only, and only the
-  standardized Catena-X identifiers are accepted.
-- **`FrameworkAgreement` without a version** — `validate()` accepted only the hardcoded literal
-  `"DataExchangeGovernance:1.0"`, rejecting the hub's canonical `"DataExchangeGovernance"`, even
-  though the documented grammar makes the version optional and `evaluate()` already parsed a bare
-  subtype correctly. `validate()` now reuses that same parsing.
-- **`UsagePolicyValidator`: "at least one" actually meant "all"** — a `CONTRACT` permission had to
-  carry *both* `FrameworkAgreement` and `UsagePurpose`, despite the failure message reading "at
-  least". Inverted to genuine "at least one of" semantics.
-- **Constraint-free `CONTRACT` policies** — the `odrl:use` counterpart of a constraint-free `ACCESS`
-  policy was rejected twice over: `AtLeastOneRuleExists` demanded a `constraint` key be present
-  (contradicting its own documented purpose, and a shape the hub really produces, since
-  `@JsonInclude(NON_NULL)` omits it), and the required-constraints check applied even to a
-  permission with no constraints to anchor them to. Both relaxed; the check still applies unchanged
-  the moment *any* constraint is present.
-
-Note that `UsagePurposeConstraintFunction` is a placeholder (see its class Javadoc): `evaluate()`
-always returns `true`, so the value-list check above only applies at policy *creation* time, never
-during negotiation or transfer.
+`con-x-policy` builds on the **unmodified** Catena-X `edc-extensions:cx-policy` and adds the
+Construct-X extensions and fixes that make the hub's own ODRL output importable (`DataUsageStartDate`,
+`FrameworkAgreement` without a version, "at least one" semantics, constraint-free `CONTRACT` policies,
+`UsagePurpose` catalog NPE). Its `ConxPolicyExtension` replaces the upstream `CxPolicyExtension` in
+both distributions. See [`edc-extensions/con-x-policy/README.md`](../con-x-policy/README.md) for the
+complete list and the reasoning.

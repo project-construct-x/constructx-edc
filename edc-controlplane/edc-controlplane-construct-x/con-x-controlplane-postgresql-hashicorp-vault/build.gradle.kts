@@ -40,21 +40,33 @@ dependencies {
     implementation("org.eclipse.tractusx.edc:control-plane-migration:$txVersion")
     implementation("org.eclipse.tractusx.edc:tx-dcp:$txVersion")
 
-    // Catena-X ODRL policy functions. Required so the control plane knows the left operands
-    // (Membership, UsagePurpose, FrameworkAgreement, ...) emitted by the Construct-X Policy Hub.
-    // Without them edc.policy.validation.enabled=true already rejects the policy on creation.
-    // Local project dependency (not the Maven artifact): cx-policy carries a Construct-X-local
-    // patch (DataUsageStartDate support) on top of the vendored tractusx-edc 0.12.0 source, so
-    // it must be compiled from edc-extensions/cx-policy, matching edc-controlplane-base's wiring.
-    implementation(project(":edc-extensions:cx-policy"))
-    // CxPolicyExtension injects BusinessPartnerStore (in-mem default) and BdrsClient; both are
+    // Catena-X ODRL policy functions plus the Construct-X additions (DataUsageStartDate, relaxed
+    // validation, ...). Required so the control plane knows the left operands (Membership,
+    // UsagePurpose, FrameworkAgreement, ...) emitted by the Construct-X Policy Hub. Without them
+    // edc.policy.validation.enabled=true already rejects the policy on creation. con-x-policy pulls
+    // in the unmodified cx-policy; its ConxPolicyExtension replaces CxPolicyExtension (see ShadowJar).
+    implementation(project(":edc-extensions:con-x-policy"))
+    // ConxPolicyExtension injects BusinessPartnerStore (in-mem default) and BdrsClient; both are
     // mandatory injects, so the runtime does not boot without these two.
     implementation(project(":edc-extensions:bpn-validation"))
     implementation(project(":edc-extensions:bdrs-client"))
 }
 
+/**
+ * Merges `META-INF/services` files like `mergeServiceFiles()`, but drops the given service implementations.
+ */
+class ExcludingServiceFileTransformer(private val excluded: Set<String>) :
+    com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer() {
+    override fun transform(context: com.github.jengelman.gradle.plugins.shadow.transformers.TransformerContext) {
+        val lines = context.inputStream.bufferedReader().use { it.readLines() }.filterNot { it.trim() in excluded }
+        super.transform(context.copy(inputStream = lines.joinToString("\n").byteInputStream()))
+    }
+}
+
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-    mergeServiceFiles()
+    // ConxPolicyExtension (con-x-policy) replaces CxPolicyExtension (cx-policy): EDC composes policy
+    // validators, so running both would still reject what Construct-X relaxes. Drop the upstream one.
+    transform(ExcludingServiceFileTransformer(setOf("org.eclipse.tractusx.edc.policy.cx.CxPolicyExtension")))
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     archiveFileName.set("con-x-controlplane-postgresql-hashicorp-vault.jar")
     transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer())
