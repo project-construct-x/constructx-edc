@@ -110,6 +110,7 @@ include(":edc-extensions:agreements:retirement-evaluation-api")
 include(":edc-extensions:agreements:retirement-evaluation-spi")
 include(":edc-extensions:agreements:retirement-evaluation-store-sql")
 include(":edc-extensions:agreements:retirement-evaluation-bootstrapping")
+include(":edc-extensions:basic-abac")
 
 include(":edc-extensions:dynamic-issuers")
 

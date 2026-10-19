@@ -21,7 +21,7 @@
 services:
   local-issuer-wallet:
     container_name: local-issuer-wallet
-    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    image: ghcr.io/project-construct-x/wallet-sql-vault:0.18.0-1
     pull_policy: missing
     depends_on:
       shared-postgres:
@@ -121,7 +121,7 @@ services:
 
   consumer-wallet:
     container_name: consumer-wallet
-    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    image: ghcr.io/project-construct-x/wallet-sql-vault:0.18.0-1
     pull_policy: missing
     depends_on:
       shared-postgres:
@@ -162,7 +162,7 @@ services:
 
   provider-wallet:
     container_name: provider-wallet
-    image: ghcr.io/project-construct-x/wallet:0.17.0-1
+    image: ghcr.io/project-construct-x/wallet-sql-vault:0.18.0-1
     pull_policy: missing
     depends_on:
       shared-postgres:
@@ -207,7 +207,7 @@ services:
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
+      - edc.iam.trustedissuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=consumersecret
       - edc.iam.credential.revocation.mimetype=application/json
@@ -236,9 +236,7 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - tx.edc.iam.dcp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.dcp.default-scopes.test.type=MembershipCredential
-      - tx.edc.iam.dcp.default-scopes.test.operation=read
+
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1"]
       start_period: 10s
@@ -305,7 +303,7 @@ services:
     pull_policy: never
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
-      - edc.iam.trusted-issuer.example.id=did:web:local-issuer-wallet:con-x-issuer
+      - edc.iam.trustedissuer.example.id=did:web:local-issuer-wallet:con-x-issuer
       - edc.iam.did.web.use.https=false
       - edc.iam.sts.oauth.client.secret.alias=providersecret
       - edc.iam.credential.revocation.mimetype=application/json
@@ -334,9 +332,6 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-      - tx.edc.iam.dcp.default-scopes.test.alias=org.eclipse.dspace.dcp.vc.type
-      - tx.edc.iam.dcp.default-scopes.test.type=MembershipCredential
-      - tx.edc.iam.dcp.default-scopes.test.operation=read
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1" ]
       start_period: 10s
