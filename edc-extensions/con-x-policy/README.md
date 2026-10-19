@@ -1,73 +1,84 @@
 # Construct-X Policy Extension (`con-x-policy`)
 
-Construct-X additions and fixes on top of the Catena-X ODRL policy functions from
-[`edc-extensions/cx-policy`](../cx-policy). `cx-policy` itself stays exactly as delivered by
-Tractus-X; everything Construct-X-specific lives in this module (package `org.constructx.edc.policy`).
+This module provides the ODRL policy functions and the policy definition validation of the Construct-X
+connector (package `org.constructx.edc.policy`). It makes sure that policies emitted by the Construct-X Policy
+Hub (see [`policy-hub-client`](../policy-hub-client/README.md)) are accepted when a policy definition is created
+and evaluate correctly at catalog, negotiation and transfer time.
 
-They are needed so that policies emitted by the Construct-X Policy Hub (see
-[`policy-hub-client`](../policy-hub-client/README.md)) are accepted at creation time and evaluate
-correctly at catalog, negotiation and transfer time.
+## Setup
 
-## How it is wired
+`ConxPolicyExtension` registers the policy functions, the rule bindings and `ConxPolicyDefinitionValidator` as
+the JSON validator for policy definitions. It builds on the classes of [`cx-policy`](../cx-policy), which stays
+unmodified.
 
-`ConxPolicyExtension` takes the role of the upstream `CxPolicyExtension`: it registers the same
-policy functions and rule bindings, but with the Construct-X variants listed below and with
-`ConxPolicyDefinitionValidator` instead of the upstream policy definition validator.
-
-The two extensions must **not** run side by side. EDC *composes* validators: all JSON object
-validators registered for a type must pass, and all `validate()` functions registered for a left operand
-must pass. With both extensions active, the stricter upstream validation would still reject what
-Construct-X relaxes. The Construct-X control plane distributions therefore remove
+`ConxPolicyExtension` must run **instead of** `CxPolicyExtension`, not next to it. EDC composes validators (all
+registered validators must pass), so the stricter validation of `CxPolicyExtension` would otherwise still
+apply. The Construct-X control plane distributions therefore remove
 `org.eclipse.tractusx.edc.policy.cx.CxPolicyExtension` from the merged
-`META-INF/services/org.eclipse.edc.spi.system.ServiceExtension` (see `ExcludingServiceFileTransformer`
-in their `build.gradle.kts`). The upstream classes are still on the classpath and are reused wherever
-nothing changes.
+`META-INF/services/org.eclipse.edc.spi.system.ServiceExtension` file (see `ExcludingServiceFileTransformer` in
+their `build.gradle.kts`).
 
-`ConxPolicyExtension` injects `BusinessPartnerStore` and `BdrsClient` (like upstream), so the runtime
-also needs `bpn-validation` and `bdrs-client`.
+The extension injects `BusinessPartnerStore` and `BdrsClient`, so the runtime also needs `bpn-validation` and
+`bdrs-client`.
 
-## Differences to upstream `cx-policy`
+## Policy behavior
 
-- **`DataUsageStartDate` / `DataUsageEndDate` (`DATE_RANGE`)**: adds `DataUsageStartDate`
-  (`DataUsageStartDateConstraintFunction`, which does not exist upstream at all) and allows both on
-  `ACCESS` policies (upstream: `CONTRACT` only). Accepted operators are widened to `gteq`/`lteq`
-  (upstream: `EQ` only), and bare ISO dates like `"2026-08-01"` are accepted besides full date-times
-  (start → 00:00:00 UTC, end → 23:59:59 UTC). See `ConxAbstractDataEndDateConstraintFunction`,
-  `ConxDataUsageEndDateConstraintFunction` and `ConxDataProvisioningEndDateConstraintFunction`.
-- **`UsagePurpose` catalog NPE**: upstream binds `UsagePurpose` to `CATALOG_SCOPE` but registers
-  **no** function for `CatalogPolicyContext`. Building a catalog for any offer with a `UsagePurpose`
-  constraint then throws an NPE, which breaks catalog generation for the whole contract definition
-  (502 on `POST /v3/catalog/request`). `ConxPolicyExtension` also registers the function for that
-  context. Apart from that, `UsagePurpose` is unchanged from upstream.
-- **`FrameworkAgreement` without a version**: upstream `validate()` accepts only the hardcoded literal
-  `"DataExchangeGovernance:1.0"`, so it rejects the hub's canonical `"DataExchangeGovernance"`, even
-  though the documented grammar makes the version optional and `evaluate()` already parses a bare
-  subtype. `ConxFrameworkAgreementConstraintFunction` validates exactly what `evaluate()` accepts, in
-  both the new and the legacy notation.
-- **"At least one" really means "all"**: upstream `UsagePolicyValidator` requires a `CONTRACT`
-  permission to carry *both* `FrameworkAgreement` and `UsagePurpose`, even though its failure message
-  says "at least". `ConxUsagePolicyValidator` implements real "at least one of" semantics.
-- **Constraint-free `CONTRACT` policies**: upstream rejects the `odrl:use` counterpart of a
-  constraint-free `ACCESS` policy for two reasons. `AtLeastOneRuleExists` requires a `constraint` key,
-  which the hub omits (`@JsonInclude(NON_NULL)`), and the required-constraints check also applies to
-  permissions that have no constraints at all. `ConxAtLeastOneRuleExists` and `ConxUsagePolicyValidator`
-  relax both. The required-constraints check still applies as soon as *any* constraint is present.
-- **`odrl:or`**: upstream only allows `odrl:and` as logical constraint. Construct-X also allows `odrl:or`
-  (nesting, e.g. an `and` inside an `or`, works as well). `odrl:xone` and `odrl:andSequence` stay rejected.
-  The EDC policy engine evaluates `or` natively. Two things to keep in mind:
-  - The required-constraints and mutual-exclusion checks still collect left operands across all branches.
-    So `or(DataUsageEndDate, DataUsageEndDurationDays)` is still rejected as mutually exclusive, and a
-    `FrameworkAgreement` in any branch satisfies the "at least one of" requirement.
-  - Before evaluation, EDC drops constraints whose left operand is not bound to the current scope. A branch
-    can therefore disappear: `DataUsageStartDate`/`DataUsageEndDate` are not bound to the `catalog` and
-    `contract.negotiation` scopes, which are the only scopes that evaluate an access policy. In an access
-    policy, an `or` branch that consists only of date constraints never grants access on its own.
+### Date constraints
 
-`ConxPolicyValidationConstants` holds the Construct-X allowed left-operand sets. The remaining
-`ConxPolicyDefinitionValidator` chain (`ConxAccessPolicyValidator`, `ConxConstraintValidator`,
-`ConxLogicalConstraintValidator`, `ConxAtomicConstraintValidator`, `ConxLeftOperandValidator`) consists
-of copies of the upstream classes. They have to be copied because upstream wires them through private
-nested classes and static imports, so they cannot be extended.
+`DataUsageStartDate`, `DataUsageEndDate` and `DataProvisioningEndDate`:
 
-Note that the upstream `UsagePurposeConstraintFunction` is a placeholder: `evaluate()` always returns
-`true`, so its value-list check applies only at policy *creation* time.
+- `DataUsageStartDate` and `DataUsageEndDate` are allowed in `ACCESS` and `CONTRACT` policies.
+- Start dates accept the operators `eq` and `gteq`, end dates accept `eq` and `lteq`.
+- Values can be full ISO date-times or bare ISO dates such as `"2026-08-01"`. A bare start date is interpreted
+  as 00:00:00 UTC, a bare end date as 23:59:59 UTC of that day.
+- The constraints are evaluated in the `transfer.process` and `policy.monitor` scopes.
+
+Implementation: `DataUsageStartDateConstraintFunction`, `ConxDataUsageEndDateConstraintFunction`,
+`ConxDataProvisioningEndDateConstraintFunction` (based on `AbstractDataStartDateConstraintFunction` and
+`ConxAbstractDataEndDateConstraintFunction`).
+
+### `UsagePurpose`
+
+`UsagePurpose` is evaluated in the `catalog`, `contract.negotiation` and `transfer.process` scopes, so offers
+with a `UsagePurpose` constraint show up in the catalog.
+
+The allowed values are checked when a policy definition is created. At evaluation time the constraint always
+passes.
+
+### `FrameworkAgreement`
+
+The version is optional: both `"DataExchangeGovernance"` and `"DataExchangeGovernance:1.0"` are valid, in the
+new as well as in the legacy notation (`ConxFrameworkAgreementConstraintFunction`).
+
+### Required usage constraints
+
+A `CONTRACT` permission with constraints must contain **at least one of** `FrameworkAgreement` and
+`UsagePurpose` (`ConxUsagePolicyValidator`).
+
+A `CONTRACT` permission without any constraints is valid as well, with or without a `constraint` key. This is
+what the hub generates for a constraint-free `ACCESS` policy (`ConxAtLeastOneRuleExists`,
+`ConxUsagePolicyValidator`).
+
+### Logical constraints
+
+`odrl:and` and `odrl:or` are allowed and can be nested (e.g. an `and` inside an `or`). `odrl:xone` and
+`odrl:andSequence` are rejected.
+
+Things to keep in mind with `odrl:or`:
+
+- **Validation looks at all branches together.** The required-constraints and mutual-exclusion checks collect
+  left operands across all branches. `or(DataUsageEndDate, DataUsageEndDurationDays)` is therefore rejected as
+  mutually exclusive, and a `FrameworkAgreement` in any branch satisfies the "at least one of" requirement.
+- **Branches can disappear during evaluation.** Before evaluating, EDC drops constraints whose left operand is
+  not bound to the current scope. Access policies are only evaluated in the `catalog` and
+  `contract.negotiation` scopes, and the date constraints are bound to neither. In an access policy, an `or`
+  branch consisting only of date constraints therefore never grants access on its own.
+
+## Policy definition validation
+
+`ConxPolicyDefinitionValidator` is the entry point. Its chain consists of:
+
+- `ConxAccessPolicyValidator`, `ConxUsagePolicyValidator`, `ConxAtLeastOneRuleExists`
+- `ConxConstraintValidator`, `ConxLogicalConstraintValidator`, `ConxAtomicConstraintValidator`,
+  `ConxLeftOperandValidator`
+- `ConxPolicyValidationConstants`, which holds the allowed left operands per policy type
