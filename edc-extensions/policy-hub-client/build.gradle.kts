@@ -23,34 +23,32 @@ plugins {
 
 repositories { mavenCentral() }
 
-val edcVersion = "0.15.1"
-
 dependencies {
-    implementation("org.eclipse.edc:boot-spi:${edcVersion}")
-    implementation("org.eclipse.edc:core-spi:${edcVersion}")
-    implementation("org.eclipse.edc:http-spi:${edcVersion}")
-    implementation("org.eclipse.edc:json-ld-spi:${edcVersion}")
-    implementation("org.eclipse.edc:transform-spi:${edcVersion}")
-    implementation("org.eclipse.edc:validator-spi:${edcVersion}")
-    implementation("org.eclipse.edc:web-spi:${edcVersion}")
-    implementation("org.eclipse.edc:control-plane-spi:${edcVersion}")
-    implementation("org.eclipse.edc:policy-spi:${edcVersion}")
-    implementation("org.eclipse.edc:participant-context-single-spi:${edcVersion}")
-    implementation("org.eclipse.edc:api-lib:${edcVersion}")
-    implementation("org.eclipse.edc:jersey-providers-lib:${edcVersion}")
+    implementation(libs.edc.spi.boot)
+    implementation(libs.edc.spi.core)
+    implementation(libs.edc.spi.http)
+    implementation(libs.edc.spi.jsonld)
+    implementation(libs.edc.spi.transform)
+    implementation(libs.edc.spi.validator)
+    implementation(libs.edc.spi.web)
+    implementation(libs.edc.spi.controlplane)
+    implementation(libs.edc.spi.policy)
+    implementation(libs.edc.spi.participant.context.single)
+    implementation(libs.edc.lib.api)
+    implementation(libs.edc.lib.jersey.providers)
     implementation(libs.jakarta.rsApi)
 
-    testImplementation("org.eclipse.edc:junit:${edcVersion}") {
+    testImplementation(libs.edc.junit) {
         exclude(group = "org.junit.jupiter")
         exclude(group = "org.junit.platform")
         exclude(group = "org.junit")
     }
-    testImplementation("org.eclipse.edc:json-ld-lib:${edcVersion}")
+    testImplementation(libs.edc.lib.jsonld)
     // ships the cached document/odrl.jsonld context that the runtime's JsonLdExtension registers as well
-    testImplementation("org.eclipse.edc:json-ld:${edcVersion}")
-    testImplementation("org.eclipse.edc:control-plane-transform:${edcVersion}")
-    testImplementation("org.eclipse.edc:transform-lib:${edcVersion}")
-    testImplementation("org.eclipse.edc:participant-spi:${edcVersion}")
+    testImplementation(libs.edc.ext.jsonld)
+    testImplementation(libs.edc.controlplane.transform)
+    testImplementation(libs.edc.lib.transform)
+    testImplementation(libs.edc.spi.participant)
     testImplementation(libs.titaniumJsonLd)
     testImplementation(libs.jacksonJsonP)
 }
