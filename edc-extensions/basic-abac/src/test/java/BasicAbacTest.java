@@ -42,7 +42,14 @@ class BasicAbacTest {
 
             // Multiple JSONPath segments
             "https://example.org/types/EmployeeCredential.credentialSubject.address.city",
-            "https://example.org/types/Employee123Credential.credentialSubject.department.name"
+            "https://example.org/types/Employee123Credential.credentialSubject.department.name",
+
+            // JSONPath array indices
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[0]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[123]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[12].name",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[0][1]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[0].children[2].name"
     })
     void shouldMatchValidBasicAbacOperands(String leftOperand) {
         assertTrue(
@@ -85,7 +92,17 @@ class BasicAbacTest {
 
             // Not a complete HTTPS URL
             "Foo.credentialSubject.fooLevel",
-            ""
+            "",
+
+            // Invalid JSONPath array indices
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[abc]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[12",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items12]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[-1]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[1.2]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[ 1]",
+            "https://example.org/types/EmployeeCredential.credentialSubject.items[1 ]"
     })
     void shouldNotMatchInvalidBasicAbacOperands(String leftOperand) {
         assertFalse(

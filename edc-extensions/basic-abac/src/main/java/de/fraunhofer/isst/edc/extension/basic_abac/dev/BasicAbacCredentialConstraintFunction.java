@@ -44,7 +44,8 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
         if (rightValue instanceof List<?> list) {
             rightValueList = normalizeNumericToDoubleOrBoolean(list);
         } else {
-            rightValueList = convertJsonToList(rightValue.toString());
+            var parsed = convertJsonToList(rightValue.toString());
+            rightValueList = parsed == null ? null : normalizeNumericToDoubleOrBoolean(parsed);
         }
         if (rightValueList != null) {
             return handleRightValueList(leftValue, operator, rightValueList, rule, context);
@@ -93,6 +94,7 @@ public class BasicAbacCredentialConstraintFunction<C extends ParticipantAgentPol
                 }
                 yield rightValueList.contains(claimValue);
             }
+
             case IS_ANY_OF -> {
                 if (claimValue instanceof List<?> claimList) {
                     yield !Collections.disjoint(claimList, rightValueList);

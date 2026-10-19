@@ -51,7 +51,7 @@ The `leftOperand` of a policy definition must match the regex pattern currently 
 
 ```java
 public static final String BASIC_ABAC_REGEX =
-    "^https://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::[0-9]+)?(?:/[^\\s/]+)*/[A-Z][^\\s/.]*\\.credentialSubject(?:\\.[^\\s/.]+)+$";
+    "^https://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::[0-9]+)?(?:/[^\\s/]+)*/[A-Z][^\\s/.]*\\.credentialSubject(?:\\.[^\\s/.\\[\\]]+(?:\\[[0-9]+])*)+$";
 ```
 
 In essence, this regex matches if the target string:
@@ -59,7 +59,8 @@ In essence, this regex matches if the target string:
 - is a valid HTTPS URL,
 - has a last path segment that starts with a capital letter,
 - contains `.credentialSubject` directly after the complete credential type, and
-- contains one or more JSONPath segments after `.credentialSubject`.
+  contains one or more JSONPath segments after .credentialSubject, and
+- allows array indices within these JSONPath segments. Each opening square bracket must be followed by at least one digit and a closing square bracket, for example [0] or [123].
 
 The JSONPath segments following .credentialSubject specify the path to a value within the credential subject of the corresponding verifiable credential.
 

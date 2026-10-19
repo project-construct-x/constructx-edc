@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 public class BasicAbacUtils {
 
     public static final String BASIC_ABAC_REGEX =
-        "^https://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::[0-9]+)?(?:/[^\\s/]+)*/[A-Z][^\\s/.]*\\.credentialSubject(?:\\.[^\\s/.]+)+$";
+            "^https://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::[0-9]+)?(?:/[^\\s/]+)*/[A-Z][^\\s/.]*\\.credentialSubject(?:\\.[^\\s/.\\[\\]]+(?:\\[[0-9]+])*)+$";
     public static final Pattern BASIC_ABAC_PATTERN = Pattern.compile(BASIC_ABAC_REGEX);
 
     public static final String DCP_PREFIX = "org.eclipse.dspace.dcp.vc.type:";
