@@ -39,7 +39,6 @@ dependencies {
     implementation(project(":edc-extensions:agreements:retirement-evaluation-bootstrapping"))
     implementation(project(":edc-extensions:dynamic-issuers"))
     implementation(project(":edc-extensions:basic-abac"))
-    implementation(project(":edc-extensions:basic-abac"))
 
 
 
