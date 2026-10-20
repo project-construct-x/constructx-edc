@@ -21,7 +21,7 @@ body:form-urlencoded {
 script:post-response {
   const accessToken = res.getBody().access_token.trim();
   
-  bru.setEnvVar("prov_access_token", accessToken);
+  bru.setVar("prov_access_token", accessToken);
 }
 
 settings {

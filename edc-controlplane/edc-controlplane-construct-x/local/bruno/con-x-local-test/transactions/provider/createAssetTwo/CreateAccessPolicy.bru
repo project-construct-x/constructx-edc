@@ -1,0 +1,46 @@
+meta {
+  name: CreateAccessPolicy
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{PROVIDER_MANAGEMENT}}/v3/policydefinitions
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/"
+    },
+    "@id": "accessPolicyTwo",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+          {
+            "action": "http://www.w3.org/ns/odrl/2/use",
+            "constraint": {
+              "and": [
+                {
+                  "leftOperand": "{{MEM_CRED_ID}}.credentialSubject.isMember",
+                  "operator": "eq",
+                  "rightOperand": true
+                }
+              ]
+            }
+          }
+        ],
+      "prohibition": [],
+      "obligation": []
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
