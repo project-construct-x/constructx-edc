@@ -28,6 +28,7 @@ import org.eclipse.edc.spi.query.SortOrder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import static org.constructx.edc.policyhub.PolicyHubImportService.POLICY_HUB_HASH_PROPERTY;
@@ -42,6 +43,19 @@ import static org.constructx.edc.policyhub.PolicyHubImportService.POLICY_HUB_NAM
  * is and only reported: contract definitions may still reference it.
  */
 public class PolicyHubSyncService {
+
+    /**
+     * What started a sync run.
+     */
+    public enum Trigger {
+        SCHEDULED, MANUAL
+    }
+
+    /**
+     * Outcome of one sync run.
+     */
+    public record SyncSummary(int checked, int updated, int unchanged, int failed) {
+    }
 
     static final int PAGE_SIZE = 100;
 
@@ -66,6 +80,7 @@ public class PolicyHubSyncService {
      * @return counts of the checked, updated, unchanged and failed definitions
      */
     public SyncSummary sync(Trigger trigger) {
+        var label = trigger.name().toLowerCase(Locale.ROOT);
         var imported = findImportedDefinitions();
         int updated = 0;
         int unchanged = 0;
@@ -74,7 +89,7 @@ public class PolicyHubSyncService {
         for (var definition : imported) {
             if (Thread.currentThread().isInterrupted()) {
                 monitor.warning("Policy Hub sync (%s) interrupted, %d of %d policies not checked"
-                        .formatted(trigger.label(), imported.size() - updated - unchanged - failed, imported.size()));
+                        .formatted(label, imported.size() - updated - unchanged - failed, imported.size()));
                 break;
             }
 
@@ -82,7 +97,7 @@ public class PolicyHubSyncService {
             if (result.failed()) {
                 failed++;
                 monitor.warning("Policy Hub sync (%s): keeping policy definition '%s' unchanged: %s"
-                        .formatted(trigger.label(), definition.getId(), result.getFailureDetail()));
+                        .formatted(label, definition.getId(), result.getFailureDetail()));
             } else if (Objects.equals(definition.getPrivateProperty(POLICY_HUB_HASH_PROPERTY),
                     result.getContent().getPrivateProperty(POLICY_HUB_HASH_PROPERTY))) {
                 unchanged++;
@@ -95,7 +110,7 @@ public class PolicyHubSyncService {
 
         var summary = new SyncSummary(imported.size(), updated, unchanged, failed);
         monitor.info("Policy Hub sync (%s) finished: %d checked, %d updated, %d unchanged, %d failed"
-                .formatted(trigger.label(), summary.checked(), summary.updated(), summary.unchanged(), summary.failed()));
+                .formatted(label, summary.checked(), summary.updated(), summary.unchanged(), summary.failed()));
         return summary;
     }
 
@@ -138,29 +153,5 @@ public class PolicyHubSyncService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    /**
-     * What started a sync run.
-     */
-    public enum Trigger {
-        SCHEDULED("scheduled"),
-        MANUAL("manual");
-
-        private final String label;
-
-        Trigger(String label) {
-            this.label = label;
-        }
-
-        public String label() {
-            return label;
-        }
-    }
-
-    /**
-     * Outcome of one sync run.
-     */
-    public record SyncSummary(int checked, int updated, int unchanged, int failed) {
     }
 }
