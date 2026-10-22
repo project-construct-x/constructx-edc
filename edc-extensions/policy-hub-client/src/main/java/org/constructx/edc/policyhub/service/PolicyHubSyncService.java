@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policyhub;
+package org.constructx.edc.policyhub.service;
 
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import static org.constructx.edc.policyhub.PolicyHubImportService.POLICY_HUB_HASH_PROPERTY;
-import static org.constructx.edc.policyhub.PolicyHubImportService.POLICY_HUB_NAME_PROPERTY;
+import static org.constructx.edc.policyhub.service.PolicyHubImportService.POLICY_HUB_HASH_PROPERTY;
+import static org.constructx.edc.policyhub.service.PolicyHubImportService.POLICY_HUB_NAME_PROPERTY;
 
 /**
  * Re-imports every policy definition that was imported from the Policy Hub, so changes made in

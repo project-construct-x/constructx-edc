@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policyhub;
+package org.constructx.edc.policyhub.service;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
+import org.constructx.edc.policyhub.client.PolicyHubClient;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
 import org.eclipse.edc.jsonld.spi.JsonLd;

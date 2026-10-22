@@ -20,6 +20,9 @@
 package org.constructx.edc.policyhub;
 
 import org.constructx.edc.policyhub.api.PolicyHubApiController;
+import org.constructx.edc.policyhub.client.PolicyHubClient;
+import org.constructx.edc.policyhub.service.PolicyHubImportService;
+import org.constructx.edc.policyhub.service.PolicyHubSyncService;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.jsonld.spi.JsonLd;

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.constructx.edc.policyhub;
+package org.constructx.edc.policyhub.client;
 
 import jakarta.json.Json;
 import jakarta.json.JsonException;
