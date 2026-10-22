@@ -22,6 +22,7 @@ package org.constructx.edc.policyhub;
 import org.constructx.edc.policyhub.api.PolicyHubApiController;
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
+import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -32,11 +33,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -44,18 +47,22 @@ import static org.mockito.Mockito.when;
 /**
  * Verifies the "no Policy Hub URL configured" contract documented in the module README: the import
  * API must be registered when {@code constructx.policyhub.url} is set, and the extension must stay
- * passive - not fail - when it is unset (the consumer-side deployment case).
+ * passive - not fail - when it is unset (the consumer-side deployment case). The periodic sync is
+ * only scheduled when the hub is configured and the sync is enabled.
  */
 @ExtendWith(DependencyInjectionExtension.class)
 class PolicyHubClientExtensionTest {
 
     private final WebService webService = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
+    private final ExecutorInstrumentation executorInstrumentation = mock();
 
     @BeforeEach
     void setUp(ServiceExtensionContext context) {
         context.registerService(WebService.class, webService);
         context.registerService(TypeTransformerRegistry.class, transformerRegistry);
+        context.registerService(ExecutorInstrumentation.class, executorInstrumentation);
+        when(executorInstrumentation.instrument(any(ScheduledExecutorService.class), any())).thenAnswer(a -> a.getArgument(0));
         when(transformerRegistry.forContext("management-api")).thenReturn(transformerRegistry);
     }
 
@@ -80,5 +87,42 @@ class PolicyHubClientExtensionTest {
 
         verifyNoInteractions(webService);
         verify(context.getMonitor()).info("No Policy Hub URL configured ('constructx.policyhub.url'), the Policy Hub import API is disabled");
+    }
+
+    @Test
+    void start_whenSyncEnabled_shouldScheduleSync(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
+                "constructx.policyhub.url", "https://policy-hub.example.com",
+                "constructx.policyhub.sync.initial-delay", "3600")));
+        var extension = factory.constructInstance(PolicyHubClientExtension.class);
+        extension.initialize(context);
+
+        extension.start();
+        extension.shutdown();
+
+        verify(executorInstrumentation).instrument(any(ScheduledExecutorService.class), eq("policy-hub-sync"));
+    }
+
+    @Test
+    void start_whenSyncDisabled_shouldNotScheduleSync(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
+                "constructx.policyhub.url", "https://policy-hub.example.com",
+                "constructx.policyhub.sync.enabled", "false")));
+        var extension = factory.constructInstance(PolicyHubClientExtension.class);
+        extension.initialize(context);
+
+        extension.start();
+
+        verify(executorInstrumentation, never()).instrument(any(ScheduledExecutorService.class), any());
+    }
+
+    @Test
+    void start_whenPolicyHubUrlNotConfigured_shouldNotScheduleSync(ServiceExtensionContext context, ObjectFactory factory) {
+        var extension = factory.constructInstance(PolicyHubClientExtension.class);
+        extension.initialize(context);
+
+        extension.start();
+
+        verify(executorInstrumentation, never()).instrument(any(ScheduledExecutorService.class), any());
     }
 }

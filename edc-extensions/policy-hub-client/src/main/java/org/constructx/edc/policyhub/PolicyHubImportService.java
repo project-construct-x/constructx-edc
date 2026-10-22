@@ -19,6 +19,9 @@
 
 package org.constructx.edc.policyhub;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
@@ -28,6 +31,14 @@ import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition.EDC_POLICY_DEFINITION_TYPE;
 import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
@@ -51,39 +62,63 @@ public class PolicyHubImportService {
      */
     public static final String POLICY_HUB_NAME_PROPERTY = EDC_NAMESPACE + "policyHubName";
 
+    /**
+     * Private property key holding a SHA-256 hash of the Policy Hub's ODRL rendering at the time of
+     * the last import. A repeated import (manual or by the periodic sync) with an unchanged hash
+     * leaves the stored definition untouched.
+     */
+    public static final String POLICY_HUB_HASH_PROPERTY = EDC_NAMESPACE + "policyHubHash";
+
+    /**
+     * Private property key holding the time (epoch millis) at which the definition's content was
+     * last taken over from the Policy Hub, i.e. created or updated. An unchanged re-import does not
+     * touch it.
+     */
+    public static final String POLICY_HUB_IMPORTED_AT_PROPERTY = EDC_NAMESPACE + "policyHubImportedAt";
+
     private final PolicyHubClient client;
     private final JsonLd jsonLd;
     private final TypeTransformerRegistry transformerRegistry;
     private final JsonObjectValidatorRegistry validatorRegistry;
     private final PolicyDefinitionService policyDefinitionService;
     private final SingleParticipantContextSupplier participantContextSupplier;
+    private final Clock clock;
     private final Monitor monitor;
 
     public PolicyHubImportService(PolicyHubClient client, JsonLd jsonLd, TypeTransformerRegistry transformerRegistry,
                                   JsonObjectValidatorRegistry validatorRegistry, PolicyDefinitionService policyDefinitionService,
-                                  SingleParticipantContextSupplier participantContextSupplier, Monitor monitor) {
+                                  SingleParticipantContextSupplier participantContextSupplier, Clock clock, Monitor monitor) {
         this.client = client;
         this.jsonLd = jsonLd;
         this.transformerRegistry = transformerRegistry;
         this.validatorRegistry = validatorRegistry;
         this.policyDefinitionService = policyDefinitionService;
         this.participantContextSupplier = participantContextSupplier;
+        this.clock = clock;
         this.monitor = monitor;
     }
 
     /**
      * Fetches the given policy from the Policy Hub and stores it as a local {@link PolicyDefinition}.
      * If a definition with the same id already exists, it is updated instead, so the import is
-     * safe to repeat.
+     * safe to repeat. If the hub's content is unchanged since the last import, nothing is written
+     * and the existing definition is returned. On any failure the stored definition stays as it is.
      *
      * @param hubPolicyId the id of the policy in the Policy Hub
-     * @return the created or updated policy definition, or a failure
+     * @return the created, updated or unchanged policy definition, or a failure
      */
     public ServiceResult<PolicyDefinition> importPolicy(String hubPolicyId) {
         var fetched = client.fetchPolicyDefinition(hubPolicyId);
         if (fetched.failed()) {
             return ServiceResult.badRequest("Could not fetch policy '%s' from the Policy Hub: %s"
                     .formatted(hubPolicyId, fetched.getFailureDetail()));
+        }
+
+        var hash = hash(fetched.getContent());
+        var existing = policyDefinitionService.findById(hubPolicyId);
+        if (existing != null && hash.equals(existing.getPrivateProperty(POLICY_HUB_HASH_PROPERTY))) {
+            monitor.debug("Policy definition '%s' is unchanged in the Policy Hub".formatted(hubPolicyId));
+            return ServiceResult.success(existing);
         }
 
         var expanded = jsonLd.expand(fetched.getContent());
@@ -114,8 +149,14 @@ public class PolicyHubImportService {
         var definition = transformed.getContent().toBuilder()
                 .id(hubPolicyId)
                 .privateProperty(POLICY_HUB_NAME_PROPERTY, policyHubName)
+                .privateProperty(POLICY_HUB_HASH_PROPERTY, hash)
+                .privateProperty(POLICY_HUB_IMPORTED_AT_PROPERTY, clock.millis())
                 .participantContextId(participantContext.getContent().getParticipantContextId())
                 .build();
+
+        if (existing != null) {
+            return update(definition);
+        }
 
         var created = policyDefinitionService.create(definition);
         if (created.succeeded()) {
@@ -123,9 +164,43 @@ public class PolicyHubImportService {
             return created;
         }
         if (created.reason() == ServiceFailure.Reason.CONFLICT) {
-            monitor.info("Policy definition '%s' already exists, updating it from the Policy Hub".formatted(definition.getId()));
-            return policyDefinitionService.update(definition);
+            return update(definition);
         }
         return created;
+    }
+
+    private ServiceResult<PolicyDefinition> update(PolicyDefinition definition) {
+        var updated = policyDefinitionService.update(definition);
+        if (updated.succeeded()) {
+            monitor.info("Updated policy definition '%s' from the Policy Hub".formatted(definition.getId()));
+        }
+        return updated;
+    }
+
+    /**
+     * Hashes the hub's response in a canonical form (object keys sorted), so a mere reordering of
+     * keys on the hub side does not count as a change.
+     */
+    private static String hash(JsonObject policy) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256")
+                    .digest(canonicalize(policy).getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
+    }
+
+    private static String canonicalize(JsonValue value) {
+        return switch (value.getValueType()) {
+            case OBJECT -> value.asJsonObject().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(entry -> Json.createValue(entry.getKey()) + ":" + canonicalize(entry.getValue()))
+                    .collect(Collectors.joining(",", "{", "}"));
+            case ARRAY -> value.asJsonArray().stream()
+                    .map(PolicyHubImportService::canonicalize)
+                    .collect(Collectors.joining(",", "[", "]"));
+            default -> value.toString();
+        };
     }
 }

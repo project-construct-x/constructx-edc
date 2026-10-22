@@ -52,6 +52,30 @@ to:
 message — including a hub-side `404`, which surfaces as `400 Could not fetch policy '…' from the
 Policy Hub: Policy Hub returned status 404`.
 
+If the hub's content is unchanged since the last import, nothing is written and the existing
+definition is returned (see [Keeping imports up to date](#keeping-imports-up-to-date)).
+
+### Sync all imported policies now
+
+```
+POST {management}/v1alpha/policyhub/policies/sync
+```
+
+Runs the [periodic sync](#keeping-imports-up-to-date) once, right away, and synchronously. No body.
+Useful for operations, tests and the testbed, where waiting for the next scheduled run is
+impractical.
+
+```json
+{
+  "@type": "PolicyHubSyncSummary",
+  "checked": 3,
+  "updated": 1,
+  "unchanged": 1,
+  "failed": 1,
+  "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" }
+}
+```
+
 ### Read imported policies back
 
 Both endpoints are plain upstream Management API — no extension code involved. They read the
@@ -159,12 +183,49 @@ post-response script repoints `importedPolicyId`, which step 4 picks up. A stale
 `importedPolicyId` (or a policy id that was never created) makes the contract definition reference a
 non-existent policy: no error, the dataset just silently drops out of the catalog.
 
+## Keeping imports up to date
+
+An import is a snapshot: if the policy is changed in the Policy Hub afterwards, the connector would
+keep offering the old version. The control plane therefore re-imports every policy it imported from
+the hub periodically (every hour by default). The hub stays the single source of truth, so changes
+are taken over automatically.
+
+- **Scope** — only the connector's own imports are synced (definitions carrying
+  `privateProperties.policyHubName`), one `GET …/odrl` request each. The cost depends on how many
+  policies the connector uses, not on how many the hub holds.
+- **Change detection** — every import stores a SHA-256 hash of the hub's ODRL rendering (keys
+  sorted, so reordering does not count as a change) as `privateProperties.policyHubHash`. An
+  unchanged policy is not written at all. `privateProperties.policyHubImportedAt` (epoch millis)
+  records when the content was last taken over from the hub.
+- **Nothing is ever deleted** — if the hub no longer serves a policy (`404`), is unreachable, or the
+  new version fails validation, the stored definition stays as it is and a warning is logged.
+  Contract definitions may still reference it.
+- **Scheduling** — runs with a fixed delay between the end of one run and the start of the next, so
+  runs never overlap. The first run starts after a random delay of up to one interval, so that many
+  connectors do not hit the hub at the same moment. Requests within a run are spaced by
+  `request-delay`.
+- **Multiple replicas** — each control plane replica syncs on its own. That is harmless because
+  imports are idempotent and the hash prevents duplicate writes.
+- **Existing contracts are not affected** — EDC copies the policy into the `ContractAgreement` when
+  a negotiation completes. A sync only changes what new catalog requests and negotiations see.
+
+Every run ends with a log line such as
+`Policy Hub sync (scheduled) finished: 3 checked, 1 updated, 1 unchanged, 1 failed` (`(manual)` for
+runs started through the sync endpoint). Each policy whose content changed additionally logs
+`Updated policy definition '…' from the Policy Hub` once it is stored, and each failure a warning with the
+reason. To monitor the periodic sync, alert when no `Policy Hub sync (scheduled) finished` line
+appears for longer than about one interval, and look at the warnings when `failed` is not 0.
+
 ## Configuration
 
-| Setting                                  | Required | Default                  | Description                                                                                        |
-|------------------------------------------|----------|--------------------------|----------------------------------------------------------------------------------------------------|
-| `constructx.policyhub.url`               | no       | –                        | Base URL of the Policy Hub. **If unset, the import API is not registered** (consumer deployments). |
-| `constructx.policyhub.credentials.alias` | no       | `policy-hub-credentials` | Vault alias holding the hub's basic-auth credentials in `user:password` format.                    |
+| Setting                                    | Required | Default                  | Description                                                                                                   |
+|--------------------------------------------|----------|--------------------------|---------------------------------------------------------------------------------------------------------------|
+| `constructx.policyhub.url`                 | no       | –                        | Base URL of the Policy Hub. **If unset, the import API is not registered and no sync runs** (consumer deployments). |
+| `constructx.policyhub.credentials.alias`   | no       | `policy-hub-credentials` | Vault alias holding the hub's basic-auth credentials in `user:password` format.                               |
+| `constructx.policyhub.sync.enabled`        | no       | `true`                   | Whether imported policies are periodically re-imported. The sync endpoint works either way.                   |
+| `constructx.policyhub.sync.interval`       | no       | `3600`                   | Seconds between the end of one sync run and the start of the next.                                            |
+| `constructx.policyhub.sync.initial-delay`  | no       | `-1`                     | Seconds before the first run. Negative means a random delay between 0 and the interval.                       |
+| `constructx.policyhub.sync.request-delay`  | no       | `100`                    | Milliseconds between two Policy Hub requests within one run.                                                  |
 
 Credentials are resolved from the vault on every request — they never appear in configuration files,
 and rotating them needs no restart.

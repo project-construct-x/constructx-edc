@@ -27,6 +27,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import org.constructx.edc.policyhub.PolicyHubImportService;
+import org.constructx.edc.policyhub.PolicyHubSyncService;
 import org.eclipse.edc.api.model.IdResponse;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.spi.EdcException;
@@ -34,11 +35,13 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 /**
- * Management API endpoint that pulls a policy from the Construct-X Policy Hub and stores it as a
- * local policy definition.
+ * Management API endpoints that pull policies from the Construct-X Policy Hub and store them as
+ * local policy definitions.
  */
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -46,13 +49,35 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 public class PolicyHubApiController {
 
     private final PolicyHubImportService importService;
+    private final PolicyHubSyncService syncService;
     private final TypeTransformerRegistry transformerRegistry;
     private final Monitor monitor;
 
-    public PolicyHubApiController(PolicyHubImportService importService, TypeTransformerRegistry transformerRegistry, Monitor monitor) {
+    public PolicyHubApiController(PolicyHubImportService importService, PolicyHubSyncService syncService,
+                                  TypeTransformerRegistry transformerRegistry, Monitor monitor) {
         this.importService = importService;
+        this.syncService = syncService;
         this.transformerRegistry = transformerRegistry;
         this.monitor = monitor;
+    }
+
+    /**
+     * Re-imports every policy definition imported from the Policy Hub right away, the same way the
+     * periodic sync does. Runs synchronously.
+     *
+     * @return the counts of checked, updated, unchanged and failed policy definitions
+     */
+    @POST
+    @Path("/policies/sync")
+    public JsonObject syncPolicies() {
+        var summary = syncService.sync(PolicyHubSyncService.Trigger.MANUAL);
+        return Json.createObjectBuilder()
+                .add(TYPE, EDC_NAMESPACE + "PolicyHubSyncSummary")
+                .add(EDC_NAMESPACE + "checked", summary.checked())
+                .add(EDC_NAMESPACE + "updated", summary.updated())
+                .add(EDC_NAMESPACE + "unchanged", summary.unchanged())
+                .add(EDC_NAMESPACE + "failed", summary.failed())
+                .build();
     }
 
     /**
