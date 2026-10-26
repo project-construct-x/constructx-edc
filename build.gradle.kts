@@ -165,7 +165,9 @@ subprojects {
 
             tasks.register("dockerize", DockerBuildImage::class) {
                 dockerFile.set(File("build/resources/docker/Dockerfile"))
-
+                // always re-run "apk upgrade" and re-check the base image to pick up OS security fixes
+                noCache.set(true)
+                pull.set(true)
                 val dockerContextDir = project.projectDir
                 images.add("${project.name}:${project.version}")
                 images.add("${project.name}:latest")
