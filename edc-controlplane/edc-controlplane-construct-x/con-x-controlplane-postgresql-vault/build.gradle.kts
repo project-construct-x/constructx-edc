@@ -44,7 +44,7 @@ dependencies {
 
     // Hotfix version overrides
     implementation("com.fasterxml.jackson.core:jackson-core:2.22.3")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.22.3")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.22.4")
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
