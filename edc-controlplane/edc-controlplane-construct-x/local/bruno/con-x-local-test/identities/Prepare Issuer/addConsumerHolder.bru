@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/holders
+  url: {{ISSUER_ISS_API}}/v1beta/participants/{{ISS_PART_CONT}}/holders
   body: json
   auth: inherit
 }
@@ -23,7 +23,7 @@ script:pre-request {
   const participantContext = cons_id.split(":").slice(3).join(":").replace(/:/g, "-");
   bru.setEnvVar("CONS_PART_CONT", participantContext);
   
-  req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
+  req.setHeader("x-api-key", bru.getVar("ISSUER_APIKEY"));
 }
 
 settings {

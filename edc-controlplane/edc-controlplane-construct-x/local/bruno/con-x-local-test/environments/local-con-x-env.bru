@@ -6,16 +6,9 @@ vars {
   CONSUMER_IDHUB_ID_API: http://localhost:20100/api/identity
   CONSUMER_IDHUB_STS_API: http://localhost:20500/api/sts
   CONSUMER_IDHUB_CREDS_API: http://localhost:20600/api/credentials
-  ISSUER_APIKEY: Y29uLXgtaXNzdWVy.9sxw+/k0HF7dPdO2w8ebMkTlLqv2/GDvimJP1KxoPhVJoG7xkYhutZo1Z9Heo0dobgE+xXfKRdaqFI7AlD5CAQ==
-  CONSUMER_IH_APIKEY: dXNlci1jb25zdW1lcg==.OzRtwdfjBtV36S+kTzknLQgzD2pmYt39KgZhm2G+Gp0ixV2VREDYUbhVSZo79Ut3e5dbuczw4cT4AQHPqv2nSg==
-  PROVIDER_IH_APIKEY: dXNlci1wcm92aWRlcg==.NanZDfHKuBRi/SUOMA4qLmIBQEYTHAR+p9TAb6Y4hOrs7/PnOpOki8ad3GkkYpPt9lzAxYbH4ToLXpv+HXrgXw==
   VAULTURL: http://localhost:8200
-  CONSUMER_STS_SECRET: fYKBjgItYIwJx6KD
-  PROVIDER_STS_SECRET: aq78zShUbOhM8z5s
   PROVIDER_MANAGEMENT: http://localhost:39010/management
   CONSUMER_MANAGEMENT: http://localhost:29010/management
-  POLICY_HUB: http://localhost:8080
-  HUB_POLICY_ID: 2ae42981-b9a1-4eba-b7f1-8df23a7eb70b
   PROVIDER_DATAPLANE_PUBLIC: http://localhost:9500/public
   PROVIDER_IDHUB_DID_API: http://localhost:21000
   PROVIDER_IDHUB_ID_API: http://localhost:21100/api/identity
@@ -24,15 +17,11 @@ vars {
   ISS_ID: did:web:local-issuer-wallet:con-x-issuer
   CONS_ID: did:web:consumer-wallet:user:consumer
   PROV_ID: did:web:provider-wallet:user:provider
-  cons_access_token: eyJraWQiOiJkaWQ6d2ViOmNvbnN1bWVyLXdhbGxldDp1c2VyOmNvbnN1bWVyI2tleS0xIiwiYWxnIjoiRWQyNTUxOSJ9.eyJhdWQiOiJkaWQ6d2ViOmNvbnN1bWVyLXdhbGxldDp1c2VyOmNvbnN1bWVyIiwic3ViIjoiZGlkOndlYjpwcm92aWRlci13YWxsZXQ6dXNlcjpwcm92aWRlciIsIm5iZiI6MTc5MDg0MTUxOSwic2NvcGUiOiJvcmcuZWNsaXBzZS5kc3BhY2UuZGNwLnZjLnR5cGU6TWVtYmVyc2hpcENyZWRlbnRpYWw6cmVhZCIsImlzcyI6ImRpZDp3ZWI6Y29uc3VtZXItd2FsbGV0OnVzZXI6Y29uc3VtZXIiLCJleHAiOjE3OTA4NDE4MTksImlhdCI6MTc5MDg0MTUxOSwianRpIjoiYWNjZXNzdG9rZW4tYzg2NGU4NWItNTEzNS00YTI1LWI5ODAtNTA5OTcwMjAyZWVlIn0.ZDWbuFMwCiXp3n31x-KxV8WM7neF6WYZrGvaCYhQfylfEgMwWnSFOlg9ZcrA_P2fmy1KhI93ZijqvVpJjvpTAQ
-  prov_access_token: eyJraWQiOiJkaWQ6d2ViOnByb3ZpZGVyLXdhbGxldDp1c2VyOnByb3ZpZGVyI2tleS0xIiwiYWxnIjoiRWQyNTUxOSJ9.eyJhdWQiOiJkaWQ6d2ViOmNvbnN1bWVyLXdhbGxldDp1c2VyOmNvbnN1bWVyIiwic3ViIjoiZGlkOndlYjpwcm92aWRlci13YWxsZXQ6dXNlcjpwcm92aWRlciIsIm5iZiI6MTc5MDg0MTUxOSwiaXNzIjoiZGlkOndlYjpwcm92aWRlci13YWxsZXQ6dXNlcjpwcm92aWRlciIsImV4cCI6MTc5MDg0MTgxOSwiaWF0IjoxNzkwODQxNTE5LCJqdGkiOiJkZjYzNGU3Zi0wOWU3LTQ4ZmEtOGNmNS03MDUyYzgxMjU4N2MiLCJ0b2tlbiI6ImV5SnJhV1FpT2lKa2FXUTZkMlZpT21OdmJuTjFiV1Z5TFhkaGJHeGxkRHAxYzJWeU9tTnZibk4xYldWeUkydGxlUzB4SWl3aVlXeG5Jam9pUldReU5UVXhPU0o5LmV5SmhkV1FpT2lKa2FXUTZkMlZpT21OdmJuTjFiV1Z5TFhkaGJHeGxkRHAxYzJWeU9tTnZibk4xYldWeUlpd2ljM1ZpSWpvaVpHbGtPbmRsWWpwd2NtOTJhV1JsY2kxM1lXeHNaWFE2ZFhObGNqcHdjbTkyYVdSbGNpSXNJbTVpWmlJNk1UYzVNRGcwTVRVeE9Td2ljMk52Y0dVaU9pSnZjbWN1WldOc2FYQnpaUzVrYzNCaFkyVXVaR053TG5aakxuUjVjR1U2VFdWdFltVnljMmhwY0VOeVpXUmxiblJwWVd3NmNtVmhaQ0lzSW1semN5STZJbVJwWkRwM1pXSTZZMjl1YzNWdFpYSXRkMkZzYkdWME9uVnpaWEk2WTI5dWMzVnRaWElpTENKbGVIQWlPakUzT1RBNE5ERTRNVGtzSW1saGRDSTZNVGM1TURnME1UVXhPU3dpYW5ScElqb2lZV05qWlhOemRHOXJaVzR0WXpnMk5HVTROV0l0TlRFek5TMDBZVEkxTFdJNU9EQXROVEE1T1Rjd01qQXlaV1ZsSW4wLlpEV2J1Rk13Q2lYcDNuMzF4LUt4VjhXTTduZUY2V1lackd2YUNZaFFmeWxmRWdNd1duU0ZPbGc5WmNyQV9QMmZteTFLaEk5M1ppanF2VnBKanZwVEFRIn0.czri77Nc4xD2vnWselFHJ7v8klrCX8ZMOpW1saoUqow1rla9R62hr6AbMj04DRsXF2Nqwojwg888_DdexF1HAg
   ISS_PART_CONT: con-x-issuer
   CONS_PART_CONT: user-consumer
   PROV_PART_CONT: user-provider
-  offerPolicy: {"@id":"Mw==:YXNzZXRJZA==:OThlMzk3NGMtMjAxNS00ZTI4LWE5ZTEtZTc0ZWMxOGE5Yjkx","@type":"Offer","permission":[{"action":"https://w3id.org/catenax/2025/9/policy/access","constraint":[{"and":[{"leftOperand":"https://w3id.org/catenax/2025/9/policy/DataUsageStartDate","operator":"gteq","rightOperand":"2026-09-28"},{"leftOperand":"https://w3id.org/catenax/2025/9/policy/DataUsageEndDate","operator":"lteq","rightOperand":"2026-09-28"}]}]}]}
-  negotiation-id: 4ddce717-a358-49d0-b978-ebab2c03e57d
-  contractId: 76de28b9-3f00-4ba2-ad33-d90cbe64b20e
-  transferId: 4d5d2dcf-315e-4d3a-9e88-f31ec44419fb
-  importedPolicyId: 2ae42981-b9a1-4eba-b7f1-8df23a7eb70b
-  importedPolicyName: meine-policy-date
+  MEM_CRED_ID: https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential
+  CUSTOM_CRED_ID: https://foo.org/constructx/bar/credentials/v1/Baustelle123Credential
+  TARGET_ASSET_ID: demoAssetIdOne
+  CRFORMAT: VC1_0_JWT
 }
