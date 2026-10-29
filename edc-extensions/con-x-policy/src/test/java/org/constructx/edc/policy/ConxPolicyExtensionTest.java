@@ -19,6 +19,7 @@
 
 package org.constructx.edc.policy;
 
+import org.constructx.edc.policy.connector.ConnectorConstraintFunction;
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.framework.ConxFrameworkAgreementConstraintFunction;
@@ -48,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition.EDC_POLICY_DEFINITION_TYPE;
 import static org.eclipse.edc.connector.policy.monitor.spi.PolicyMonitorContext.POLICY_MONITOR_SCOPE;
 import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.CX_POLICY_2025_09_NS;
+import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.CATALOG_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.TRANSFER_PROCESS_SCOPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -98,6 +100,15 @@ class ConxPolicyExtensionTest {
         var leftOperand = CX_POLICY_2025_09_NS + "DataUsageEndDate";
         verify(policyEngine).registerFunction(eq(PolicyMonitorContext.class), eq(Permission.class), eq(leftOperand), isA(ConxDataUsageEndDateConstraintFunction.class));
         verify(policyEngine).registerFunction(eq(TransferProcessPolicyContext.class), eq(Permission.class), eq(leftOperand), isA(ConxDataUsageEndDateConstraintFunction.class));
+    }
+
+    @Test
+    void initialize_shouldRegisterConnectorFunctionAndCatalogBinding(ConxPolicyExtension extension, ServiceExtensionContext context) {
+        extension.initialize(context);
+
+        verify(policyEngine).registerFunction(eq(CatalogPolicyContext.class), eq(Permission.class),
+                eq(ConnectorConstraintFunction.CONNECTOR), isA(ConnectorConstraintFunction.class));
+        verify(bindingRegistry).bind(ConnectorConstraintFunction.CONNECTOR, CATALOG_SCOPE);
     }
 
     @Test

@@ -31,6 +31,7 @@ dependencies {
     implementation(project(":edc-extensions:bpn-validation:bpn-validation-spi"))
     implementation(project(":spi:core-spi"))
     implementation(project(":spi:bdrs-client-spi"))
+    implementation(libs.edc.spi.core)
     implementation(libs.edc.core.policy.monitor)
     implementation(libs.edc.spi.catalog)
     implementation(libs.edc.spi.contract)

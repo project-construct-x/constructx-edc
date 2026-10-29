@@ -50,6 +50,24 @@ passes.
 The version is optional: both `"DataExchangeGovernance"` and `"DataExchangeGovernance:1.0"` are valid, in the
 new as well as in the legacy notation (`ConxFrameworkAgreementConstraintFunction`).
 
+### `connector` (Participant selection)
+
+The Policy Hub's "Participant selection" constraint uses EDC's own built-in left operand
+`https://w3id.org/edc/v0.0.1/ns/connector` (not a Catena-X-namespaced one) with operator `eq` and a right operand
+that is a single comma-separated string of one or more `did:...` values, e.g.
+`"did:web:adesso.de,did:web:adesso-group.com"`. EDC core defines this left operand but implements no evaluation
+semantics for it, so `ConnectorConstraintFunction` (no upstream equivalent) provides them.
+
+- Allowed only in `ACCESS` permission policies, not in `CONTRACT` (usage) policies.
+- The participant's identity is resolved to a DID for comparison: used as-is if already `did:`-prefixed, otherwise
+  resolved up from a BPN via `BdrsClient.resolveDid(...)` — the inverse of the `BusinessPartnerGroup`/
+  `BusinessPartnerNumber` functions, which resolve a DID down to a BPN.
+- Like `BusinessPartnerGroup`/`BusinessPartnerNumber`, this constraint is evaluated only in the `catalog` scope: it
+  governs whether an offer is visible in the catalog for a given participant, not whether a subsequent negotiation
+  or transfer is accepted.
+
+Implementation: `ConnectorConstraintFunction`.
+
 ### Required usage constraints
 
 A `CONTRACT` permission with constraints must contain **at least one of** `FrameworkAgreement` and

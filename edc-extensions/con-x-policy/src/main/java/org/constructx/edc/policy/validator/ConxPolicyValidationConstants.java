@@ -29,6 +29,7 @@ import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_AND_CONSTRAIN
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_AND_SEQUENCE_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OR_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_XONE_CONSTRAINT_ATTRIBUTE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.CX_POLICY_2025_09_NS;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.DATA_USAGE_END_DATE_LITERAL;
 
@@ -44,6 +45,11 @@ public final class ConxPolicyValidationConstants {
     // DataUsageEndDate for the Construct-X Policy Hub's DATE_RANGE constraint.
     public static final String DATA_USAGE_START_DATE_LITERAL = CX_POLICY_2025_09_NS + "DataUsageStartDate";
 
+    // Construct-X Policy Hub's "Participant selection" constraint, using EDC's own left operand (not Catena-X
+    // namespaced, like INFORCE_POLICY_LITERAL above). EDC core defines this left operand but implements no
+    // evaluation semantics for it; evaluation is provided by ConnectorConstraintFunction (no upstream equivalent).
+    public static final String CONNECTOR_LITERAL = EDC_NAMESPACE + "connector";
+
     // Upstream only allows odrl:and; Construct-X additionally allows odrl:or.
     public static final Set<String> ALLOWED_LOGICAL_CONSTRAINTS = Set.of(
             ODRL_AND_CONSTRAINT_ATTRIBUTE,
@@ -55,13 +61,14 @@ public final class ConxPolicyValidationConstants {
     );
 
     // Upstream only allows DataUsageStartDate/DataUsageEndDate on CONTRACT (usage) policies.
-    public static final Set<String> ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS = union(
+    static final Set<String> ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS = union(
             PolicyValidationConstants.ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS,
             DATA_USAGE_START_DATE_LITERAL,
-            DATA_USAGE_END_DATE_LITERAL
+            DATA_USAGE_END_DATE_LITERAL,
+            CONNECTOR_LITERAL
     );
 
-    public static final Set<String> USAGE_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS = union(
+    static final Set<String> USAGE_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS = union(
             PolicyValidationConstants.USAGE_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS,
             DATA_USAGE_START_DATE_LITERAL
     );

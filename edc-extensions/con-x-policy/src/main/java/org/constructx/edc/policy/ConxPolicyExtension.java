@@ -21,6 +21,7 @@
 
 package org.constructx.edc.policy;
 
+import org.constructx.edc.policy.connector.ConnectorConstraintFunction;
 import org.constructx.edc.policy.dataprovisioning.ConxDataProvisioningEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
@@ -71,6 +72,7 @@ import org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonthsConstra
 import org.eclipse.tractusx.edc.spi.identity.mapper.BdrsClient;
 import org.eclipse.tractusx.edc.validation.businesspartner.spi.store.BusinessPartnerStore;
 
+import static org.constructx.edc.policy.connector.ConnectorConstraintFunction.CONNECTOR;
 import static org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction.DATA_USAGE_START_DATE;
 import static org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition.EDC_POLICY_DEFINITION_TYPE;
 import static org.eclipse.edc.connector.policy.monitor.spi.PolicyMonitorContext.POLICY_MONITOR_SCOPE;
@@ -79,6 +81,7 @@ import static org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesBpnlProhib
 import static org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesRegionProhibitionConstraintFunction.AFFILIATES_REGION;
 import static org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerGroupConstraintFunction.BUSINESS_PARTNER_GROUP;
 import static org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerNumberConstraintFunction.BUSINESS_PARTNER_NUMBER;
+import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.CATALOG_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.TRANSFER_PROCESS_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.confidentialinformation.ConfidentialInformationMeasuresConstraintFunction.CONFIDENTIAL_INFORMATION_MEASURES;
 import static org.eclipse.tractusx.edc.policy.cx.confidentialinformation.ConfidentialInformationSharingConstraintFunction.CONFIDENTIAL_INFORMATION_SHARING;
@@ -119,6 +122,8 @@ import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonths
  *   <li>new {@link DataUsageStartDateConstraintFunction} (does not exist upstream)</li>
  *   <li>UsagePurpose registered for {@link CatalogPolicyContext} (upstream binds it to the catalog scope but has
  *   no function for it, which causes a NullPointerException when building the catalog)</li>
+ *   <li>new {@link ConnectorConstraintFunction}: evaluates the Policy Hub's "Participant selection" constraint
+ *   using EDC's own {@code connector} left operand (does not exist upstream)</li>
  * </ul>
  */
 @Extension(ConxPolicyExtension.NAME)
@@ -188,6 +193,8 @@ public class ConxPolicyExtension implements ServiceExtension {
                 withCxPolicyNsPrefix(BUSINESS_PARTNER_GROUP), new BusinessPartnerGroupConstraintFunction<>(store, bdrsClient));
         engine.registerFunction(CatalogPolicyContext.class, Permission.class,
                 withCxPolicyNsPrefix(BUSINESS_PARTNER_NUMBER), new BusinessPartnerNumberConstraintFunction<>(bdrsClient));
+        engine.registerFunction(CatalogPolicyContext.class, Permission.class,
+                CONNECTOR, new ConnectorConstraintFunction<>(bdrsClient));
 
         // Usage Permission Validators
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class,
@@ -297,6 +304,8 @@ public class ConxPolicyExtension implements ServiceExtension {
 
         registry.bind(withCxPolicyNsPrefix(DATA_USAGE_START_DATE), TRANSFER_PROCESS_SCOPE);
         registry.bind(withCxPolicyNsPrefix(DATA_USAGE_START_DATE), POLICY_MONITOR_SCOPE);
+
+        registry.bind(CONNECTOR, CATALOG_SCOPE);
     }
 
     @Override

@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.CONNECTOR_LITERAL;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OBLIGATION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PERMISSION_ATTRIBUTE;
@@ -95,6 +96,28 @@ class ConxLeftOperandValidatorTest {
         ValidationResult result = validateLeftOperand(input, ACTION_USAGE, ODRL_OBLIGATION_ATTRIBUTE);
 
         assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void shouldReturnSuccess_whenConnectorLeftOperandUsedInAccessPermissionPolicy() {
+        JsonObject input = Json.createObjectBuilder()
+                .add(ID, CONNECTOR_LITERAL)
+                .build();
+
+        ValidationResult result = validateLeftOperand(input, ACTION_ACCESS, ODRL_PERMISSION_ATTRIBUTE);
+
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void shouldReturnFailure_whenConnectorLeftOperandUsedInUsagePermissionPolicy() {
+        JsonObject input = Json.createObjectBuilder()
+                .add(ID, CONNECTOR_LITERAL)
+                .build();
+
+        ValidationResult result = validateLeftOperand(input, ACTION_USAGE, ODRL_PERMISSION_ATTRIBUTE);
+
+        assertThat(result).isFailed();
     }
 
     @Test
