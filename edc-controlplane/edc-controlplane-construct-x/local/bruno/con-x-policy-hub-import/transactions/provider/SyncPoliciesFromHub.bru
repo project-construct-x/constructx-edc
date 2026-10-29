@@ -1,0 +1,35 @@
+meta {
+  name: SyncPoliciesFromHub
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{PROVIDER_MANAGEMENT}}/v1alpha/policyhub/policies/sync
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  Re-imports every policy definition previously imported from the Construct-X Policy Hub right
+  away - the same run the control plane otherwise performs periodically (every hour by default,
+  see constructx.policyhub.sync.*). Only the connector's own imports (those carrying
+  "privateProperties.policyHubName") are synced; hand-written policies such as "aPolicy" are left
+  alone. Runs synchronously, no body.
+
+  Response: counts of "checked", "updated", "unchanged" and "failed" policy definitions. A policy
+  is only written when its content in the hub changed. Failed policies (e.g. hub returns 404 or
+  the new version fails validation) are kept unchanged - the control plane log shows the reason as
+  a warning ("Policy Hub sync (manual): keeping policy definition ... unchanged: ...").
+
+  To try it: run ImportPolicyFromHub, change the policy in the Policy Hub, run this request and
+  check with Check Imported Policy that the new version and
+  "privateProperties.policyHubImportedAt" are there.
+
+  Prerequisite: the Policy Hub stack (policy-hub/docker-compose.yml) is running on port 8080.
+}

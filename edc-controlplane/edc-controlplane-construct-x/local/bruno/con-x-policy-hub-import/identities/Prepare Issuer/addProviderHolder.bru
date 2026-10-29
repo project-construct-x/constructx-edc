@@ -1,0 +1,32 @@
+meta {
+  name: addProviderHolder
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/holders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "holderId" : "{{PROV_ID}}", 
+    "did" : "{{PROV_ID}}",  
+    "name" : "{{PROV_PART_CONT}}"
+  }
+}
+
+script:pre-request {
+  const prov_id = bru.getEnvVar("PROV_ID");
+  const participantContext = prov_id.split(":").slice(3).join(":").replace(/:/g, "-");
+  bru.setEnvVar("PROV_PART_CONT", participantContext);
+  
+  req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

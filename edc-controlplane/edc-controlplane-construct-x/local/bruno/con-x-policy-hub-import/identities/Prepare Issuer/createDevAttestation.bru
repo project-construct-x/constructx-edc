@@ -1,0 +1,55 @@
+meta {
+  name: createDevAttestation
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{ISSUER_ISS_API}}/v1alpha/participants/{{ISS_PART_CONT}}/attestations
+  body: json
+  auth: none
+}
+
+headers {
+  ~x-api-key: {{ISSUER_APIKEY}}
+}
+
+body:json {
+  {
+    "attestationType": "dev",
+    "id": "dev-def-1",
+    "configuration": {
+      "{{CONS_ID}}": {
+        "isConsumer": true,
+        "isProvider": false,
+        "foo": {
+          "bar": 123
+        }
+      },
+      "{{PROV_ID}}": {
+        "isConsumer": false,
+        "isProvider": true,
+        "foo": {
+          "bar": 789
+        }
+      },
+      "default": {
+        "isConsumer": false,
+        "isProvider": false,
+        "foo": {
+          "bar": 0
+        }
+      },
+      "blackList": []
+    }
+  }
+}
+
+script:pre-request {
+  req.setHeader("x-api-key", bru.getEnvVar("ISSUER_APIKEY"));
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

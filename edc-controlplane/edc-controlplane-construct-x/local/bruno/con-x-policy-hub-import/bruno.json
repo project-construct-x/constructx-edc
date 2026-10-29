@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "con-x-policy-hub-import",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

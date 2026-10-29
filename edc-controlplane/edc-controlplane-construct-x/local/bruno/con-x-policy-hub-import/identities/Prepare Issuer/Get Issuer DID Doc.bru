@@ -1,0 +1,20 @@
+meta {
+  name: Get Issuer DID Doc
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{ISSUER_DID_API}}/con-x-issuer/did.json
+  body: none
+  auth: inherit
+}
+
+headers {
+  Host: local-issuer-wallet
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

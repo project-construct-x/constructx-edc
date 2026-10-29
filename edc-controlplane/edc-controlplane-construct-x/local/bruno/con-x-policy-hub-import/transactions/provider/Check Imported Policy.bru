@@ -1,0 +1,31 @@
+meta {
+  name: Check Imported Policy
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{PROVIDER_MANAGEMENT}}/v3/policydefinitions/{{importedPolicyId}}
+  body: none
+  auth: inherit
+}
+
+headers {
+  X-Api-Key: prov-management-api-key
+}
+
+vars:pre-request {
+  importedPolicyId: 74619dad-cbc0-4f45-b9af-2de06cb537c2
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+  forwardAuthorizationHeader: false
+}
+
+docs {
+  Reads back the policy last imported via ImportPolicyFromHub, addressed by its connector-side
+  id (the Policy Hub's UUID, captured in the env var "importedPolicyId"). The response's
+  "privateProperties.policyHubName" carries the Policy Hub's human-readable policy name.
+}

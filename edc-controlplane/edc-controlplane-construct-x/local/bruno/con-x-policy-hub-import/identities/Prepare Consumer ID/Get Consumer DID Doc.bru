@@ -1,0 +1,20 @@
+meta {
+  name: Get Consumer DID Doc
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{CONSUMER_IDHUB_DID_API}}/user/consumer
+  body: none
+  auth: inherit
+}
+
+headers {
+  Host: consumer-wallet
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,42 @@
+meta {
+  name: RequestProviderCatalog
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{CONSUMER_MANAGEMENT}}/v3/catalog/request
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "http://provider-controlplane:9020/dsp/2025-1",
+    "counterPartyId": "{{PROV_ID}}",
+    "protocol": "dataspace-protocol-http:2025-1"
+  }
+}
+
+script:post-response {
+  // hasPolicy is a bare object (not an array) when there is only a single offer - JSON-LD
+  // compaction collapses single-element arrays. Normalize to an array either way.
+  const rawOffers = res.getBody().dataset[0].hasPolicy;
+  const offerArray = Array.isArray(rawOffers) ? rawOffers : [rawOffers];
+  const offer = offerArray.find(item => item && item['@type'] === "Offer" && item['@id']);
+
+  // Full offer (incl. permission/constraint), not just its id - InitiateNegotiation sends this
+  // verbatim (plus assigner/assignee/target) so the negotiated policy matches what the provider
+  // actually offered. A hand-written policy stub only matches by coincidence for constraint-free
+  // policies and gets rejected ("Policy in the contract agreement is not equal to the one in the
+  // contract offer") for anything with real constraints (Membership, DATE_RANGE, ...).
+  bru.setEnvVar("offerPolicy", offer ? JSON.stringify(offer) : undefined);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
