@@ -107,6 +107,9 @@ public class PolicyHubImportService {
      *
      * @param hubPolicyId the id of the policy in the Policy Hub
      * @return the created, updated or unchanged policy definition, or a failure
+     * @throws org.constructx.edc.policyhub.client.PolicyHubUnavailableException if the Policy Hub
+     *         cannot be reached; deliberately not mapped to a failure, so callers can tell an
+     *         outage of the whole hub apart from a problem with this one policy
      */
     public ServiceResult<PolicyDefinition> importPolicy(String hubPolicyId) {
         var fetched = client.fetchPolicyDefinition(hubPolicyId);

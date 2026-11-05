@@ -19,12 +19,13 @@
 
 package org.constructx.edc.policyhub;
 
+import okhttp3.OkHttpClient;
 import org.constructx.edc.policyhub.api.PolicyHubApiController;
 import org.constructx.edc.policyhub.client.PolicyHubClient;
 import org.constructx.edc.policyhub.service.PolicyHubImportService;
+import org.constructx.edc.policyhub.service.PolicyHubSyncScheduler;
 import org.constructx.edc.policyhub.service.PolicyHubSyncService;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
-import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.participantcontext.single.spi.SingleParticipantContextSupplier;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -47,7 +48,6 @@ import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
@@ -65,6 +65,9 @@ public class PolicyHubClientExtension implements ServiceExtension {
     private static final String DEFAULT_CREDENTIALS_ALIAS = "policy-hub-credentials";
     private static final String DEFAULT_SYNC_INTERVAL_SECONDS = "3600";
     private static final String DEFAULT_SYNC_REQUEST_DELAY_MILLIS = "100";
+    private static final String DEFAULT_SYNC_RETRY_INITIAL_DELAY_SECONDS = "5";
+    private static final String DEFAULT_SYNC_RETRY_MAX_WAIT_SECONDS = "60";
+    private static final String DEFAULT_SYNC_OUTAGE_INTERVAL_SECONDS = "300";
 
     @Setting(description = "Base URL of the Construct-X Policy Hub. If not set, the Policy Hub import API is not registered.",
             key = "constructx.policyhub.url", required = false)
@@ -90,10 +93,22 @@ public class PolicyHubClientExtension implements ServiceExtension {
             key = "constructx.policyhub.sync.request-delay", defaultValue = DEFAULT_SYNC_REQUEST_DELAY_MILLIS)
     private long syncRequestDelayMillis;
 
+    @Setting(description = "If the Policy Hub is unreachable during a scheduled sync run: seconds until the first retry, doubled on every further retry",
+            key = "constructx.policyhub.sync.retry.initial-delay", defaultValue = DEFAULT_SYNC_RETRY_INITIAL_DELAY_SECONDS)
+    private long syncRetryInitialDelaySeconds;
+
+    @Setting(description = "If the Policy Hub is unreachable during a scheduled sync run: maximum total seconds to wait for it before the run is aborted",
+            key = "constructx.policyhub.sync.retry.max-wait", defaultValue = DEFAULT_SYNC_RETRY_MAX_WAIT_SECONDS)
+    private long syncRetryMaxWaitSeconds;
+
+    @Setting(description = "Seconds until the next sync run after a run was aborted because the Policy Hub was unreachable",
+            key = "constructx.policyhub.sync.outage-interval", defaultValue = DEFAULT_SYNC_OUTAGE_INTERVAL_SECONDS)
+    private long syncOutageIntervalSeconds;
+
     @Inject
     private WebService webService;
     @Inject
-    private EdcHttpClient httpClient;
+    private OkHttpClient httpClient;
     @Inject
     private Vault vault;
     @Inject
@@ -134,8 +149,10 @@ public class PolicyHubClientExtension implements ServiceExtension {
         var client = new PolicyHubClient(httpClient, policyHubUrl, vault, credentialsAlias);
         var importService = new PolicyHubImportService(client, jsonLd, managementTransformerRegistry,
                 validatorRegistry, policyDefinitionService, participantContextSupplier, clock, monitor);
+        var outageRetry = new PolicyHubSyncService.OutageRetry(
+                Duration.ofSeconds(syncRetryInitialDelaySeconds), Duration.ofSeconds(syncRetryMaxWaitSeconds));
         syncService = new PolicyHubSyncService(policyDefinitionService, importService,
-                Duration.ofMillis(syncRequestDelayMillis), monitor);
+                Duration.ofMillis(syncRequestDelayMillis), outageRetry, monitor);
 
         webService.registerResource(ApiContext.MANAGEMENT,
                 new PolicyHubApiController(importService, syncService, managementTransformerRegistry, monitor));
@@ -157,24 +174,19 @@ public class PolicyHubClientExtension implements ServiceExtension {
                 ? syncInitialDelaySeconds
                 : ThreadLocalRandom.current().nextLong(syncIntervalSeconds + 1);
         syncExecutor = executorInstrumentation.instrument(Executors.newSingleThreadScheduledExecutor(), "policy-hub-sync");
-        // fixed delay rather than fixed rate: a slow run never overlaps with the next one
-        syncExecutor.scheduleWithFixedDelay(this::runSync, initialDelay, syncIntervalSeconds, TimeUnit.SECONDS);
-        monitor.info("Periodic Policy Hub sync scheduled every %d s, first run in %d s".formatted(syncIntervalSeconds, initialDelay));
+        new PolicyHubSyncScheduler(syncService, syncExecutor, Duration.ofSeconds(syncIntervalSeconds),
+                Duration.ofSeconds(syncOutageIntervalSeconds), clock, monitor)
+                .start(Duration.ofSeconds(initialDelay));
+        monitor.info("Periodic Policy Hub sync scheduled every %d s, first run in %d s"
+                .formatted(syncIntervalSeconds, initialDelay));
+        monitor.info("If the Policy Hub is unreachable, a sync run waits up to %d s for it, then the next run follows after %d s"
+                .formatted(syncRetryMaxWaitSeconds, syncOutageIntervalSeconds));
     }
 
     @Override
     public void shutdown() {
         if (syncExecutor != null) {
             syncExecutor.shutdownNow();
-        }
-    }
-
-    private void runSync() {
-        // an exception escaping a scheduled task would silently cancel all further runs
-        try {
-            syncService.sync(PolicyHubSyncService.Trigger.SCHEDULED);
-        } catch (Exception e) {
-            monitor.severe("Policy Hub sync failed", e);
         }
     }
 }

@@ -19,6 +19,7 @@
 
 package org.constructx.edc.policyhub.service;
 
+import org.constructx.edc.policyhub.client.PolicyHubUnavailableException;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
 import org.eclipse.edc.policy.model.Policy;
@@ -28,6 +29,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -46,12 +48,16 @@ import static org.mockito.Mockito.when;
 
 class PolicyHubSyncServiceTest {
 
+    private static final PolicyHubSyncService.OutageRetry OUTAGE_RETRY =
+            new PolicyHubSyncService.OutageRetry(Duration.ofSeconds(5), Duration.ofSeconds(60));
+
     private final PolicyDefinitionService policyDefinitionService = mock();
     private final PolicyHubImportService importService = mock();
     private final Monitor monitor = mock();
+    private final List<Duration> sleeps = new ArrayList<>();
 
     private final PolicyHubSyncService service =
-            new PolicyHubSyncService(policyDefinitionService, importService, Duration.ZERO, monitor);
+            new PolicyHubSyncService(policyDefinitionService, importService, Duration.ZERO, OUTAGE_RETRY, sleeps::add, monitor);
 
     @Test
     void sync_whenDefinitionsWereImported_shouldReimportOnlyThose() {
@@ -64,7 +70,7 @@ class PolicyHubSyncServiceTest {
 
         verify(importService).importPolicy("hub-1");
         verify(importService, never()).importPolicy("manual");
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, false, null));
     }
 
     @Test
@@ -75,7 +81,7 @@ class PolicyHubSyncServiceTest {
 
         var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
 
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 1, 0, 0));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 1, 0, 0, false, null));
     }
 
     @Test
@@ -91,7 +97,7 @@ class PolicyHubSyncServiceTest {
 
         verify(importService).importPolicy("hub-2");
         verify(policyDefinitionService, never()).deleteById(anyString());
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 1, 1));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 1, 1, false, null));
     }
 
     @Test
@@ -131,6 +137,56 @@ class PolicyHubSyncServiceTest {
 
         verify(importService, never()).importPolicy(anyString());
         assertThat(summary.checked()).isZero();
+    }
+
+    @Test
+    void sync_whenHubComesBackDuringRetries_shouldCompleteRun() {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1"))
+                .thenThrow(new PolicyHubUnavailableException("Connection refused"))
+                .thenThrow(new PolicyHubUnavailableException("Connection refused"))
+                .thenReturn(ServiceResult.success(first));
+        when(importService.importPolicy("hub-2")).thenReturn(ServiceResult.success(second));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        assertThat(sleeps).containsExactly(Duration.ofSeconds(5), Duration.ofSeconds(10));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 2, 0, false, null));
+        verify(monitor).info("Policy Hub sync (scheduled): Policy Hub reachable again after 2 retries");
+    }
+
+    @Test
+    void sync_whenHubStaysUnreachable_shouldAbortAfterRetryBudget() {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1")).thenThrow(new PolicyHubUnavailableException("Connection refused"));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        // 5 + 10 + 20 + 25 = 60 s: the last pause is cut short to stay within the budget
+        assertThat(sleeps).containsExactly(Duration.ofSeconds(5), Duration.ofSeconds(10),
+                Duration.ofSeconds(20), Duration.ofSeconds(25));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(0, 0, 0, 0, true, "Connection refused"));
+        verify(importService, never()).importPolicy("hub-2");
+        verify(monitor).warning("Policy Hub sync (scheduled) aborted: Policy Hub unreachable for 60 s (Connection refused), 0 of 2 policies checked");
+    }
+
+    @Test
+    void sync_whenTriggeredManuallyAndHubUnreachable_shouldAbortWithoutWaiting() {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1")).thenReturn(ServiceResult.success(first));
+        when(importService.importPolicy("hub-2")).thenThrow(new PolicyHubUnavailableException("status 503"));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.MANUAL);
+
+        assertThat(sleeps).isEmpty();
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, true, "status 503"));
+        verify(monitor).warning("Policy Hub sync (manual) aborted: Policy Hub unreachable (status 503), 1 of 2 policies checked");
     }
 
     private static PolicyDefinition importedDefinition(String id, String hash) {

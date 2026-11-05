@@ -50,7 +50,8 @@ to:
 
 `@id` is the id to use in contract definitions. Errors come back as `400` with the reason in the
 message — including a hub-side `404`, which surfaces as `400 Could not fetch policy '…' from the
-Policy Hub: Policy Hub returned status 404`.
+Policy Hub: Policy Hub returned status 404`. If the hub itself is unreachable (connection failure,
+timeout, `5xx`, `408`, `429`), the response is `503 Service Unavailable` instead.
 
 If the hub's content is unchanged since the last import, nothing is written and the existing
 definition is returned (see [Keeping imports up to date](#keeping-imports-up-to-date)).
@@ -75,6 +76,10 @@ impractical.
   "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" }
 }
 ```
+
+If the Policy Hub is unreachable, the manual run does **not** wait for it (it blocks an HTTP
+request): it aborts at once and answers `503 Service Unavailable`, e.g.
+`Policy Hub sync aborted: Policy Hub unreachable (Connection refused), 0 policies checked before`.
 
 ### Read imported policies back
 
@@ -200,10 +205,24 @@ are taken over automatically.
 - **Nothing is ever deleted** — if the hub no longer serves a policy (`404`), is unreachable, or the
   new version fails validation, the stored definition stays as it is and a warning is logged.
   Contract definitions may still reference it.
-- **Scheduling** — runs with a fixed delay between the end of one run and the start of the next, so
-  runs never overlap. The first run starts after a random delay of up to one interval, so that many
-  connectors do not hit the hub at the same moment. Requests within a run are spaced by
-  `request-delay`.
+- **Scheduling** — the next run is scheduled when the previous one has ended, so runs never
+  overlap. The first run starts after a random delay of up to one interval, so that many connectors
+  do not hit the hub at the same moment. Requests within a run are spaced by `request-delay`.
+- **Hub unreachable** — a connection failure or timeout, or a `5xx`, `408` or `429` response,
+  affects every policy alike, so it is handled for the run as a whole rather than per policy:
+  1. The run waits and retries the same policy with a doubling pause (`5 s`, `10 s`, `20 s`, …),
+     the last pause cut short so the pauses add up to at most `retry.max-wait` (`60 s`). If the hub
+     comes back, the run simply continues.
+  2. Otherwise the run is aborted; the remaining policies are not requested. The next run follows
+     after `outage-interval` (`5 min`) instead of the regular interval, and again every 5 minutes
+     until the hub is back. The first run that completes switches back to the regular interval.
+
+  Requests to the hub use the runtime's plain `OkHttpClient` (same timeouts as the rest of the
+  connector) but **not** EDC's built-in HTTP retries (`edc.core.retry.*`), which would retry every
+  request silently for about 15 s. Each request is therefore a single attempt: the waiting happens
+  only in the backoff above, and every attempt is logged. The import and sync endpoints answer
+  `503` right away. A `404`, `400`, `401` or `403` is *not* treated as an outage: it concerns one
+  policy and is counted as `failed`.
 - **Multiple replicas** — each control plane replica syncs on its own. That is harmless because
   imports are idempotent and the hash prevents duplicate writes.
 - **Existing contracts are not affected** — EDC copies the policy into the `ContractAgreement` when
@@ -213,8 +232,22 @@ Every run ends with a log line such as
 `Policy Hub sync (scheduled) finished: 3 checked, 1 updated, 1 unchanged, 1 failed` (`(manual)` for
 runs started through the sync endpoint). Each policy whose content changed additionally logs
 `Updated policy definition '…' from the Policy Hub` once it is stored, and each failure a warning with the
-reason. To monitor the periodic sync, alert when no `Policy Hub sync (scheduled) finished` line
-appears for longer than about one interval, and look at the warnings when `failed` is not 0.
+reason.
+
+While the hub is unreachable, the log shows:
+
+| Situation                        | Level   | Log line                                                                                                                    |
+|----------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------------|
+| Waiting for the hub              | WARNING | `Policy Hub sync (scheduled): Policy Hub unreachable (Connection refused), retry 1 in 5 s`                                  |
+| Hub back within the same run     | INFO    | `Policy Hub sync (scheduled): Policy Hub reachable again after 2 retries`                                                   |
+| Run aborted                      | WARNING | `Policy Hub sync (scheduled) aborted: Policy Hub unreachable for 60 s (Connection refused), 0 of 12 policies checked`       |
+| Next run after an abort          | WARNING | `Next Policy Hub sync in 300 s (3 aborted runs in a row, Policy Hub unreachable since 2026-11-05T10:15:00Z)`                |
+| First completed run after abort  | INFO    | `Policy Hub reachable again after 3 aborted runs, back to the regular interval of 3600 s`                                   |
+| Manual sync while hub is down    | WARNING | `Policy Hub sync (manual) aborted: Policy Hub unreachable (Connection refused), 0 of 12 policies checked` (plus HTTP `503`) |
+
+To monitor the periodic sync, alert on `Policy Hub sync (scheduled) aborted` lines and when no
+`Policy Hub sync (scheduled) finished` line appears for longer than about one interval; look at the
+warnings when `failed` is not 0.
 
 ## Configuration
 
@@ -226,6 +259,9 @@ appears for longer than about one interval, and look at the warnings when `faile
 | `constructx.policyhub.sync.interval`       | no       | `3600`                   | Seconds between the end of one sync run and the start of the next.                                            |
 | `constructx.policyhub.sync.initial-delay`  | no       | `-1`                     | Seconds before the first run. Negative means a random delay between 0 and the interval.                       |
 | `constructx.policyhub.sync.request-delay`  | no       | `100`                    | Milliseconds between two Policy Hub requests within one run.                                                  |
+| `constructx.policyhub.sync.retry.initial-delay` | no  | `5`                      | Hub unreachable: seconds until the first retry within a scheduled run, doubled on every further retry.        |
+| `constructx.policyhub.sync.retry.max-wait` | no       | `60`                     | Hub unreachable: maximum total seconds a scheduled run waits for the hub before it is aborted.                |
+| `constructx.policyhub.sync.outage-interval` | no      | `300`                    | Seconds until the next run after a run was aborted because the hub was unreachable.                           |
 
 Credentials are resolved from the vault on every request — they never appear in configuration files,
 and rotating them needs no restart.

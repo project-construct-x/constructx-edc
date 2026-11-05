@@ -19,11 +19,14 @@
 
 package org.constructx.edc.policyhub.service;
 
+import org.constructx.edc.policyhub.client.PolicyHubUnavailableException;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
+import org.eclipse.edc.spi.result.ServiceResult;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -41,6 +44,10 @@ import static org.constructx.edc.policyhub.service.PolicyHubImportService.POLICY
  *
  * <p>A policy the hub no longer serves (e.g. a {@code 404}) or that fails validation is kept as it
  * is and only reported: contract definitions may still reference it.
+ *
+ * <p>If the hub as a whole is unreachable, a scheduled run retries the same policy with a
+ * doubling pause until {@link OutageRetry#maxWait()} is used up, then aborts. A manual run aborts
+ * right away, since it blocks an HTTP request. Either way the remaining policies are not requested.
  */
 public class PolicyHubSyncService {
 
@@ -53,8 +60,29 @@ public class PolicyHubSyncService {
 
     /**
      * Outcome of one sync run.
+     *
+     * @param checked    policy definitions processed, i.e. updated + unchanged + failed
+     * @param aborted    whether the run was aborted because the Policy Hub was unreachable
+     * @param abortReason the cause of the abort, e.g. {@code Connection refused}; {@code null} if
+     *                   not aborted
      */
-    public record SyncSummary(int checked, int updated, int unchanged, int failed) {
+    public record SyncSummary(int checked, int updated, int unchanged, int failed,
+                              boolean aborted, @Nullable String abortReason) {
+    }
+
+    /**
+     * How a scheduled run waits for an unreachable Policy Hub: first pause, doubled on every
+     * further retry, until the pauses add up to {@code maxWait}.
+     */
+    public record OutageRetry(Duration initialDelay, Duration maxWait) {
+    }
+
+    /**
+     * Waits for the given duration; replaced in tests so they do not actually wait.
+     */
+    @FunctionalInterface
+    interface Sleeper {
+        void sleep(Duration duration) throws InterruptedException;
     }
 
     static final int PAGE_SIZE = 100;
@@ -62,13 +90,22 @@ public class PolicyHubSyncService {
     private final PolicyDefinitionService policyDefinitionService;
     private final PolicyHubImportService importService;
     private final Duration requestDelay;
+    private final OutageRetry outageRetry;
+    private final Sleeper sleeper;
     private final Monitor monitor;
 
     public PolicyHubSyncService(PolicyDefinitionService policyDefinitionService, PolicyHubImportService importService,
-                                Duration requestDelay, Monitor monitor) {
+                                Duration requestDelay, OutageRetry outageRetry, Monitor monitor) {
+        this(policyDefinitionService, importService, requestDelay, outageRetry, duration -> Thread.sleep(duration.toMillis()), monitor);
+    }
+
+    PolicyHubSyncService(PolicyDefinitionService policyDefinitionService, PolicyHubImportService importService,
+                         Duration requestDelay, OutageRetry outageRetry, Sleeper sleeper, Monitor monitor) {
         this.policyDefinitionService = policyDefinitionService;
         this.importService = importService;
         this.requestDelay = requestDelay;
+        this.outageRetry = outageRetry;
+        this.sleeper = sleeper;
         this.monitor = monitor;
     }
 
@@ -76,8 +113,9 @@ public class PolicyHubSyncService {
      * Runs one sync over all imported policy definitions.
      *
      * @param trigger what started the run; part of the log output, so scheduled and manual runs can
-     *                be monitored separately
-     * @return counts of the checked, updated, unchanged and failed definitions
+     *                be monitored separately. Only scheduled runs wait for an unreachable hub.
+     * @return counts of the checked, updated, unchanged and failed definitions, and whether the run
+     *         was aborted because the Policy Hub was unreachable
      */
     public SyncSummary sync(Trigger trigger) {
         var label = trigger.name().toLowerCase(Locale.ROOT);
@@ -93,7 +131,16 @@ public class PolicyHubSyncService {
                 break;
             }
 
-            var result = importService.importPolicy(definition.getId());
+            var attempt = importWithRetry(definition.getId(), trigger, label);
+            if (attempt.outage() != null) {
+                var checked = updated + unchanged + failed;
+                var unreachableFor = attempt.waited().isZero() ? "" : " for %d s".formatted(attempt.waited().toSeconds());
+                monitor.warning("Policy Hub sync (%s) aborted: Policy Hub unreachable%s (%s), %d of %d policies checked"
+                        .formatted(label, unreachableFor, attempt.outage().getReason(), checked, imported.size()));
+                return new SyncSummary(checked, updated, unchanged, failed, true, attempt.outage().getReason());
+            }
+
+            var result = attempt.result();
             if (result.failed()) {
                 failed++;
                 monitor.warning("Policy Hub sync (%s): keeping policy definition '%s' unchanged: %s"
@@ -105,13 +152,47 @@ public class PolicyHubSyncService {
                 updated++;
             }
 
-            pause();
+            pause(requestDelay);
         }
 
-        var summary = new SyncSummary(imported.size(), updated, unchanged, failed);
+        var summary = new SyncSummary(updated + unchanged + failed, updated, unchanged, failed, false, null);
         monitor.info("Policy Hub sync (%s) finished: %d checked, %d updated, %d unchanged, %d failed"
                 .formatted(label, summary.checked(), summary.updated(), summary.unchanged(), summary.failed()));
         return summary;
+    }
+
+    /**
+     * Imports one policy. If the hub is unreachable, a scheduled run waits and tries again with a
+     * doubling pause; the last pause is cut short so the pauses never exceed the retry budget.
+     */
+    private Attempt importWithRetry(String hubPolicyId, Trigger trigger, String label) {
+        var waited = Duration.ZERO;
+        var delay = outageRetry.initialDelay();
+        var retries = 0;
+        while (true) {
+            try {
+                var result = importService.importPolicy(hubPolicyId);
+                if (retries > 0) {
+                    monitor.info("Policy Hub sync (%s): Policy Hub reachable again after %d %s"
+                            .formatted(label, retries, retries == 1 ? "retry" : "retries"));
+                }
+                return new Attempt(result, null, waited);
+            } catch (PolicyHubUnavailableException e) {
+                var remaining = outageRetry.maxWait().minus(waited);
+                if (trigger == Trigger.MANUAL || remaining.isZero() || remaining.isNegative()) {
+                    return new Attempt(null, e, waited);
+                }
+                var wait = delay.compareTo(remaining) > 0 ? remaining : delay;
+                retries++;
+                monitor.warning("Policy Hub sync (%s): Policy Hub unreachable (%s), retry %d in %d s"
+                        .formatted(label, e.getReason(), retries, wait.toSeconds()));
+                if (!pause(wait)) {
+                    return new Attempt(null, e, waited);
+                }
+                waited = waited.plus(wait);
+                delay = delay.multipliedBy(2);
+            }
+        }
     }
 
     /**
@@ -144,14 +225,29 @@ public class PolicyHubSyncService {
         }
     }
 
-    private void pause() {
-        if (requestDelay.isZero()) {
-            return;
+    /**
+     * Waits for the given duration.
+     *
+     * @return {@code false} if the wait was interrupted, i.e. the runtime is shutting down
+     */
+    private boolean pause(Duration duration) {
+        if (duration.isZero()) {
+            return true;
         }
         try {
-            Thread.sleep(requestDelay.toMillis());
+            sleeper.sleep(duration);
+            return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return false;
         }
+    }
+
+    /**
+     * Result of importing one policy: either the import's own result, or the outage that made the
+     * run give up, plus how long it waited for the hub.
+     */
+    private record Attempt(@Nullable ServiceResult<PolicyDefinition> result,
+                           @Nullable PolicyHubUnavailableException outage, Duration waited) {
     }
 }

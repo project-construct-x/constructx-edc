@@ -26,13 +26,20 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.ServiceUnavailableException;
+import jakarta.ws.rs.core.Response;
+import org.constructx.edc.policyhub.client.PolicyHubUnavailableException;
 import org.constructx.edc.policyhub.service.PolicyHubImportService;
 import org.constructx.edc.policyhub.service.PolicyHubSyncService;
 import org.eclipse.edc.api.model.IdResponse;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.eclipse.edc.web.spi.ApiErrorDetail;
+
+import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
@@ -66,11 +73,17 @@ public class PolicyHubApiController {
      * periodic sync does. Runs synchronously.
      *
      * @return the counts of checked, updated, unchanged and failed policy definitions
+     * @throws ServiceUnavailableException {@code 503} if the Policy Hub is unreachable; the run is
+     *         aborted right away, without waiting for the hub
      */
     @POST
     @Path("/policies/sync")
     public JsonObject syncPolicies() {
         var summary = syncService.sync(PolicyHubSyncService.Trigger.MANUAL);
+        if (summary.aborted()) {
+            throw serviceUnavailable("Policy Hub sync aborted: Policy Hub unreachable (%s), %d policies checked before"
+                    .formatted(summary.abortReason(), summary.checked()));
+        }
         return Json.createObjectBuilder()
                 .add(TYPE, EDC_NAMESPACE + "PolicyHubSyncSummary")
                 .add(EDC_NAMESPACE + "checked", summary.checked())
@@ -88,12 +101,19 @@ public class PolicyHubApiController {
      * @return an {@link IdResponse} carrying the id of the imported policy definition (the Policy
      *         Hub's UUID), plus a {@code policyHubName} field carrying the Policy Hub's own
      *         human-readable policy id
+     * @throws ServiceUnavailableException {@code 503} if the Policy Hub is unreachable
      */
     @POST
     @Path("/policies/{hubPolicyId}/import")
     public JsonObject importPolicy(@PathParam("hubPolicyId") String hubPolicyId) {
-        var definition = importService.importPolicy(hubPolicyId)
-                .orElseThrow(exceptionMapper(PolicyDefinition.class, hubPolicyId));
+        ServiceResult<PolicyDefinition> result;
+        try {
+            result = importService.importPolicy(hubPolicyId);
+        } catch (PolicyHubUnavailableException e) {
+            monitor.warning("Policy Hub import of '%s' failed: %s".formatted(hubPolicyId, e.getMessage()));
+            throw serviceUnavailable("Could not import policy '%s': %s".formatted(hubPolicyId, e.getMessage()));
+        }
+        var definition = result.orElseThrow(exceptionMapper(PolicyDefinition.class, hubPolicyId));
 
         monitor.debug("Policy definition '%s' imported from the Policy Hub".formatted(definition.getId()));
 
@@ -109,5 +129,21 @@ public class PolicyHubApiController {
         return Json.createObjectBuilder(json)
                 .add(PolicyHubImportService.POLICY_HUB_NAME_PROPERTY, String.valueOf(policyHubName))
                 .build();
+    }
+
+    /**
+     * Builds a {@code 503} with the same error body as the Management API's other errors. EDC's
+     * exception mappers pass a {@link jakarta.ws.rs.WebApplicationException}'s response through
+     * unchanged.
+     */
+    private static ServiceUnavailableException serviceUnavailable(String message) {
+        var error = ApiErrorDetail.Builder.newInstance()
+                .message(message)
+                .type("ServiceUnavailable")
+                .build();
+        return new ServiceUnavailableException(Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                .type(APPLICATION_JSON)
+                .entity(List.of(error))
+                .build());
     }
 }
