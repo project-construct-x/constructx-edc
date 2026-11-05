@@ -27,6 +27,12 @@ docs {
   the new version fails validation) are kept unchanged - the control plane log shows the reason as
   a warning ("Policy Hub sync (manual): keeping policy definition ... unchanged: ...").
 
+  If the Policy Hub itself is unreachable (connection refused, timeout, 5xx, 408, 429), this
+  request does not wait for it: it aborts right away with 503 Service Unavailable, and the log
+  shows "Policy Hub sync (manual) aborted: Policy Hub unreachable (...)". Only the periodic sync
+  waits for the hub (up to 60 s) and, if it stays away, retries the run every 5 minutes. To try
+  it: docker stop policyhub-backend, run this request, then docker start policyhub-backend.
+
   To try it: run ImportPolicyFromHub, change the policy in the Policy Hub, run this request and
   check with Check Imported Policy that the new version and
   "privateProperties.policyHubImportedAt" are there.
