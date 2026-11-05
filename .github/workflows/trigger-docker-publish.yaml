@@ -45,6 +45,16 @@ on:
         type: string
         description: 'Explicitly specify the Docker tag. Note that SHA and latest are added automatically.'
         required: false
+    secrets:
+      DOCKER_HUB_USER:
+        required: false
+        description: 'DockerHub username'
+      DOCKER_HUB_TOKEN:
+        required: false
+        description: 'DockerHub token'
+
+permissions:
+  contents: read
 
 jobs:
   create-docker-image:
@@ -55,15 +65,23 @@ jobs:
       matrix:
         variant: [ { dir: edc-controlplane, img: edc-runtime-memory },
                    { dir: edc-controlplane, img: edc-controlplane-postgresql-hashicorp-vault },
-                   { dir: edc-dataplane,    img: edc-dataplane-hashicorp-vault },
-                   { dir: edc-tests/runtime, img: mock-connector }]
+                   { dir: edc-dataplane,    img: edc-dataplane-hashicorp-vault }]
     permissions:
-      contents: write
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Log inputs
+        env:
+          INPUT_DOCKER_TAG: ${{ inputs.docker_tag }}
+          INPUT_NAMESPACE: ${{ inputs.namespace }}
         run: |
-          echo "Input Version: ${{ inputs.docker_tag }}, Input namespace: ${{ inputs.namespace}}"
+          echo "Input Version: $INPUT_DOCKER_TAG, Input namespace: $INPUT_NAMESPACE"
       - uses: ./.github/actions/publish-docker-image
         name: Publish ${{ matrix.variant.img }}
         with:

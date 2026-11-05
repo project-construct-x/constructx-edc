@@ -80,8 +80,8 @@ public abstract class ProviderPushBaseTest implements ParticipantAwareTest, Runt
                 "type", "HttpData",
                 "contentType", "application/json");
         provider().createAsset(assetId, Map.of(), dataAddress);
-        var accessPolicyId = provider().createPolicyDefinition(bpnPolicy(consumer().getBpn()));
-        var policyId = provider().createPolicyDefinition(frameworkPolicy(FRAMEWORK_AGREEMENT_LITERAL, Operator.EQ, "DataExchangeGovernance:1.0", "use"));
+        var accessPolicyId = provider().createPolicyDefinition(bpnPolicy(Operator.IS_ANY_OF, consumer().getBpn()));
+        var policyId = provider().createPolicyDefinition(frameworkPolicy("FrameworkAgreement", Operator.EQ, "DataExchangeGovernance:1.0", "use", false));
         provider().createContractDefinition(assetId, "def-1", accessPolicyId, policyId);
 
         var destination = httpDataAddress(destinationUrl);
@@ -95,12 +95,12 @@ public abstract class ProviderPushBaseTest implements ParticipantAwareTest, Runt
         server.verify(anyRequestedFor(urlPathEqualTo(MOCK_BACKEND_SOURCE_PATH)));
         server.verify(anyRequestedFor(urlPathEqualTo(MOCK_BACKEND_DESTINATION_PATH)));
     }
-    
+
     @Test
     void httpPushDataTransfer_withLegacyUsagePolicy() {
         var sourceUrl = createMockHttpDataUrl(MOCK_BACKEND_SOURCE_PATH);
         var destinationUrl = createMockHttpDataUrl(MOCK_BACKEND_DESTINATION_PATH);
-        
+
         var assetId = UUID.randomUUID().toString();
         Map<String, Object> dataAddress = Map.of(
                 "name", "transfer-test",
@@ -108,17 +108,17 @@ public abstract class ProviderPushBaseTest implements ParticipantAwareTest, Runt
                 "type", "HttpData",
                 "contentType", "application/json");
         provider().createAsset(assetId, Map.of(), dataAddress);
-        var accessPolicyId = provider().createPolicyDefinition(bpnPolicy(consumer().getBpn()));
-        var policyId = provider().createPolicyDefinition(legacyFrameworkPolicy());
+        var accessPolicyId = provider().createPolicyDefinition(bpnPolicy(Operator.IS_ANY_OF, consumer().getBpn()));
+        var policyId = provider().createPolicyDefinition(frameworkPolicy("FrameworkAgreement", Operator.EQ, "DataExchangeGovernance:1.0", "use", false));
         provider().createContractDefinition(assetId, "def-1", accessPolicyId, policyId);
-        
+
         var destination = httpDataAddress(destinationUrl);
         var transferProcessId = consumer()
                 .requestAssetFrom(assetId, provider())
                 .withDestination(destination)
                 .withTransferType("HttpData-PUSH")
                 .execute();
-        
+
         await().atMost(ASYNC_TIMEOUT).untilAsserted(() -> transferProcessIsInState(transferProcessId, COMPLETED));
         server.verify(anyRequestedFor(urlPathEqualTo(MOCK_BACKEND_SOURCE_PATH)));
         server.verify(anyRequestedFor(urlPathEqualTo(MOCK_BACKEND_DESTINATION_PATH)));
@@ -137,8 +137,9 @@ public abstract class ProviderPushBaseTest implements ParticipantAwareTest, Runt
                 "contentType", "application/json",
                 "isNonFinite", "true");
         provider().createAsset(assetId, Map.of(), dataAddress);
-        var policyId = provider().createPolicyDefinition(bpnPolicy(consumer().getBpn()));
-        provider().createContractDefinition(assetId, "def-1", policyId, policyId);
+        var accessPolicyId = provider().createPolicyDefinition(bpnPolicy(consumer().getBpn()));
+        var contractPolicyId = provider().createPolicyDefinition(frameworkPolicy(Map.of(), "use"));
+        provider().createContractDefinition(assetId, "def-1", accessPolicyId, contractPolicyId);
 
         var destination = httpDataAddress(destinationUrl);
         var consumerTransferProcessId = consumer()

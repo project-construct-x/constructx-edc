@@ -82,18 +82,20 @@ public class DataspaceIssuer extends IdentityParticipant {
     }
 
 
-    public VerifiableCredentialResource issueMembershipCredential(String did, String bpn) {
+    public VerifiableCredentialResource issueMembershipCredential(String did, String bpn, String participantContextId) {
         return issueCredential(
                 did, bpn, "MembershipCredential",
                 () -> CredentialSubject.Builder.newInstance()
                         .id(did)
                         .claim("holderIdentifier", bpn)
+                        .claim("bpn", bpn)
                         .build(),
-                membershipRawVc(did, bpn)
+                membershipRawVc(did, bpn),
+                participantContextId
         );
     }
 
-    public VerifiableCredentialResource issueDismantlerCredential(String did, String bpn) {
+    public VerifiableCredentialResource issueDismantlerCredential(String did, String bpn, String participantContextId) {
         return issueCredential(
                 did, bpn, "DismantlerCredential",
                 () -> CredentialSubject.Builder.newInstance()
@@ -108,11 +110,12 @@ public class DataspaceIssuer extends IdentityParticipant {
                         .add("activityType", "vehicleDismantle")
                         .add("allowedVehicleBrands", Json.createArrayBuilder().add("BMW").add("Volkswagen").build())
                         .add("id", did)
-                        .build())
+                        .build()),
+                participantContextId
         );
     }
 
-    public VerifiableCredentialResource issueFrameworkCredential(String did, String bpn, String credentialType) {
+    public VerifiableCredentialResource issueFrameworkCredential(String did, String bpn, String credentialType, String participantContextId) {
         var subject = Json.createObjectBuilder()
                 .add("type", credentialType)
                 .add("holderIdentifier", bpn)
@@ -127,7 +130,8 @@ public class DataspaceIssuer extends IdentityParticipant {
                         .id(did)
                         .claim("holderIdentifier", bpn)
                         .build(),
-                createVcBuilder(credentialType, subject)
+                createVcBuilder(credentialType, subject),
+                participantContextId
         );
     }
 
@@ -158,15 +162,38 @@ public class DataspaceIssuer extends IdentityParticipant {
         return createVcBuilder("MembershipCredential", subject);
     }
 
-    public List<VerifiableCredentialResource> issueCredentials(String did, String bpn) {
+    public List<VerifiableCredentialResource> issueCredentials(String did, String bpn, String participantContextId) {
         return List.of(
-                issueMembershipCredential(did, bpn),
-                issueDismantlerCredential(did, bpn),
-                issueFrameworkCredential(did, bpn, "BpnCredential"),
-                issueFrameworkCredential(did, bpn, "DataExchangeGovernanceCredential"));
+                issueMembershipCredential(did, bpn, participantContextId),
+                issueDismantlerCredential(did, bpn, participantContextId),
+                issueBpnCredential(did, bpn, participantContextId),
+                issueFrameworkCredential(did, bpn, "DataExchangeGovernanceCredential", participantContextId));
     }
 
-    private VerifiableCredentialResource issueCredential(String did, String bpn, String type, Supplier<CredentialSubject> credentialSubjectSupplier, JsonObjectBuilder vcBuilder) {
+    VerifiableCredentialResource issueBpnCredential(String did, String bpn, String participantContextId) {
+        var subject = Json.createObjectBuilder()
+                .add("type", "BpnCredential")
+                .add("holderIdentifier", bpn)
+                .add("bpn", bpn)
+                .add("id", did)
+                .build();
+
+        return issueCredential(
+                did, bpn, "BpnCredential",
+                () -> CredentialSubject.Builder.newInstance()
+                        .id(did)
+                        .claim("holderIdentifier", bpn)
+                        .claim("bpn", bpn)
+                        .build(),
+                createVcBuilder("BpnCredential", subject),
+                participantContextId
+        );
+    }
+
+    private VerifiableCredentialResource issueCredential(String did, String bpn, String type,
+                                                         Supplier<CredentialSubject> credentialSubjectSupplier,
+                                                         JsonObjectBuilder vcBuilder,
+                                                         String participantContextId) {
         var credential = VerifiableCredential.Builder.newInstance()
                 .type(type)
                 .credentialSubject(credentialSubjectSupplier.get())
@@ -178,7 +205,7 @@ public class DataspaceIssuer extends IdentityParticipant {
         var rawVc = createJwtVc(vcJson, did);
         return VerifiableCredentialResource.Builder.newInstance()
                 .issuerId(didUrl())
-                .participantContextId(did)
+                .participantContextId(participantContextId)
                 .holderId(bpn)
                 .credential(new VerifiableCredentialContainer(rawVc, CredentialFormat.VC1_0_JWT, credential))
                 .build();
@@ -192,8 +219,8 @@ public class DataspaceIssuer extends IdentityParticipant {
                         .add("https://w3id.org/catenax/credentials")
                         .add("https://w3id.org/vc/status-list/2021/v1"))
                 .add("type", Json.createArrayBuilder()
-                        .add("VerifiableCredential")
-                        .add(type))
+                        .add(type)
+                        .add("VerifiableCredential"))
                 .add("credentialSubject", subjectSupplier)
                 .add("issuer", didUrl())
                 .add("issuanceDate", Instant.now().toString());

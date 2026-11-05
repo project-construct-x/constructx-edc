@@ -46,7 +46,7 @@ dependencies {
     testImplementation(libs.edc.lib.jsonld)
     // ships the cached document/odrl.jsonld context that the runtime's JsonLdExtension registers as well
     testImplementation(libs.edc.ext.jsonld)
-    testImplementation(libs.edc.controlplane.transform)
+    testImplementation(libs.edc.transform.controlplane)
     testImplementation(libs.edc.lib.transform)
     testImplementation(libs.edc.spi.participant)
     testImplementation(libs.titaniumJsonLd)

@@ -197,7 +197,7 @@ public class ConxPolicyExtension implements ServiceExtension {
         engine.registerFunction(CatalogPolicyContext.class, Permission.class,
                 withCxPolicyNsPrefix(BUSINESS_PARTNER_GROUP), new BusinessPartnerGroupConstraintFunction<>(store, bdrsClient));
         engine.registerFunction(CatalogPolicyContext.class, Permission.class,
-                withCxPolicyNsPrefix(BUSINESS_PARTNER_NUMBER), new BusinessPartnerNumberConstraintFunction<>(bdrsClient));
+                withCxPolicyNsPrefix(BUSINESS_PARTNER_NUMBER), new BusinessPartnerNumberConstraintFunction<>());
         engine.registerFunction(CatalogPolicyContext.class, Permission.class,
                 CONNECTOR, new ConnectorConstraintFunction<>(bdrsClient));
 

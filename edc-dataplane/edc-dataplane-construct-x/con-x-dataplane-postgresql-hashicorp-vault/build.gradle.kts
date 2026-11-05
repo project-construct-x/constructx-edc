@@ -29,9 +29,10 @@ configurations.all {
     exclude(group = "org.eclipse.edc", module = "data-plane-util")
 }
 
+val edcVersion = project.property("con-x-edcVersion") as String
+val txVersion = project.property("version") as String
+
 dependencies {
-    val edcVersion = "0.15.1"
-    val txVersion = "0.12.0"
     implementation("org.eclipse.edc:dataplane-base-bom:$edcVersion")
     implementation("org.eclipse.edc:dataplane-feature-sql-bom:$edcVersion")
     implementation("org.eclipse.edc:vault-hashicorp:${edcVersion}")
@@ -40,6 +41,12 @@ dependencies {
 
     implementation("org.eclipse.tractusx.edc:dataplane-public-api-v2:$txVersion")
     implementation("org.eclipse.tractusx.edc:dataplane-util:$txVersion")
+
+
+
+    // Hotfix version overrides
+    implementation("com.fasterxml.jackson.core:jackson-core:2.22.3")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.22.4")
 }
 
 

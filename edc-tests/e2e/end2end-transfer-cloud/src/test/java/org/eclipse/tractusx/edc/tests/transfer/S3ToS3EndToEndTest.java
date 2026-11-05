@@ -24,7 +24,7 @@ import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
-import org.eclipse.tractusx.edc.tests.aws.LocalstackExtension;
+import org.eclipse.tractusx.edc.tests.aws.FlociExtension;
 import org.eclipse.tractusx.edc.tests.participant.TransferParticipant;
 import org.eclipse.tractusx.edc.tests.runtimes.PostgresExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +48,7 @@ import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.PROVIDER_B
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.PROVIDER_DID;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.PROVIDER_NAME;
 import static org.eclipse.tractusx.edc.tests.helpers.PolicyHelperFunctions.bpnPolicy;
+import static org.eclipse.tractusx.edc.tests.helpers.PolicyHelperFunctions.frameworkPolicy;
 import static org.eclipse.tractusx.edc.tests.participant.TractusxParticipantBase.ASYNC_TIMEOUT;
 import static org.eclipse.tractusx.edc.tests.runtimes.Runtimes.pgRuntime;
 
@@ -64,15 +65,13 @@ public class S3ToS3EndToEndTest {
             .name(CONSUMER_NAME)
             .id(CONSUMER_DID)
             .bpn(CONSUMER_BPN)
-            .protocol(DSP_2025)
-            .protocolVersionPath(DSP_2025_PATH)
+            .protocol(DSP_2025, DSP_2025_PATH)
             .build();
     private static final TransferParticipant PROVIDER = TransferParticipant.Builder.newInstance()
             .name(PROVIDER_NAME)
             .id(PROVIDER_DID)
             .bpn(PROVIDER_BPN)
-            .protocol(DSP_2025)
-            .protocolVersionPath(DSP_2025_PATH)
+            .protocol(DSP_2025, DSP_2025_PATH)
             .build();
 
     @RegisterExtension
@@ -85,9 +84,10 @@ public class S3ToS3EndToEndTest {
     private static final RuntimeExtension CONSUMER_RUNTIME = pgRuntime(CONSUMER, POSTGRES, CONSUMER::getConfig);
 
     @RegisterExtension
-    private static final LocalstackExtension PROVIDER_CONTAINER = new LocalstackExtension();
+    private static final FlociExtension PROVIDER_CONTAINER = new FlociExtension();
+
     @RegisterExtension
-    private static final LocalstackExtension CONSUMER_CONTAINER = new LocalstackExtension();
+    private static final FlociExtension CONSUMER_CONTAINER = new FlociExtension();
     
     @BeforeEach
     void setup() {
@@ -117,8 +117,9 @@ public class S3ToS3EndToEndTest {
 
         // create objects in EDC
         PROVIDER.createAsset(assetId, Map.of(), dataAddress);
-        var policyId = PROVIDER.createPolicyDefinition(bpnPolicy(CONSUMER.getBpn()));
-        PROVIDER.createContractDefinition(assetId, "def-1", policyId, policyId);
+        var accessPolicyId = PROVIDER.createPolicyDefinition(bpnPolicy(CONSUMER.getBpn()));
+        var contractPolicyId = PROVIDER.createPolicyDefinition(frameworkPolicy(Map.of(), "use"));
+        PROVIDER.createContractDefinition(assetId, "def-1", accessPolicyId, contractPolicyId);
 
         var destination = Json.createObjectBuilder()
                 .add(TYPE, EDC_NAMESPACE + "DataAddress")
@@ -173,8 +174,9 @@ public class S3ToS3EndToEndTest {
         );
 
         PROVIDER.createAsset(assetId, Map.of(), dataAddress);
-        var policyId = PROVIDER.createPolicyDefinition(bpnPolicy(CONSUMER.getBpn()));
-        PROVIDER.createContractDefinition(assetId, "def-1", policyId, policyId);
+        var accessPolicyId = PROVIDER.createPolicyDefinition(bpnPolicy(CONSUMER.getBpn()));
+        var contractPolicyId = PROVIDER.createPolicyDefinition(frameworkPolicy(Map.of(), "use"));
+        PROVIDER.createContractDefinition(assetId, "def-1", accessPolicyId, contractPolicyId);
 
         var destination = Json.createObjectBuilder()
                 .add(TYPE, EDC_NAMESPACE + "DataAddress")

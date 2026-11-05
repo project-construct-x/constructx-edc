@@ -26,8 +26,6 @@ import org.eclipse.edc.connector.controlplane.transfer.spi.types.TransferProcess
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
-import org.eclipse.edc.policy.model.Operator;
-import org.eclipse.tractusx.edc.tests.helpers.PolicyHelperFunctions;
 import org.eclipse.tractusx.edc.tests.participant.TransferParticipant;
 import org.eclipse.tractusx.edc.tests.runtimes.PostgresExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +40,6 @@ import java.util.UUID;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.CX_POLICY_2025_09_NS;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.CONSUMER_BPN;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.CONSUMER_DID;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.CONSUMER_NAME;
@@ -51,6 +48,8 @@ import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.DSP_2025_P
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.PROVIDER_BPN;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.PROVIDER_DID;
 import static org.eclipse.tractusx.edc.tests.TestRuntimeConfiguration.PROVIDER_NAME;
+import static org.eclipse.tractusx.edc.tests.helpers.PolicyHelperFunctions.bpnGroupPolicy;
+import static org.eclipse.tractusx.edc.tests.helpers.PolicyHelperFunctions.frameworkPolicy;
 import static org.eclipse.tractusx.edc.tests.participant.TractusxParticipantBase.ASYNC_POLL_INTERVAL;
 import static org.eclipse.tractusx.edc.tests.participant.TractusxParticipantBase.ASYNC_TIMEOUT;
 import static org.eclipse.tractusx.edc.tests.runtimes.Runtimes.pgRuntime;
@@ -62,16 +61,14 @@ public class RetireAgreementTest {
             .name(CONSUMER_NAME)
             .id(CONSUMER_DID)
             .bpn(CONSUMER_BPN)
-            .protocol(DSP_2025)
-            .protocolVersionPath(DSP_2025_PATH)
+            .protocol(DSP_2025, DSP_2025_PATH)
             .build();
 
     private static final TransferParticipant PROVIDER = TransferParticipant.Builder.newInstance()
             .name(PROVIDER_NAME)
             .id(PROVIDER_DID)
             .bpn(PROVIDER_BPN)
-            .protocol(DSP_2025)
-            .protocolVersionPath(DSP_2025_PATH)
+            .protocol(DSP_2025, DSP_2025_PATH)
             .enableEventSubscription()
             .build();
 
@@ -110,8 +107,8 @@ public class RetireAgreementTest {
         PROVIDER.createAsset(assetId, Map.of(), dataAddress);
 
         PROVIDER.storeBusinessPartner(CONSUMER.getBpn(), "test-group1");
-        var accessPolicy = PROVIDER.createPolicyDefinition(PolicyHelperFunctions.bpnGroupPolicy(Operator.IS_ANY_OF, "test-group1"));
-        var policy = PolicyHelperFunctions.frameworkPolicy(Map.of(), CX_POLICY_2025_09_NS + "access");
+        var accessPolicy = PROVIDER.createPolicyDefinition(bpnGroupPolicy("isAnyOf", true, "test-group1"));
+        var policy = frameworkPolicy(Map.of(), "use");
         var contractPolicy = PROVIDER.createPolicyDefinition(policy);
         PROVIDER.createContractDefinition(assetId, "def-1", accessPolicy, contractPolicy);
 

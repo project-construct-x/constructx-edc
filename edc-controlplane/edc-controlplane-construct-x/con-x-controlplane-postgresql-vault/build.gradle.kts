@@ -25,9 +25,10 @@ plugins {
     alias(libs.plugins.shadow)
 }
 
+val edcVersion = project.property("con-x-edcVersion") as String
+val txVersion = project.property("version") as String
+
 dependencies {
-    val edcVersion = "0.15.1"
-    val txVersion = "0.12.0"
     implementation("org.eclipse.edc:controlplane-dcp-bom:$edcVersion")
     implementation("org.eclipse.edc:controlplane-feature-sql-bom:$edcVersion")
 
@@ -36,8 +37,9 @@ dependencies {
 
     implementation("org.eclipse.tractusx.edc:agreements:$txVersion")
     implementation("org.eclipse.tractusx.edc:retirement-evaluation-store-sql:$txVersion")
-    implementation("org.eclipse.tractusx.edc:control-plane-migration:$txVersion")
-    implementation("org.eclipse.tractusx.edc:tx-dcp:$txVersion")
+    implementation(project(":edc-extensions:agreements:retirement-evaluation-bootstrapping"))
+    implementation(project(":edc-extensions:dynamic-issuers"))
+    implementation(project(":edc-extensions:basic-abac"))
 
     // Catena-X ODRL policy functions plus the Construct-X additions (DataUsageStartDate, relaxed
     // validation, ...). Required so the control plane knows the left operands (Membership,
@@ -49,6 +51,10 @@ dependencies {
     // mandatory injects, so the runtime does not boot without these two.
     implementation(project(":edc-extensions:bpn-validation"))
     implementation(project(":edc-extensions:bdrs-client"))
+
+    // Hotfix version overrides
+    implementation("com.fasterxml.jackson.core:jackson-core:2.22.3")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.22.4")
 }
 
 /**
