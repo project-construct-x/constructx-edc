@@ -23,6 +23,7 @@ package org.constructx.edc.policy;
 
 import org.constructx.edc.policy.connector.ConnectorConstraintFunction;
 import org.constructx.edc.policy.dataprovisioning.ConxDataProvisioningEndDateConstraintFunction;
+import org.constructx.edc.policy.datasubset.DataSubsetConstraintFunction;
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.framework.ConxFrameworkAgreementConstraintFunction;
@@ -73,6 +74,7 @@ import org.eclipse.tractusx.edc.spi.identity.mapper.BdrsClient;
 import org.eclipse.tractusx.edc.validation.businesspartner.spi.store.BusinessPartnerStore;
 
 import static org.constructx.edc.policy.connector.ConnectorConstraintFunction.CONNECTOR;
+import static org.constructx.edc.policy.datasubset.DataSubsetConstraintFunction.DATA_SUBSET;
 import static org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction.DATA_USAGE_START_DATE;
 import static org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition.EDC_POLICY_DEFINITION_TYPE;
 import static org.eclipse.edc.connector.policy.monitor.spi.PolicyMonitorContext.POLICY_MONITOR_SCOPE;
@@ -82,6 +84,7 @@ import static org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesRegionProh
 import static org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerGroupConstraintFunction.BUSINESS_PARTNER_GROUP;
 import static org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerNumberConstraintFunction.BUSINESS_PARTNER_NUMBER;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.CATALOG_SCOPE;
+import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.NEGOTIATION_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.TRANSFER_PROCESS_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.confidentialinformation.ConfidentialInformationMeasuresConstraintFunction.CONFIDENTIAL_INFORMATION_MEASURES;
 import static org.eclipse.tractusx.edc.policy.cx.confidentialinformation.ConfidentialInformationSharingConstraintFunction.CONFIDENTIAL_INFORMATION_SHARING;
@@ -124,6 +127,8 @@ import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonths
  *   no function for it, which causes a NullPointerException when building the catalog)</li>
  *   <li>new {@link ConnectorConstraintFunction}: evaluates the Policy Hub's "Participant selection" constraint
  *   using EDC's own {@code connector} left operand (does not exist upstream)</li>
+ *   <li>new {@link DataSubsetConstraintFunction}: placeholder for the Policy Hub's {@code DataSubset} constraint
+ *   (Construct-X namespace, does not exist upstream)</li>
  * </ul>
  */
 @Extension(ConxPolicyExtension.NAME)
@@ -222,6 +227,10 @@ public class ConxPolicyExtension implements ServiceExtension {
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class,
                 withCxPolicyNsPrefix(USAGE_PURPOSE), new UsagePurposeConstraintFunction<>());
 
+        engine.registerFunction(CatalogPolicyContext.class, Permission.class, DATA_SUBSET, new DataSubsetConstraintFunction<>());
+        engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, DATA_SUBSET, new DataSubsetConstraintFunction<>());
+        engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, DATA_SUBSET, new DataSubsetConstraintFunction<>());
+
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_FREQUENCY), new DataFrequencyConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_FREQUENCY), new DataFrequencyConstraintFunction<>());
 
@@ -306,6 +315,10 @@ public class ConxPolicyExtension implements ServiceExtension {
         registry.bind(withCxPolicyNsPrefix(DATA_USAGE_START_DATE), POLICY_MONITOR_SCOPE);
 
         registry.bind(CONNECTOR, CATALOG_SCOPE);
+
+        registry.bind(DATA_SUBSET, CATALOG_SCOPE);
+        registry.bind(DATA_SUBSET, NEGOTIATION_SCOPE);
+        registry.bind(DATA_SUBSET, TRANSFER_PROCESS_SCOPE);
     }
 
     @Override

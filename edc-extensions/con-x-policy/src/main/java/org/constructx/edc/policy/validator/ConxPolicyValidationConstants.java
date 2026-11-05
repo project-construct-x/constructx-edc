@@ -50,6 +50,10 @@ public final class ConxPolicyValidationConstants {
     // evaluation semantics for it; evaluation is provided by ConnectorConstraintFunction (no upstream equivalent).
     public static final String CONNECTOR_LITERAL = EDC_NAMESPACE + "connector";
 
+    // Construct-X Policy Hub's "DataSubset" constraint (Construct-X namespace, no upstream equivalent), allowed in
+    // ACCESS and CONTRACT permissions. Evaluation is a placeholder, see DataSubsetConstraintFunction.
+    public static final String DATA_SUBSET_LITERAL = "https://w3id.org/construct-x/policy/DataSubset";
+
     // Upstream only allows odrl:and; Construct-X additionally allows odrl:or.
     public static final Set<String> ALLOWED_LOGICAL_CONSTRAINTS = Set.of(
             ODRL_AND_CONSTRAINT_ATTRIBUTE,
@@ -65,12 +69,14 @@ public final class ConxPolicyValidationConstants {
             PolicyValidationConstants.ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS,
             DATA_USAGE_START_DATE_LITERAL,
             DATA_USAGE_END_DATE_LITERAL,
-            CONNECTOR_LITERAL
+            CONNECTOR_LITERAL,
+            DATA_SUBSET_LITERAL
     );
 
     static final Set<String> USAGE_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS = union(
             PolicyValidationConstants.USAGE_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS,
-            DATA_USAGE_START_DATE_LITERAL
+            DATA_USAGE_START_DATE_LITERAL,
+            DATA_SUBSET_LITERAL
     );
 
     private static Set<String> union(Set<String> base, String... additions) {

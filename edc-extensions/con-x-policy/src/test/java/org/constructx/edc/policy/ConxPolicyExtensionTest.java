@@ -20,6 +20,7 @@
 package org.constructx.edc.policy;
 
 import org.constructx.edc.policy.connector.ConnectorConstraintFunction;
+import org.constructx.edc.policy.datasubset.DataSubsetConstraintFunction;
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.framework.ConxFrameworkAgreementConstraintFunction;
@@ -50,6 +51,7 @@ import static org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition
 import static org.eclipse.edc.connector.policy.monitor.spi.PolicyMonitorContext.POLICY_MONITOR_SCOPE;
 import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.CX_POLICY_2025_09_NS;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.CATALOG_SCOPE;
+import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.NEGOTIATION_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.TRANSFER_PROCESS_SCOPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -109,6 +111,19 @@ class ConxPolicyExtensionTest {
         verify(policyEngine).registerFunction(eq(CatalogPolicyContext.class), eq(Permission.class),
                 eq(ConnectorConstraintFunction.CONNECTOR), isA(ConnectorConstraintFunction.class));
         verify(bindingRegistry).bind(ConnectorConstraintFunction.CONNECTOR, CATALOG_SCOPE);
+    }
+
+    @Test
+    void initialize_shouldRegisterDataSubsetFunctionsAndBindings(ConxPolicyExtension extension, ServiceExtensionContext context) {
+        extension.initialize(context);
+
+        var leftOperand = DataSubsetConstraintFunction.DATA_SUBSET;
+        verify(policyEngine).registerFunction(eq(CatalogPolicyContext.class), eq(Permission.class), eq(leftOperand), isA(DataSubsetConstraintFunction.class));
+        verify(policyEngine).registerFunction(eq(ContractNegotiationPolicyContext.class), eq(Permission.class), eq(leftOperand), isA(DataSubsetConstraintFunction.class));
+        verify(policyEngine).registerFunction(eq(TransferProcessPolicyContext.class), eq(Permission.class), eq(leftOperand), isA(DataSubsetConstraintFunction.class));
+        verify(bindingRegistry).bind(leftOperand, CATALOG_SCOPE);
+        verify(bindingRegistry).bind(leftOperand, NEGOTIATION_SCOPE);
+        verify(bindingRegistry).bind(leftOperand, TRANSFER_PROCESS_SCOPE);
     }
 
     @Test

@@ -277,6 +277,6 @@ depend on the local `edc-extensions:con-x-policy` module (plus `:bpn-validation`
 `con-x-policy` builds on the **unmodified** Catena-X `edc-extensions:cx-policy` and adds the
 Construct-X extensions and fixes that make the hub's own ODRL output importable (`DataUsageStartDate`,
 `FrameworkAgreement` without a version, "at least one" semantics, constraint-free `CONTRACT` policies,
-`UsagePurpose` catalog NPE). Its `ConxPolicyExtension` replaces the upstream `CxPolicyExtension` in
+`UsagePurpose` catalog NPE, Participant selection via `connector`, `DataSubset`). Its `ConxPolicyExtension` replaces the upstream `CxPolicyExtension` in
 both distributions. See [`edc-extensions/con-x-policy/README.md`](../con-x-policy/README.md) for the
 complete list and the reasoning.

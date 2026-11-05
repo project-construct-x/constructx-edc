@@ -68,6 +68,30 @@ semantics for it, so `ConnectorConstraintFunction` (no upstream equivalent) prov
 
 Implementation: `ConnectorConstraintFunction`.
 
+### `DataSubset`
+
+The Policy Hub's `DataSubset` constraint restricts an offer to a subset of the data. Its left operand lives in the
+Construct-X namespace, `https://w3id.org/construct-x/policy/DataSubset`; there is no upstream equivalent.
+
+```json
+{
+  "odrl:leftOperand": { "@id": "https://w3id.org/construct-x/policy/DataSubset" },
+  "odrl:operator": { "@id": "odrl:isAnyOf" },
+  "odrl:rightOperand": ["field:materialName", "attribute:color", "submodel:urn:samm:com.example.material:1.0.0#Material", "record:2027-Q1"]
+}
+```
+
+- Allowed in `ACCESS` and `CONTRACT` permission policies.
+- Operator `isAnyOf` only. The right operand is a list of unique values, each starting with `field:`, `attribute:`,
+  `submodel:` or `record:` followed by at least one character.
+- Like `UsagePurpose`, the values are checked when a policy definition is created, and evaluation always passes. It is
+  bound to the `catalog`, `contract.negotiation` and `transfer.process` scopes. The connector does not filter the data
+  itself: it carries the restriction in the offer and the contract agreement, and the provider's backend enforces it.
+- `DataSubset` does not count as a required usage constraint: a `CONTRACT` permission with `DataSubset` must still
+  contain `FrameworkAgreement` or `UsagePurpose` (see [Required usage constraints](#required-usage-constraints)).
+
+Implementation: `DataSubsetConstraintFunction`.
+
 ### Required usage constraints
 
 A `CONTRACT` permission with constraints must contain **at least one of** `FrameworkAgreement` and
