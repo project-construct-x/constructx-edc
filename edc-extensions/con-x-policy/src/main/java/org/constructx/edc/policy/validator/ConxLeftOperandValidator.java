@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS;
 import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.USAGE_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS;
+import static org.constructx.edc.policy.validator.ConxPolicyValidationConstants.isAbacLeftOperand;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OBLIGATION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PERMISSION_ATTRIBUTE;
@@ -75,9 +76,18 @@ public class ConxLeftOperandValidator implements Validator<JsonObject> {
     public ValidationResult validate(JsonObject input) {
         return JsonObjectValidator.newValidator()
                 .verifyId(MandatoryIdNotBlank::new)
-                .verify(ID, path -> new ValueIn(path, getAllowedLeftOperands(), encounteredConstraints))
+                .verify(ID, path -> new ValueIn(path, getAllowedLeftOperands(), abacAllowed(), encounteredConstraints))
                 .build()
                 .validate(input);
+    }
+
+    /**
+     * Credential attributes of the {@code basic-abac} extension are accepted in permissions of both access and usage
+     * (contract) policies, and nowhere else: that extension evaluates them for permissions only, so in a prohibition or
+     * obligation they would validate but never be enforced.
+     */
+    private boolean abacAllowed() {
+        return ODRL_PERMISSION_ATTRIBUTE.equals(ruleType);
     }
 
     @SuppressWarnings("checkstyle:RightCurly")
@@ -117,13 +127,15 @@ public class ConxLeftOperandValidator implements Validator<JsonObject> {
 
     private static final class ValueIn implements Validator<JsonObject> {
         private final Set<String> allowedValues;
+        private final boolean abacAllowed;
         private final JsonLdPath path;
         private final String id;
         private final Set<String> encounteredConstraints;
 
-        private ValueIn(JsonLdPath path, Set<String> allowedValues, Set<String> encounteredConstraints) {
+        private ValueIn(JsonLdPath path, Set<String> allowedValues, boolean abacAllowed, Set<String> encounteredConstraints) {
             this.path = path;
             this.allowedValues = allowedValues;
+            this.abacAllowed = abacAllowed;
             this.id = path.last();
             this.encounteredConstraints = encounteredConstraints;
         }
@@ -136,9 +148,12 @@ public class ConxLeftOperandValidator implements Validator<JsonObject> {
                         violation("leftOperand.'" + id + "' value can not be null or empty. Expected one of: " + allowedValues, path.toString())
                 );
             }
-            if (!allowedValues.contains(value)) {
+            if (!allowedValues.contains(value) && !(abacAllowed && isAbacLeftOperand(value))) {
+                var abacHint = abacAllowed
+                        ? ", or a credential attribute 'https://<host>/<path>/<CredentialType>.credentialSubject.<attribute>'"
+                        : "";
                 return ValidationResult.failure(
-                        violation("leftOperand.@id value '" + value + "' is not allowed. Expected one of: " + allowedValues, path.toString())
+                        violation("leftOperand.@id value '" + value + "' is not allowed. Expected one of: " + allowedValues + abacHint, path.toString())
                 );
             }
             var hasMutualExclusionConflict = hasMutualExclusionConflict(value);

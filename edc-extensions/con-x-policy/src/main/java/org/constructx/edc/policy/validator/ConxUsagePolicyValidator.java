@@ -51,6 +51,8 @@ import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConst
  *   <li>a rule without constraints counts as a rule (see {@link ConxAtLeastOneRuleExists})</li>
  *   <li>permissions must contain <em>at least one</em> of FrameworkAgreement/UsagePurpose (upstream requires both)</li>
  *   <li>that requirement only applies once a permission actually carries constraints</li>
+ *   <li>a credential attribute constraint ({@code basic-abac}) also satisfies that requirement, and is accepted as a
+ *   permission left operand (see {@link ConxPolicyValidationConstants#isAbacLeftOperand(String)})</li>
  * </ul>
  */
 public class ConxUsagePolicyValidator implements Validator<JsonObject> {
@@ -115,7 +117,12 @@ public class ConxUsagePolicyValidator implements Validator<JsonObject> {
             boolean hasAtLeastOneRequiredConstraint = requiredConstraints.stream()
                     .anyMatch(encounteredConstraints::contains);
 
-            if (hasAtLeastOneRequiredConstraint) {
+            // a credential attribute (basic-abac) is itself the permission's anchor - the condition under which the
+            // data may be used - so it satisfies the requirement just like FrameworkAgreement/UsagePurpose do
+            boolean hasAbacConstraint = encounteredConstraints.stream()
+                    .anyMatch(ConxPolicyValidationConstants::isAbacLeftOperand);
+
+            if (hasAtLeastOneRequiredConstraint || hasAbacConstraint) {
                 return ValidationResult.success();
             }
             return ValidationResult.failure(

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_ACTION_ATTRIBUTE;
+import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_AND_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OBLIGATION_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OR_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_PERMISSION_ATTRIBUTE;
@@ -53,6 +54,9 @@ import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConst
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.WARRANTY_DEFINITION_LITERAL;
 
 class ConxUsagePolicyValidatorTest {
+
+    private static final String ABAC_LEFT_OPERAND =
+            "https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential.credentialSubject.isMember";
 
     private final JsonLdPath path = JsonLdPath.path();
 
@@ -337,6 +341,51 @@ class ConxUsagePolicyValidatorTest {
         assertThat(result).isFailed();
         FailureAssert.assertThat(result.getFailure()).messages().anyMatch(msg ->
                 msg.contains("Action property is missing"));
+    }
+
+    @Test
+    void shouldReturnSuccess_whenOnlyAbacConstraintPresentInPermission() {
+        // a credential attribute (basic-abac) anchors the permission like FrameworkAgreement/UsagePurpose would
+        var permission = rule(ACTION_USAGE, atomicConstraint(ABAC_LEFT_OPERAND, "odrl:eq", "true"));
+        var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void shouldReturnSuccess_whenAbacConstraintCombinedWithOtherConstraintsInAnd() {
+        var permission = rule(ACTION_USAGE, logicalConstraint(ODRL_AND_CONSTRAINT_ATTRIBUTE,
+                atomicConstraint(ABAC_LEFT_OPERAND, "odrl:gteq", 4),
+                atomicConstraint(LIABILITY_LITERAL)));
+        var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void shouldReturnFailure_whenAbacConstraintInProhibition() {
+        var prohibition = rule(ACTION_USAGE, atomicConstraint(ABAC_LEFT_OPERAND, "odrl:eq", "true"));
+        var input = policy(ODRL_PROHIBITION_ATTRIBUTE, prohibition);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isFailed();
+    }
+
+    @Test
+    void shouldStillRequireAnchorConstraint_whenPermissionHasNeitherAbacNorRequiredConstraint() {
+        var permission = rule(ACTION_USAGE, atomicConstraint(LIABILITY_LITERAL));
+        var input = policy(ODRL_PERMISSION_ATTRIBUTE, permission);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isFailed();
+        FailureAssert.assertThat(result.getFailure()).messages().anyMatch(msg ->
+                msg.contains("Usage policy permission must include at least one of the following constraints"));
     }
 
     @Test

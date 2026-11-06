@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static de.fraunhofer.isst.edc.extension.basic_abac.dev.BasicAbacUtils.BASIC_ABAC_PATTERN;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_AND_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_AND_SEQUENCE_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OR_CONSTRAINT_ATTRIBUTE;
@@ -78,6 +79,20 @@ public final class ConxPolicyValidationConstants {
             DATA_USAGE_START_DATE_LITERAL,
             DATA_SUBSET_LITERAL
     );
+
+    /**
+     * Whether the given left operand is a credential attribute handled by the {@code basic-abac} extension, e.g.
+     * {@code https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential.credentialSubject.isMember}.
+     * Such operands are open-ended (any credential type, any attribute path), so they cannot be listed in the allowed
+     * left-operand sets; instead they are recognised by the same pattern the constraint function evaluates them with.
+     * They are only evaluated in permissions, which is therefore the only place the validators accept them.
+     *
+     * @param leftOperand the left operand IRI of a constraint
+     * @return {@code true} if it matches the {@code basic-abac} pattern
+     */
+    public static boolean isAbacLeftOperand(String leftOperand) {
+        return leftOperand != null && BASIC_ABAC_PATTERN.matcher(leftOperand).matches();
+    }
 
     private static Set<String> union(Set<String> base, String... additions) {
         return Stream.concat(base.stream(), Stream.of(additions)).collect(Collectors.toUnmodifiableSet());

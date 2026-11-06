@@ -49,6 +49,8 @@ class ConxPolicyDefinitionValidatorTest {
 
     private static final String DEFINITION_ID = "00000000-0000-0000-0000-000000000002";
     private static final String UNKNOWN_ACTION = "https://example.com/not-a-policy-type";
+    private static final String ABAC_LEFT_OPERAND =
+            "https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential.credentialSubject.isMember";
 
     private final Validator<jakarta.json.JsonObject> validator = ConxPolicyDefinitionValidator.instance();
 
@@ -83,6 +85,62 @@ class ConxPolicyDefinitionValidatorTest {
         var result = validator.validate(input);
 
         assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void validate_whenAccessPolicyWithAbacConstraint_shouldSucceed() {
+        var permission = rule(ACTION_ACCESS, atomicConstraint(ABAC_LEFT_OPERAND, "odrl:eq", "true"));
+        var input = policyDefinition(policy(ODRL_PERMISSION_ATTRIBUTE, permission), DEFINITION_ID);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void validate_whenUsagePolicyWithOnlyAbacConstraint_shouldSucceed() {
+        // the example of the basic-abac README: a contract policy that needs no FrameworkAgreement/UsagePurpose
+        var permission = rule(ACTION_USAGE, atomicConstraint(ABAC_LEFT_OPERAND, "odrl:eq", "true"));
+        var input = policyDefinition(policy(ODRL_PERMISSION_ATTRIBUTE, permission), DEFINITION_ID);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void validate_whenAbacConstraintCombinedWithMembership_shouldSucceedForAccessAndUsage() {
+        var access = rule(ACTION_ACCESS,
+                atomicConstraint(MEMBERSHIP_LITERAL, "odrl:eq", "active"),
+                atomicConstraint(ABAC_LEFT_OPERAND, "odrl:gteq", 4));
+        var usage = rule(ACTION_USAGE,
+                atomicConstraint(FRAMEWORK_AGREEMENT_LITERAL, "odrl:eq", "DataExchangeGovernance"),
+                atomicConstraint(ABAC_LEFT_OPERAND, "odrl:gteq", 4));
+
+        assertThat(validator.validate(policyDefinition(policy(ODRL_PERMISSION_ATTRIBUTE, access), DEFINITION_ID))).isSucceeded();
+        assertThat(validator.validate(policyDefinition(policy(ODRL_PERMISSION_ATTRIBUTE, usage), DEFINITION_ID))).isSucceeded();
+    }
+
+    @Test
+    void validate_whenAbacConstraintInUsageProhibition_shouldFail() {
+        var prohibition = rule(ACTION_USAGE, atomicConstraint(ABAC_LEFT_OPERAND, "odrl:eq", "true"));
+        var input = policyDefinition(policy(ODRL_PROHIBITION_ATTRIBUTE, prohibition), DEFINITION_ID);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isFailed();
+    }
+
+    @Test
+    void validate_whenLeftOperandLooksLikeAbacButIsMalformed_shouldFail() {
+        // missing the mandatory .credentialSubject segment
+        var permission = rule(ACTION_USAGE,
+                atomicConstraint("https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential.isMember", "odrl:eq", "true"));
+        var input = policyDefinition(policy(ODRL_PERMISSION_ATTRIBUTE, permission), DEFINITION_ID);
+
+        var result = validator.validate(input);
+
+        assertThat(result).isFailed();
     }
 
     @Test

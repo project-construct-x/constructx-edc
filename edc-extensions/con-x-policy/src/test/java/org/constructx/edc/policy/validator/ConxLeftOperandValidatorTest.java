@@ -53,6 +53,9 @@ import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConst
 
 class ConxLeftOperandValidatorTest {
 
+    private static final String ABAC_LEFT_OPERAND =
+            "https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential.credentialSubject.isMember";
+
     private final JsonLdPath path = JsonLdPath.path();
 
     @Test
@@ -251,6 +254,85 @@ class ConxLeftOperandValidatorTest {
         assertThat(result.failed()).isTrue();
         assertThat(result.getFailureMessages()).anyMatch(msg ->
                 msg.contains("is mutually exclusive"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { ACTION_ACCESS, ACTION_USAGE })
+    void shouldReturnSuccess_whenAbacLeftOperandUsedInPermission(String policyType) {
+        JsonObject input = Json.createObjectBuilder().add(ID, ABAC_LEFT_OPERAND).build();
+
+        ValidationResult result = validateLeftOperand(input, policyType, ODRL_PERMISSION_ATTRIBUTE);
+
+        assertThat(result).isSucceeded();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://w3id.org/constructx/credentials/v1.0/Baustelle123Credential.credentialSubject.accessLevels[0].role",
+            "https://my-domain.com:8080/some/arbitrary/path/Foo.credentialSubject.nestedObject.fooLevel"
+    })
+    void shouldReturnSuccess_whenAbacLeftOperandHasNestedPathOrPort(String leftOperand) {
+        JsonObject input = Json.createObjectBuilder().add(ID, leftOperand).build();
+
+        assertThat(validateLeftOperand(input, ACTION_ACCESS, ODRL_PERMISSION_ATTRIBUTE)).isSucceeded();
+        assertThat(validateLeftOperand(input, ACTION_USAGE, ODRL_PERMISSION_ATTRIBUTE)).isSucceeded();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { ODRL_PROHIBITION_ATTRIBUTE, ODRL_OBLIGATION_ATTRIBUTE })
+    void shouldReturnFailure_whenAbacLeftOperandUsedOutsidePermission(String ruleType) {
+        // basic-abac only evaluates permissions, so anywhere else the constraint would validate but never be enforced
+        JsonObject input = Json.createObjectBuilder().add(ID, ABAC_LEFT_OPERAND).build();
+
+        assertThat(validateLeftOperand(input, ACTION_ACCESS, ruleType)).isFailed();
+        assertThat(validateLeftOperand(input, ACTION_USAGE, ruleType)).isFailed();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // HTTP instead of HTTPS
+            "http://w3id.org/constructx/credentials/v1.0/Foo.credentialSubject.fooLevel",
+            // no .credentialSubject segment
+            "https://w3id.org/constructx/credentials/v1.0/Foo.fooLevel",
+            // nothing after .credentialSubject
+            "https://w3id.org/constructx/credentials/v1.0/Foo.credentialSubject",
+            // credential type does not start with a capital letter
+            "https://w3id.org/constructx/credentials/v1.0/foo.credentialSubject.fooLevel",
+            // not a credential attribute at all
+            "https://example.com/UnknownOperand"
+    })
+    void shouldReturnFailure_whenLeftOperandDoesNotMatchAbacPattern(String leftOperand) {
+        JsonObject input = Json.createObjectBuilder().add(ID, leftOperand).build();
+
+        ValidationResult result = validateLeftOperand(input, ACTION_ACCESS, ODRL_PERMISSION_ATTRIBUTE);
+
+        assertThat(result).isFailed();
+        FailureAssert.assertThat(result.getFailure()).messages().anyMatch(msg ->
+                msg.contains("is not allowed") && msg.contains("credentialSubject"));
+    }
+
+    @Test
+    void shouldNotMentionAbacInFailure_whenRuleTypeCannotUseIt() {
+        JsonObject input = Json.createObjectBuilder().add(ID, "https://example.com/UnknownOperand").build();
+
+        ValidationResult result = validateLeftOperand(input, ACTION_USAGE, ODRL_PROHIBITION_ATTRIBUTE);
+
+        assertThat(result).isFailed();
+        FailureAssert.assertThat(result.getFailure()).messages().noneMatch(msg -> msg.contains("credentialSubject"));
+    }
+
+    @Test
+    void shouldRecordAbacLeftOperand_asEncounteredConstraint() {
+        // the usage policy validator relies on this to see that a permission carries a credential attribute
+        var encountered = new HashSet<String>();
+        JsonObject input = Json.createObjectBuilder().add(ID, ABAC_LEFT_OPERAND).build();
+
+        var result = ConxLeftOperandValidator.instance(JsonObjectValidator.newValidator(), ACTION_USAGE, ODRL_PERMISSION_ATTRIBUTE, encountered)
+                .build()
+                .validate(input);
+
+        assertThat(result).isSucceeded();
+        assertThat(encountered).containsExactly(ABAC_LEFT_OPERAND);
     }
 
     private ValidationResult validateLeftOperand(JsonObject input, String policyType, String ruleType) {

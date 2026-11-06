@@ -101,6 +101,33 @@ A `CONTRACT` permission without any constraints is valid as well, with or withou
 what the hub generates for a constraint-free `ACCESS` policy (`ConxAtLeastOneRuleExists`,
 `ConxUsagePolicyValidator`).
 
+### Credential attributes (`basic-abac`)
+
+Besides the left operands listed in the validator, a permission may constrain a **credential attribute** as handled
+by the [`basic-abac`](../basic-abac/README.md) extension, i.e. a left operand of the form
+
+```
+https://<host>/<path>/<CredentialType>.credentialSubject.<attribute>
+```
+
+for example `https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential.credentialSubject.isMember`.
+
+- **Where:** in permissions of `ACCESS` and of `CONTRACT` policies. Not in prohibitions or obligations: `basic-abac`
+  only evaluates permissions, so there the constraint would validate but never be enforced.
+- **Required constraints:** a credential attribute satisfies the "at least one of `FrameworkAgreement` and
+  `UsagePurpose`" requirement above, so a `CONTRACT` policy made of credential attributes alone is valid.
+- **One pattern:** the validator uses `BasicAbacUtils.BASIC_ABAC_PATTERN` from `basic-abac` itself (module
+  dependency), so what validates is exactly what `basic-abac` evaluates. A near miss such as `http://` instead of
+  `https://`, a missing `.credentialSubject` segment or a lower-case credential type is rejected, and the error
+  message names the expected form.
+- **Why it is needed:** the validator accepts only a fixed set of left operands, which rejected every credential
+  attribute. With `basic-abac` loaded in the same distribution, such policies could neither be created through
+  `POST /v3/policydefinitions` nor imported from the Policy Hub (same validator).
+
+See the `basic-abac` README for how to write right operands (e.g. set operators need a stringified JSON list).
+Implementation: `ConxPolicyValidationConstants.isAbacLeftOperand`, used by `ConxLeftOperandValidator` and
+`ConxUsagePolicyValidator`.
+
 ### Logical constraints
 
 `odrl:and` and `odrl:or` are allowed and can be nested (e.g. an `and` inside an `or`). `odrl:xone` and

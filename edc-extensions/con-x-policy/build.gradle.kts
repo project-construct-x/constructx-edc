@@ -29,6 +29,9 @@ dependencies {
     // distributions' ShadowJar configuration).
     api(project(":edc-extensions:cx-policy"))
     implementation(project(":edc-extensions:bpn-validation:bpn-validation-spi"))
+    // the ABAC left-operand pattern (BasicAbacUtils.BASIC_ABAC_PATTERN) is the contract between the validator here and the
+    // constraint function there; sharing it keeps the two from drifting apart (a policy that validates but is never evaluated)
+    implementation(project(":edc-extensions:basic-abac"))
     implementation(project(":spi:core-spi"))
     implementation(project(":spi:bdrs-client-spi"))
     implementation(libs.edc.spi.core)

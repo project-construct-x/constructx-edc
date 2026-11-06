@@ -129,6 +129,9 @@ import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonths
  *   using EDC's own {@code connector} left operand (does not exist upstream)</li>
  *   <li>new {@link DataSubsetConstraintFunction}: placeholder for the Policy Hub's {@code DataSubset} constraint
  *   (Construct-X namespace, does not exist upstream)</li>
+ *   <li>the validators accept credential attributes of the {@code basic-abac} extension as permission left operands in
+ *   access and contract policies (see {@code ConxPolicyValidationConstants#isAbacLeftOperand}); evaluating them is
+ *   {@code basic-abac}'s job, not registered here</li>
  * </ul>
  */
 @Extension(ConxPolicyExtension.NAME)
