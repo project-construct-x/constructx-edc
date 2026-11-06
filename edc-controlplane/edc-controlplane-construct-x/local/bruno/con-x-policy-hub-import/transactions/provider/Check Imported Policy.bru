@@ -5,17 +5,13 @@ meta {
 }
 
 get {
-  url: {{PROVIDER_MANAGEMENT}}/v3/policydefinitions/{{importedPolicyId}}
+  url: {{PROVIDER_MANAGEMENT}}/v4/policydefinitions/{{HUB_POLICY_ID}}
   body: none
   auth: inherit
 }
 
 headers {
   X-Api-Key: prov-management-api-key
-}
-
-vars:pre-request {
-  importedPolicyId: 73dd2da1-1ee9-4c2b-9358-51298700a912
 }
 
 settings {
@@ -25,7 +21,7 @@ settings {
 }
 
 docs {
-  Reads back the policy last imported via ImportPolicyFromHub, addressed by its connector-side
-  id (the Policy Hub's UUID, captured in the env var "importedPolicyId"). The response's
+  Reads back the policy imported via ImportPolicyFromHub. The import stores the policy under the
+  Policy Hub's UUID, which is HUB_POLICY_ID, so no other variable is needed. The response's
   "privateProperties.policyHubName" carries the Policy Hub's human-readable policy name.
 }

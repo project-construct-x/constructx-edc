@@ -19,7 +19,7 @@ docs {
   Re-imports every policy definition previously imported from the Construct-X Policy Hub right
   away - the same run the control plane otherwise performs periodically (every hour by default,
   see constructx.policyhub.sync.*). Only the connector's own imports (those carrying
-  "privateProperties.policyHubName") are synced; hand-written policies such as "aPolicy" are left
+  "privateProperties.policyHubName") are synced; hand-written policies are left
   alone. Runs synchronously, no body.
 
   Response: counts of "checked", "updated", "unchanged" and "failed" policy definitions. A policy

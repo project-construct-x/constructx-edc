@@ -11,8 +11,8 @@ post {
 }
 
 script:post-response {
-  bru.setEnvVar("importedPolicyId", res.getBody()['@id']);
-  bru.setEnvVar("importedPolicyName", res.getBody()['policyHubName']);
+  bru.setVar("importedPolicyId", res.getBody()['@id']);
+  bru.setVar("importedPolicyName", res.getBody()['policyHubName']);
 }
 
 settings {
@@ -32,11 +32,11 @@ docs {
   "policyHubName", so it stays easy to tell which Policy Hub policy a given connector-side UUID
   corresponds to.
 
-  The post-response script stores "@id" in the env var "importedPolicyId", which
-  CreateContractDefinition uses for accessPolicyId/contractPolicyId - so switching
-  HUB_POLICY_ID to a different hub policy and re-running this request automatically points the
-  next CreateContractDefinition run at the right policy. "policyHubName" is stored in
-  "importedPolicyName" purely for readability when inspecting the environment.
+  The policy is stored under the Policy Hub UUID (= HUB_POLICY_ID), so a contract definition
+  created in the con-x-local-test collection references it with accessPolicyId /
+  contractPolicyId = HUB_POLICY_ID. The post-response script additionally keeps "@id" and
+  "policyHubName" in the runtime variables "importedPolicyId" / "importedPolicyName" for
+  readability; they only exist within the current Bruno session.
 
   Prerequisite: the Policy Hub stack (policy-hub/docker-compose.yml) is running on port 8080.
 }
