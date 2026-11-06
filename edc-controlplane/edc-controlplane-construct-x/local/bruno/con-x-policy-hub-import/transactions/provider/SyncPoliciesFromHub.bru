@@ -33,6 +33,12 @@ docs {
   waits for the hub (up to 60 s) and, if it stays away, retries the run every 5 minutes. To try
   it: docker stop policyhub-backend, run this request, then docker start policyhub-backend.
 
+  If the Policy Hub rejects the connector's credentials (401/403, e.g. a wrong secret under the
+  vault alias policy-hub-credentials), the run aborts at once without waiting and this request
+  answers 502 Bad Gateway; the log shows "Policy Hub sync (manual) aborted: Policy Hub rejected
+  the credentials (...)". The periodic sync aborts the same way and tries again after 5 minutes,
+  so a corrected secret takes effect without a restart.
+
   To try it: run ImportPolicyFromHub, change the policy in the Policy Hub, run this request and
   check with Check Imported Policy that the new version and
   "privateProperties.policyHubImportedAt" are there.
