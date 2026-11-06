@@ -91,7 +91,19 @@ class PolicyHubClientTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 400, 401, 403, 404 })
+    @ValueSource(ints = { 401, 403 })
+    void fetchPolicyDefinition_whenHubRejectsCredentials_shouldThrowAccessDenied(int status) throws IOException {
+        givenResponse(status, "{}");
+
+        assertThatThrownBy(() -> client.fetchPolicyDefinition(HUB_POLICY_ID))
+                .isInstanceOfSatisfying(PolicyHubAccessDeniedException.class, e -> {
+                    assertThat(e.getReason()).isEqualTo("status " + status);
+                    assertThat(e.getMessage()).contains("rejected the credentials").contains("vault");
+                });
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 400, 404 })
     void fetchPolicyDefinition_whenHubRejectsThisPolicy_shouldReturnFailure(int status) throws IOException {
         givenResponse(status, "{}");
 

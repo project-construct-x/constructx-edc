@@ -51,7 +51,14 @@ to:
 `@id` is the id to use in contract definitions. Errors come back as `400` with the reason in the
 message — including a hub-side `404`, which surfaces as `400 Could not fetch policy '…' from the
 Policy Hub: Policy Hub returned status 404`. If the hub itself is unreachable (connection failure,
-timeout, `5xx`, `408`, `429`), the response is `503 Service Unavailable` instead.
+timeout, `5xx`, `408`, `429`), the response is `503 Service Unavailable` instead; if it rejects the
+connector's credentials (`401`/`403`), the response is `502 Bad Gateway`.
+
+Every failed import is also logged as a warning in the control plane, so it does not only reach
+the HTTP client: `Policy Hub import of '<id>' failed: <reason>`. For a policy the validator rejects,
+the reason names each violation with its place in the policy and the offending value, e.g.
+`Policy '<id>' is not a valid policy definition: leftOperand.@id value 'https://example.com/Unknown' is not allowed. Expected one of: […] (at '@id')`.
+The periodic sync logs the same reason per policy (see [Keeping imports up to date](#keeping-imports-up-to-date)).
 
 If the hub's content is unchanged since the last import, nothing is written and the existing
 definition is returned (see [Keeping imports up to date](#keeping-imports-up-to-date)).
@@ -80,6 +87,7 @@ impractical.
 If the Policy Hub is unreachable, the manual run does **not** wait for it (it blocks an HTTP
 request): it aborts at once and answers `503 Service Unavailable`, e.g.
 `Policy Hub sync aborted: Policy Hub unreachable (Connection refused), 0 policies checked before`.
+If the hub rejects the credentials (`401`/`403`), it answers `502 Bad Gateway` instead.
 
 ### Read imported policies back
 
@@ -228,8 +236,15 @@ are taken over automatically.
   connector) but **not** EDC's built-in HTTP retries (`edc.core.retry.*`), which would retry every
   request silently for about 15 s. Each request is therefore a single attempt: the waiting happens
   only in the backoff above, and every attempt is logged. The import and sync endpoints answer
-  `503` right away. A `404`, `400`, `401` or `403` is *not* treated as an outage: it concerns one
-  policy and is counted as `failed`.
+  `503` right away.
+- **Hub rejects the credentials** — a `401` or `403` answer also affects every policy alike, but
+  waiting cannot fix it: the secret in the vault has to be corrected. The run therefore aborts at
+  once, on the first request, **without** waiting or retrying, and logs that the credentials were
+  rejected. The next run follows after `outage-interval` like after an outage, so it picks up the
+  corrected secret within minutes and without a restart. The import and sync endpoints answer
+  `502 Bad Gateway` (the problem lies between the connector and the hub, not with the caller).
+- **Single policy rejected** — a `404` or `400` concerns one policy only, is counted as `failed`
+  and does not stop the run.
 - **Multiple replicas** — each control plane replica syncs on its own. That is harmless because
   imports are idempotent and the hash prevents duplicate writes.
 - **Existing contracts are not affected** — EDC copies the policy into the `ContractAgreement` when
@@ -241,16 +256,18 @@ runs started through the sync endpoint). Each policy whose content changed addit
 `Updated policy definition '…' from the Policy Hub` once it is stored, and each failure a warning with the
 reason.
 
-While the hub is unreachable, the log shows:
+While the hub is unreachable or rejects the credentials, the log shows:
 
 | Situation                        | Level   | Log line                                                                                                                    |
 |----------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------------|
 | Waiting for the hub              | WARNING | `Policy Hub sync (scheduled): Policy Hub unreachable (Connection refused), retry 1 in 5 s`                                  |
 | Hub back within the same run     | INFO    | `Policy Hub sync (scheduled): Policy Hub reachable again after 2 retries`                                                   |
 | Run aborted                      | WARNING | `Policy Hub sync (scheduled) aborted: Policy Hub unreachable for 60 s (Connection refused), 0 of 12 policies checked`       |
-| Next run after an abort          | WARNING | `Next Policy Hub sync in 300 s (3 aborted runs in a row, Policy Hub unreachable since 2026-11-05T10:15:00Z)`                |
-| First completed run after abort  | INFO    | `Policy Hub reachable again after 3 aborted runs, back to the regular interval of 3600 s`                                   |
+| Credentials rejected (401/403)   | WARNING | `Policy Hub sync (scheduled) aborted: Policy Hub rejected the credentials (status 401), 0 of 12 policies checked; check the Policy Hub credentials in the vault` |
+| Next run after an abort          | WARNING | `Next Policy Hub sync in 300 s (3 aborted runs in a row since 2026-11-05T10:15:00Z, last cause: unreachable (Connection refused))` — or `last cause: access denied (status 401)` |
+| First completed run after abort  | INFO    | `Policy Hub sync completed again after 3 aborted runs, back to the regular interval of 3600 s`                              |
 | Manual sync while hub is down    | WARNING | `Policy Hub sync (manual) aborted: Policy Hub unreachable (Connection refused), 0 of 12 policies checked` (plus HTTP `503`) |
+| Manual import/sync, credentials rejected | WARNING | `Policy Hub import of '<id>' failed: Policy Hub rejected the credentials (status 401); check the Policy Hub credentials in the vault` (plus HTTP `502`) |
 
 To monitor the periodic sync, alert on `Policy Hub sync (scheduled) aborted` lines and when no
 `Policy Hub sync (scheduled) finished` line appears for longer than about one interval; look at the
@@ -268,7 +285,7 @@ warnings when `failed` is not 0.
 | `constructx.policyhub.sync.request-delay`  | no       | `100`                    | Milliseconds between two Policy Hub requests within one run.                                                  |
 | `constructx.policyhub.sync.retry.initial-delay` | no  | `5`                      | Hub unreachable: seconds until the first retry within a scheduled run, doubled on every further retry.        |
 | `constructx.policyhub.sync.retry.max-wait` | no       | `60`                     | Hub unreachable: maximum total seconds a scheduled run waits for the hub before it is aborted.                |
-| `constructx.policyhub.sync.outage-interval` | no      | `300`                    | Seconds until the next run after a run was aborted because the hub was unreachable.                           |
+| `constructx.policyhub.sync.outage-interval` | no      | `300`                    | Seconds until the next run after a run was aborted (hub unreachable or credentials rejected).                 |
 
 Credentials are resolved from the vault on every request — they never appear in configuration files,
 and rotating them needs no restart.

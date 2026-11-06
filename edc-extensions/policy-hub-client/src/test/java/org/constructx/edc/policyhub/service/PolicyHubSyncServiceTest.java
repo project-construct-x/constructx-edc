@@ -19,6 +19,7 @@
 
 package org.constructx.edc.policyhub.service;
 
+import org.constructx.edc.policyhub.client.PolicyHubAccessDeniedException;
 import org.constructx.edc.policyhub.client.PolicyHubUnavailableException;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
@@ -27,10 +28,13 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +74,7 @@ class PolicyHubSyncServiceTest {
 
         verify(importService).importPolicy("hub-1");
         verify(importService, never()).importPolicy("manual");
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, false, null));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, null));
     }
 
     @Test
@@ -81,7 +85,7 @@ class PolicyHubSyncServiceTest {
 
         var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
 
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 1, 0, 0, false, null));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 1, 0, 0, null));
     }
 
     @Test
@@ -97,7 +101,7 @@ class PolicyHubSyncServiceTest {
 
         verify(importService).importPolicy("hub-2");
         verify(policyDefinitionService, never()).deleteById(anyString());
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 1, 1, false, null));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 1, 1, null));
     }
 
     @Test
@@ -153,7 +157,7 @@ class PolicyHubSyncServiceTest {
         var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
 
         assertThat(sleeps).containsExactly(Duration.ofSeconds(5), Duration.ofSeconds(10));
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 2, 0, false, null));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 2, 0, null));
         verify(monitor).info("Policy Hub sync (scheduled): Policy Hub reachable again after 2 retries");
     }
 
@@ -169,7 +173,7 @@ class PolicyHubSyncServiceTest {
         // 5 + 10 + 20 + 25 = 60 s: the last pause is cut short to stay within the budget
         assertThat(sleeps).containsExactly(Duration.ofSeconds(5), Duration.ofSeconds(10),
                 Duration.ofSeconds(20), Duration.ofSeconds(25));
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(0, 0, 0, 0, true, "Connection refused"));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(0, 0, 0, 0, new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.UNREACHABLE, "Connection refused")));
         verify(importService, never()).importPolicy("hub-2");
         verify(monitor).warning("Policy Hub sync (scheduled) aborted: Policy Hub unreachable for 60 s (Connection refused), 0 of 2 policies checked");
     }
@@ -185,8 +189,43 @@ class PolicyHubSyncServiceTest {
         var summary = service.sync(PolicyHubSyncService.Trigger.MANUAL);
 
         assertThat(sleeps).isEmpty();
-        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, true, "status 503"));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.UNREACHABLE, "status 503")));
         verify(monitor).warning("Policy Hub sync (manual) aborted: Policy Hub unreachable (status 503), 1 of 2 policies checked");
+    }
+
+    @ParameterizedTest
+    @EnumSource(PolicyHubSyncService.Trigger.class)
+    void sync_whenHubRejectsCredentials_shouldAbortAtOnceWithoutWaiting(PolicyHubSyncService.Trigger trigger) {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1")).thenThrow(new PolicyHubAccessDeniedException("status 401"));
+
+        var summary = service.sync(trigger);
+
+        // waiting cannot fix wrong credentials: no pause, one request, the rest is not asked
+        assertThat(sleeps).isEmpty();
+        verify(importService, times(1)).importPolicy("hub-1");
+        verify(importService, never()).importPolicy("hub-2");
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(0, 0, 0, 0,
+                new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.ACCESS_DENIED, "status 401")));
+        verify(monitor).warning("Policy Hub sync (%s) aborted: Policy Hub rejected the credentials (status 401), 0 of 2 policies checked; check the Policy Hub credentials in the vault"
+                .formatted(trigger.name().toLowerCase(Locale.ROOT)));
+    }
+
+    @Test
+    void sync_whenCredentialsAreRejectedAfterOutage_shouldAbortAsAccessDenied() {
+        var first = importedDefinition("hub-1", "hash-1");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first)));
+        when(importService.importPolicy("hub-1"))
+                .thenThrow(new PolicyHubUnavailableException("Connection refused"))
+                .thenThrow(new PolicyHubAccessDeniedException("status 403"));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        assertThat(sleeps).containsExactly(Duration.ofSeconds(5));
+        assertThat(summary.abort()).isEqualTo(
+                new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.ACCESS_DENIED, "status 403"));
     }
 
     private static PolicyDefinition importedDefinition(String id, String hash) {

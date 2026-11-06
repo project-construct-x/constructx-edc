@@ -19,6 +19,7 @@
 
 package org.constructx.edc.policyhub.service;
 
+import org.constructx.edc.policyhub.client.PolicyHubAccessDeniedException;
 import org.constructx.edc.policyhub.client.PolicyHubUnavailableException;
 import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
 import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
@@ -47,7 +48,8 @@ import static org.constructx.edc.policyhub.service.PolicyHubImportService.POLICY
  *
  * <p>If the hub as a whole is unreachable, a scheduled run retries the same policy with a
  * doubling pause until {@link OutageRetry#maxWait()} is used up, then aborts. A manual run aborts
- * right away, since it blocks an HTTP request. Either way the remaining policies are not requested.
+ * right away, since it blocks an HTTP request. If the hub rejects the credentials ({@code 401}/{@code 403}),
+ * every run aborts at once: waiting cannot fix that. In all these cases the remaining policies are not requested.
  */
 public class PolicyHubSyncService {
 
@@ -59,15 +61,40 @@ public class PolicyHubSyncService {
     }
 
     /**
+     * Why a run gave up before all policies were checked.
+     */
+    public enum AbortCause {
+        /**
+         * The hub could not be reached (connection failure, timeout, {@code 5xx}, {@code 408}, {@code 429}).
+         */
+        UNREACHABLE,
+        /**
+         * The hub rejected the connector's credentials ({@code 401}/{@code 403}).
+         */
+        ACCESS_DENIED
+    }
+
+    /**
+     * A run that gave up early.
+     *
+     * @param cause  what went wrong
+     * @param reason short detail, e.g. {@code Connection refused} or {@code status 401}
+     */
+    public record Abort(AbortCause cause, String reason) {
+    }
+
+    /**
      * Outcome of one sync run.
      *
-     * @param checked    policy definitions processed, i.e. updated + unchanged + failed
-     * @param aborted    whether the run was aborted because the Policy Hub was unreachable
-     * @param abortReason the cause of the abort, e.g. {@code Connection refused}; {@code null} if
-     *                   not aborted
+     * @param checked policy definitions processed, i.e. updated + unchanged + failed
+     * @param abort   why the run was aborted before all policies were checked; {@code null} if it ran
+     *                to the end
      */
-    public record SyncSummary(int checked, int updated, int unchanged, int failed,
-                              boolean aborted, @Nullable String abortReason) {
+    public record SyncSummary(int checked, int updated, int unchanged, int failed, @Nullable Abort abort) {
+
+        public boolean aborted() {
+            return abort != null;
+        }
     }
 
     /**
@@ -114,8 +141,8 @@ public class PolicyHubSyncService {
      *
      * @param trigger what started the run; part of the log output, so scheduled and manual runs can
      *                be monitored separately. Only scheduled runs wait for an unreachable hub.
-     * @return counts of the checked, updated, unchanged and failed definitions, and whether the run
-     *         was aborted because the Policy Hub was unreachable
+     * @return counts of the checked, updated, unchanged and failed definitions, and why the run was
+     *         aborted, if it was
      */
     public SyncSummary sync(Trigger trigger) {
         var label = trigger.name().toLowerCase(Locale.ROOT);
@@ -132,12 +159,10 @@ public class PolicyHubSyncService {
             }
 
             var attempt = importWithRetry(definition.getId(), trigger, label);
-            if (attempt.outage() != null) {
+            if (attempt.abort() != null) {
                 var checked = updated + unchanged + failed;
-                var unreachableFor = attempt.waited().isZero() ? "" : " for %d s".formatted(attempt.waited().toSeconds());
-                monitor.warning("Policy Hub sync (%s) aborted: Policy Hub unreachable%s (%s), %d of %d policies checked"
-                        .formatted(label, unreachableFor, attempt.outage().getReason(), checked, imported.size()));
-                return new SyncSummary(checked, updated, unchanged, failed, true, attempt.outage().getReason());
+                logAbort(label, attempt, checked, imported.size());
+                return new SyncSummary(checked, updated, unchanged, failed, attempt.abort());
             }
 
             var result = attempt.result();
@@ -155,15 +180,28 @@ public class PolicyHubSyncService {
             pause(requestDelay);
         }
 
-        var summary = new SyncSummary(updated + unchanged + failed, updated, unchanged, failed, false, null);
+        var summary = new SyncSummary(updated + unchanged + failed, updated, unchanged, failed, null);
         monitor.info("Policy Hub sync (%s) finished: %d checked, %d updated, %d unchanged, %d failed"
                 .formatted(label, summary.checked(), summary.updated(), summary.unchanged(), summary.failed()));
         return summary;
     }
 
+    private void logAbort(String label, Attempt attempt, int checked, int total) {
+        var abort = attempt.abort();
+        if (abort.cause() == AbortCause.ACCESS_DENIED) {
+            monitor.warning("Policy Hub sync (%s) aborted: Policy Hub rejected the credentials (%s), %d of %d policies checked; check the Policy Hub credentials in the vault"
+                    .formatted(label, abort.reason(), checked, total));
+        } else {
+            var unreachableFor = attempt.waited().isZero() ? "" : " for %d s".formatted(attempt.waited().toSeconds());
+            monitor.warning("Policy Hub sync (%s) aborted: Policy Hub unreachable%s (%s), %d of %d policies checked"
+                    .formatted(label, unreachableFor, abort.reason(), checked, total));
+        }
+    }
+
     /**
      * Imports one policy. If the hub is unreachable, a scheduled run waits and tries again with a
-     * doubling pause; the last pause is cut short so the pauses never exceed the retry budget.
+     * doubling pause; the last pause is cut short so the pauses never exceed the retry budget. If the
+     * hub rejects the credentials, the run gives up at once: waiting cannot fix that.
      */
     private Attempt importWithRetry(String hubPolicyId, Trigger trigger, String label) {
         var waited = Duration.ZERO;
@@ -177,17 +215,20 @@ public class PolicyHubSyncService {
                             .formatted(label, retries, retries == 1 ? "retry" : "retries"));
                 }
                 return new Attempt(result, null, waited);
+            } catch (PolicyHubAccessDeniedException e) {
+                return new Attempt(null, new Abort(AbortCause.ACCESS_DENIED, e.getReason()), waited);
             } catch (PolicyHubUnavailableException e) {
+                var abort = new Abort(AbortCause.UNREACHABLE, e.getReason());
                 var remaining = outageRetry.maxWait().minus(waited);
                 if (trigger == Trigger.MANUAL || remaining.isZero() || remaining.isNegative()) {
-                    return new Attempt(null, e, waited);
+                    return new Attempt(null, abort, waited);
                 }
                 var wait = delay.compareTo(remaining) > 0 ? remaining : delay;
                 retries++;
                 monitor.warning("Policy Hub sync (%s): Policy Hub unreachable (%s), retry %d in %d s"
                         .formatted(label, e.getReason(), retries, wait.toSeconds()));
                 if (!pause(wait)) {
-                    return new Attempt(null, e, waited);
+                    return new Attempt(null, abort, waited);
                 }
                 waited = waited.plus(wait);
                 delay = delay.multipliedBy(2);
@@ -244,10 +285,9 @@ public class PolicyHubSyncService {
     }
 
     /**
-     * Result of importing one policy: either the import's own result, or the outage that made the
-     * run give up, plus how long it waited for the hub.
+     * Result of importing one policy: either the import's own result, or why the run had to give up,
+     * plus how long it waited for the hub.
      */
-    private record Attempt(@Nullable ServiceResult<PolicyDefinition> result,
-                           @Nullable PolicyHubUnavailableException outage, Duration waited) {
+    private record Attempt(@Nullable ServiceResult<PolicyDefinition> result, @Nullable Abort abort, Duration waited) {
     }
 }

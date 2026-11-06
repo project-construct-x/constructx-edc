@@ -46,9 +46,9 @@ class PolicyHubSyncSchedulerTest {
     private static final Instant NOW = Instant.parse("2026-11-05T10:15:00Z");
 
     private static final PolicyHubSyncService.SyncSummary COMPLETED =
-            new PolicyHubSyncService.SyncSummary(2, 0, 2, 0, false, null);
+            new PolicyHubSyncService.SyncSummary(2, 0, 2, 0, null);
     private static final PolicyHubSyncService.SyncSummary ABORTED =
-            new PolicyHubSyncService.SyncSummary(0, 0, 0, 0, true, "Connection refused");
+            new PolicyHubSyncService.SyncSummary(0, 0, 0, 0, new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.UNREACHABLE, "Connection refused"));
 
     private final PolicyHubSyncService syncService = mock();
     private final ScheduledExecutorService executor = mock();
@@ -81,8 +81,19 @@ class PolicyHubSyncSchedulerTest {
         scheduler.run();
 
         verify(executor, times(2)).schedule(any(Runnable.class), eq(300L), eq(TimeUnit.SECONDS));
-        verify(monitor).warning("Next Policy Hub sync in 300 s (1 aborted run in a row, Policy Hub unreachable since 2026-11-05T10:15:00Z)");
-        verify(monitor).warning("Next Policy Hub sync in 300 s (2 aborted runs in a row, Policy Hub unreachable since 2026-11-05T10:15:00Z)");
+        verify(monitor).warning("Next Policy Hub sync in 300 s (1 aborted run in a row since 2026-11-05T10:15:00Z, last cause: unreachable (Connection refused))");
+        verify(monitor).warning("Next Policy Hub sync in 300 s (2 aborted runs in a row since 2026-11-05T10:15:00Z, last cause: unreachable (Connection refused))");
+    }
+
+    @Test
+    void run_whenHubRejectsCredentials_shouldScheduleNextRunAfterOutageIntervalAndNameTheCause() {
+        when(syncService.sync(PolicyHubSyncService.Trigger.SCHEDULED)).thenReturn(new PolicyHubSyncService.SyncSummary(0, 0, 0, 0,
+                new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.ACCESS_DENIED, "status 401")));
+
+        scheduler.run();
+
+        verify(executor).schedule(any(Runnable.class), eq(300L), eq(TimeUnit.SECONDS));
+        verify(monitor).warning("Next Policy Hub sync in 300 s (1 aborted run in a row since 2026-11-05T10:15:00Z, last cause: access denied (status 401))");
     }
 
     @Test
@@ -93,7 +104,7 @@ class PolicyHubSyncSchedulerTest {
         scheduler.run();
         scheduler.run();
 
-        verify(monitor).info("Policy Hub reachable again after 2 aborted runs, back to the regular interval of 3600 s");
+        verify(monitor).info("Policy Hub sync completed again after 2 aborted runs, back to the regular interval of 3600 s");
         verify(executor).schedule(any(Runnable.class), eq(3600L), eq(TimeUnit.SECONDS));
     }
 

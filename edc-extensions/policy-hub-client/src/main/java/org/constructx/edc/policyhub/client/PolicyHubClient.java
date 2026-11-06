@@ -64,6 +64,7 @@ public class PolicyHubClient {
      * @return the raw JSON-LD policy definition as served by the hub, or a failure that concerns
      *         this policy only (e.g. the hub returned {@code 404})
      * @throws PolicyHubUnavailableException if the hub itself cannot be reached
+     * @throws PolicyHubAccessDeniedException if the hub rejects the credentials ({@code 401}/{@code 403})
      */
     public Result<JsonObject> fetchPolicyDefinition(String hubPolicyId) {
         var credentials = vault.resolveSecret(credentialsAlias);
@@ -78,6 +79,9 @@ public class PolicyHubClient {
                 .build();
 
         try (var response = httpClient.newCall(request).execute()) {
+            if (response.code() == 401 || response.code() == 403) {
+                throw new PolicyHubAccessDeniedException("status %d".formatted(response.code()));
+            }
             if (isHubUnavailable(response.code())) {
                 throw new PolicyHubUnavailableException("status %d".formatted(response.code()));
             }

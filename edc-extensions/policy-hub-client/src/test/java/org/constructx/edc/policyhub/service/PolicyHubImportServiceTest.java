@@ -51,6 +51,7 @@ import java.net.URISyntaxException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -260,6 +261,22 @@ class PolicyHubImportServiceTest {
         assertThat(result).isFailed();
         verify(policyDefinitionService, never()).create(any());
         verify(policyDefinitionService, never()).update(any());
+    }
+
+    @Test
+    void importPolicy_whenValidationFails_shouldNameEveryViolationWithPathAndValue() {
+        when(client.fetchPolicyDefinition(HUB_POLICY_ID)).thenReturn(Result.success(membershipPolicy()));
+        when(validatorRegistry.validate(eq(EDC_POLICY_DEFINITION_TYPE), any())).thenReturn(ValidationResult.failure(List.of(
+                Violation.violation("Left operand not allowed", "policy.permission[0].constraint[0]", "https://example.com/Unknown"),
+                Violation.violation("Policy must contain a rule", "policy"))));
+
+        var result = service.importPolicy(HUB_POLICY_ID);
+
+        assertThat(result).isFailed();
+        assertThat(result.getFailureDetail()).isEqualTo(
+                "Policy '%s' is not a valid policy definition: %s; %s".formatted(HUB_POLICY_ID,
+                        "Left operand not allowed (at 'policy.permission[0].constraint[0]', value 'https://example.com/Unknown')",
+                        "Policy must contain a rule (at 'policy')"));
     }
 
     private static PolicyDefinition staleDefinition() {

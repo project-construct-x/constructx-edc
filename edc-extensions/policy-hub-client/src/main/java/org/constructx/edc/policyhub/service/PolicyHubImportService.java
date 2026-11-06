@@ -32,11 +32,14 @@ import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
+import org.eclipse.edc.validator.spi.ValidationResult;
+import org.eclipse.edc.validator.spi.Violation;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -134,7 +137,7 @@ public class PolicyHubImportService {
         var validation = validatorRegistry.validate(EDC_POLICY_DEFINITION_TYPE, expanded.getContent());
         if (validation.failed()) {
             return ServiceResult.badRequest("Policy '%s' is not a valid policy definition: %s"
-                    .formatted(hubPolicyId, validation.getFailureDetail()));
+                    .formatted(hubPolicyId, describeViolations(validation)));
         }
 
         var participantContext = participantContextSupplier.get();
@@ -179,6 +182,27 @@ public class PolicyHubImportService {
             monitor.info("Updated policy definition '%s' from the Policy Hub".formatted(definition.getId()));
         }
         return updated;
+    }
+
+    /**
+     * Lists every violation with the place in the policy where it was found, so an invalid policy can be
+     * fixed from the log alone; {@code ValidationResult#getFailureDetail()} would only give the bare messages.
+     */
+    private static String describeViolations(ValidationResult validation) {
+        return validation.getFailure().getViolations().stream()
+                .map(PolicyHubImportService::describe)
+                .collect(Collectors.joining("; "));
+    }
+
+    private static String describe(Violation violation) {
+        var where = new ArrayList<String>();
+        if (violation.path() != null && !violation.path().isBlank()) {
+            where.add("at '%s'".formatted(violation.path()));
+        }
+        if (violation.value() != null) {
+            where.add("value '%s'".formatted(violation.value()));
+        }
+        return where.isEmpty() ? violation.message() : "%s (%s)".formatted(violation.message(), String.join(", ", where));
     }
 
     /**

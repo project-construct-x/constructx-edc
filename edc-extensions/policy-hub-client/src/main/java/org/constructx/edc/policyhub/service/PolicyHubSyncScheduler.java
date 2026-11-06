@@ -24,6 +24,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -31,8 +32,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Runs the periodic Policy Hub sync. After every run it schedules the next one itself: after the
  * regular {@code interval} normally, or after the shorter {@code outageInterval} if the run was
- * aborted because the Policy Hub was unreachable. Since the next run is only scheduled once the
- * previous one has ended, runs never overlap.
+ * aborted because the Policy Hub was unreachable or rejected the credentials. Since the next run is
+ * only scheduled once the previous one has ended, runs never overlap.
  */
 public class PolicyHubSyncScheduler {
 
@@ -45,7 +46,7 @@ public class PolicyHubSyncScheduler {
 
     // only touched by the executor's single thread
     private int consecutiveAbortedRuns;
-    private Instant unreachableSince;
+    private Instant abortedSince;
 
     public PolicyHubSyncScheduler(PolicyHubSyncService syncService, ScheduledExecutorService executor,
                                   Duration interval, Duration outageInterval, Clock clock, Monitor monitor) {
@@ -72,7 +73,7 @@ public class PolicyHubSyncScheduler {
         // an exception must not break the chain of runs, so it is caught and the next run scheduled
         try {
             var summary = syncService.sync(PolicyHubSyncService.Trigger.SCHEDULED);
-            next = summary.aborted() ? afterAbortedRun(startedAt) : afterCompletedRun();
+            next = summary.aborted() ? afterAbortedRun(startedAt, summary.abort()) : afterCompletedRun();
         } catch (Exception e) {
             monitor.severe("Policy Hub sync failed", e);
             next = interval;
@@ -80,25 +81,27 @@ public class PolicyHubSyncScheduler {
         schedule(next);
     }
 
-    private Duration afterAbortedRun(Instant startedAt) {
+    private Duration afterAbortedRun(Instant startedAt, PolicyHubSyncService.Abort abort) {
         if (executor.isShutdown()) {
             return outageInterval;
         }
         consecutiveAbortedRuns++;
-        if (unreachableSince == null) {
-            unreachableSince = startedAt;
+        if (abortedSince == null) {
+            abortedSince = startedAt;
         }
-        monitor.warning("Next Policy Hub sync in %d s (%d aborted %s in a row, Policy Hub unreachable since %s)"
-                .formatted(outageInterval.toSeconds(), consecutiveAbortedRuns, consecutiveAbortedRuns == 1 ? "run" : "runs", unreachableSince));
+        var cause = abort.cause().name().toLowerCase(Locale.ROOT).replace('_', ' ');
+        monitor.warning("Next Policy Hub sync in %d s (%d aborted %s in a row since %s, last cause: %s (%s))"
+                .formatted(outageInterval.toSeconds(), consecutiveAbortedRuns, consecutiveAbortedRuns == 1 ? "run" : "runs",
+                        abortedSince, cause, abort.reason()));
         return outageInterval;
     }
 
     private Duration afterCompletedRun() {
         if (consecutiveAbortedRuns > 0) {
-            monitor.info("Policy Hub reachable again after %d aborted %s, back to the regular interval of %d s"
+            monitor.info("Policy Hub sync completed again after %d aborted %s, back to the regular interval of %d s"
                     .formatted(consecutiveAbortedRuns, consecutiveAbortedRuns == 1 ? "run" : "runs", interval.toSeconds()));
             consecutiveAbortedRuns = 0;
-            unreachableSince = null;
+            abortedSince = null;
         }
         return interval;
     }
