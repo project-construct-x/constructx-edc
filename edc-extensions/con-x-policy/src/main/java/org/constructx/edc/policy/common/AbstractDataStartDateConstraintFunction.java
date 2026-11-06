@@ -25,14 +25,8 @@ import org.eclipse.edc.policy.model.Operator;
 import org.eclipse.edc.policy.model.Rule;
 import org.eclipse.edc.spi.result.Result;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
-import java.util.regex.Pattern;
-
 
 /**
  * This is an abstract constraint function for DataStartDate constraints. It evaluates to true if the current date is
@@ -49,57 +43,18 @@ public abstract class AbstractDataStartDateConstraintFunction<R extends Rule, C 
             Operator.GEQ
     );
 
-    private static final String DATE_TIME_PATTERN = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$";
-    private static final String DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
-
     @Override
     public boolean evaluate(Operator operator, Object rightOperand, R rule, C context) {
-        var startDate = parseAsStartOfDayInstant(rightOperand.toString());
-        if (startDate == null) {
-            context.reportProblem("Invalid right-operand: right operand must match pattern '%s' or '%s'".formatted(DATE_TIME_PATTERN, DATE_PATTERN));
+        var limit = DateConstraints.parseAsStartOfDay(rightOperand.toString());
+        if (limit == null) {
+            context.reportProblem(DateConstraints.invalidRightOperandMessage());
             return false;
         }
-        return !context.now().truncatedTo(ChronoUnit.SECONDS).isBefore(startDate);
+        return !context.now().truncatedTo(ChronoUnit.SECONDS).isBefore(limit);
     }
 
     @Override
     public Result<Void> validate(Operator operator, Object rightOperand, R rule) {
-        if (operator == null) {
-            return Result.failure("Invalid operator: this constraint only allows the following operators: %s, but received null.".formatted(ALLOWED_OPERATORS));
-        }
-
-        if (!ALLOWED_OPERATORS.contains(operator)) {
-            return Result.failure("Invalid operator: this constraint only allows the following operators: %s, but received '%s'.".formatted(ALLOWED_OPERATORS, operator));
-        }
-
-        if (!(rightOperand instanceof String rightValue) || parseAsStartOfDayInstant(rightValue) == null) {
-            return Result.failure("Invalid right-operand: right operand must match pattern '%s' or '%s'".formatted(DATE_TIME_PATTERN, DATE_PATTERN));
-        }
-
-        return Result.success();
-    }
-
-    /**
-     * Parses the given value as an {@link Instant}, either directly (full ISO-8601 date-time) or, for a bare
-     * ISO-8601 date, as the beginning of that day (00:00:00 UTC).
-     *
-     * @return the parsed instant, or {@code null} if the value matches neither format
-     */
-    private Instant parseAsStartOfDayInstant(String value) {
-        if (Pattern.matches(DATE_TIME_PATTERN, value)) {
-            try {
-                return Instant.parse(value);
-            } catch (DateTimeParseException e) {
-                return null;
-            }
-        }
-        if (Pattern.matches(DATE_PATTERN, value)) {
-            try {
-                return LocalDate.parse(value).atStartOfDay(ZoneOffset.UTC).toInstant();
-            } catch (DateTimeParseException e) {
-                return null;
-            }
-        }
-        return null;
+        return DateConstraints.validate(ALLOWED_OPERATORS, operator, rightOperand, DateConstraints::parseAsStartOfDay);
     }
 }

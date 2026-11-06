@@ -21,6 +21,8 @@ package org.constructx.edc.policy;
 
 import org.constructx.edc.policy.connector.ConnectorConstraintFunction;
 import org.constructx.edc.policy.datasubset.DataSubsetConstraintFunction;
+import org.constructx.edc.policy.datausage.CatalogDataUsageEndDateConstraintFunction;
+import org.constructx.edc.policy.datausage.CatalogDataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.framework.ConxFrameworkAgreementConstraintFunction;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Clock;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +78,7 @@ class ConxPolicyExtensionTest {
         context.registerService(JsonObjectValidatorRegistry.class, validatorRegistry);
         context.registerService(BusinessPartnerStore.class, mock());
         context.registerService(BdrsClient.class, mock());
+        context.registerService(Clock.class, Clock.systemUTC());
     }
 
     @Test
@@ -93,6 +97,18 @@ class ConxPolicyExtensionTest {
         verify(policyEngine).registerFunction(eq(TransferProcessPolicyContext.class), eq(Permission.class), eq(leftOperand), isA(DataUsageStartDateConstraintFunction.class));
         verify(bindingRegistry).bind(leftOperand, TRANSFER_PROCESS_SCOPE);
         verify(bindingRegistry).bind(leftOperand, POLICY_MONITOR_SCOPE);
+    }
+
+    @Test
+    void initialize_shouldEnforceDateConstraintsOfAccessPolicyInCatalogScope(ConxPolicyExtension extension, ServiceExtensionContext context) {
+        extension.initialize(context);
+
+        var startDate = CX_POLICY_2025_09_NS + DataUsageStartDateConstraintFunction.DATA_USAGE_START_DATE;
+        var endDate = CX_POLICY_2025_09_NS + "DataUsageEndDate";
+        verify(policyEngine).registerFunction(eq(CatalogPolicyContext.class), eq(Permission.class), eq(startDate), isA(CatalogDataUsageStartDateConstraintFunction.class));
+        verify(policyEngine).registerFunction(eq(CatalogPolicyContext.class), eq(Permission.class), eq(endDate), isA(CatalogDataUsageEndDateConstraintFunction.class));
+        verify(bindingRegistry).bind(startDate, CATALOG_SCOPE);
+        verify(bindingRegistry).bind(endDate, CATALOG_SCOPE);
     }
 
     @Test

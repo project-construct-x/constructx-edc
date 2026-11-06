@@ -31,9 +31,17 @@ The extension injects `BusinessPartnerStore` and `BdrsClient`, so the runtime al
 - Start dates accept the operators `eq` and `gteq`, end dates accept `eq` and `lteq`.
 - Values can be full ISO date-times or bare ISO dates such as `"2026-08-01"`. A bare start date is interpreted
   as 00:00:00 UTC, a bare end date as 23:59:59 UTC of that day.
-- The constraints are evaluated in the `transfer.process` and `policy.monitor` scopes.
+- In a `CONTRACT` policy they are evaluated in the `transfer.process` scope (a transfer cannot start outside the
+  period) and in the `policy.monitor` scope (a running transfer is terminated after the end date).
+- In an `ACCESS` policy they are evaluated in the `catalog` scope, the only scope an access policy is evaluated in
+  (catalog and initial offer validation of a negotiation): outside the period the offer is not shown in the catalog
+  and a negotiation for it is rejected. Contracts that already exist are not affected, their period comes from the
+  contract policy. Only `DataUsageStartDate` and `DataUsageEndDate` work this way; `DataProvisioningEndDate` is a
+  duty and is not allowed in access policies.
 
-Implementation: `DataUsageStartDateConstraintFunction`, `ConxDataUsageEndDateConstraintFunction`,
+Implementation: `DataUsageStartDateConstraintFunction`, `ConxDataUsageEndDateConstraintFunction`, the catalog variants
+`CatalogDataUsageStartDateConstraintFunction` and `CatalogDataUsageEndDateConstraintFunction` (time from the injected
+`Clock`, the catalog context has no contract agreement),
 `ConxDataProvisioningEndDateConstraintFunction` (based on `AbstractDataStartDateConstraintFunction` and
 `ConxAbstractDataEndDateConstraintFunction`).
 
@@ -140,8 +148,9 @@ Things to keep in mind with `odrl:or`:
   mutually exclusive, and a `FrameworkAgreement` in any branch satisfies the "at least one of" requirement.
 - **Branches can disappear during evaluation.** Before evaluating, EDC drops constraints whose left operand is
   not bound to the current scope. Access policies are only evaluated in the `catalog` and
-  `contract.negotiation` scopes, and the date constraints are bound to neither. In an access policy, an `or`
-  branch consisting only of date constraints therefore never grants access on its own.
+  `contract.negotiation` scopes. The date constraints `DataUsageStartDate` and `DataUsageEndDate` are bound to the
+  `catalog` scope, but the other date-like operands (e.g. `inForceDate`, which needs a contract agreement) are not,
+  so an `or` branch consisting only of those never grants access on its own.
 
 ## Known limitation: multi-value right operands
 

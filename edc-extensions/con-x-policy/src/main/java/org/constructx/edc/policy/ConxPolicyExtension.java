@@ -24,6 +24,8 @@ package org.constructx.edc.policy;
 import org.constructx.edc.policy.connector.ConnectorConstraintFunction;
 import org.constructx.edc.policy.dataprovisioning.ConxDataProvisioningEndDateConstraintFunction;
 import org.constructx.edc.policy.datasubset.DataSubsetConstraintFunction;
+import org.constructx.edc.policy.datausage.CatalogDataUsageEndDateConstraintFunction;
+import org.constructx.edc.policy.datausage.CatalogDataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.framework.ConxFrameworkAgreementConstraintFunction;
@@ -72,6 +74,8 @@ import org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDefinitionConstraintF
 import org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonthsConstraintFunction;
 import org.eclipse.tractusx.edc.spi.identity.mapper.BdrsClient;
 import org.eclipse.tractusx.edc.validation.businesspartner.spi.store.BusinessPartnerStore;
+
+import java.time.Clock;
 
 import static org.constructx.edc.policy.connector.ConnectorConstraintFunction.CONNECTOR;
 import static org.constructx.edc.policy.datasubset.DataSubsetConstraintFunction.DATA_SUBSET;
@@ -123,6 +127,9 @@ import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonths
  *   <li>{@link ConxFrameworkAgreementConstraintFunction}: subtype without version is valid</li>
  *   <li>{@link ConxDataUsageEndDateConstraintFunction}/{@link ConxDataProvisioningEndDateConstraintFunction}: LEQ and bare dates</li>
  *   <li>new {@link DataUsageStartDateConstraintFunction} (does not exist upstream)</li>
+ *   <li>{@link CatalogDataUsageStartDateConstraintFunction}/{@link CatalogDataUsageEndDateConstraintFunction}: date
+ *   constraints in access policies, which are only evaluated in the catalog scope (upstream binds them to the
+ *   transfer and policy monitor scopes only, so they were silently dropped there)</li>
  *   <li>UsagePurpose registered for {@link CatalogPolicyContext} (upstream binds it to the catalog scope but has
  *   no function for it, which causes a NullPointerException when building the catalog)</li>
  *   <li>new {@link ConnectorConstraintFunction}: evaluates the Policy Hub's "Participant selection" constraint
@@ -154,6 +161,9 @@ public class ConxPolicyExtension implements ServiceExtension {
 
     @Inject
     private BdrsClient bdrsClient;
+
+    @Inject
+    private Clock clock;
 
     @Inject
     private JsonObjectValidatorRegistry validatorRegistry;
@@ -237,6 +247,9 @@ public class ConxPolicyExtension implements ServiceExtension {
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_FREQUENCY), new DataFrequencyConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_FREQUENCY), new DataFrequencyConstraintFunction<>());
 
+        // an access policy is only evaluated in the catalog scope, where the agreement-based functions below cannot run
+        engine.registerFunction(CatalogPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_END_DATE), new CatalogDataUsageEndDateConstraintFunction(clock));
+        engine.registerFunction(CatalogPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_START_DATE), new CatalogDataUsageStartDateConstraintFunction(clock));
         engine.registerFunction(PolicyMonitorContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_END_DATE), new ConxDataUsageEndDateConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, withCxPolicyNsPrefix(DATA_USAGE_END_DATE), new ConxDataUsageEndDateConstraintFunction<>());
 
@@ -314,6 +327,8 @@ public class ConxPolicyExtension implements ServiceExtension {
         // upstream bindings are purely additive and can be reused as they are
         CxPolicyExtension.registerBindings(registry);
 
+        registry.bind(withCxPolicyNsPrefix(DATA_USAGE_START_DATE), CATALOG_SCOPE);
+        registry.bind(withCxPolicyNsPrefix(DATA_USAGE_END_DATE), CATALOG_SCOPE);
         registry.bind(withCxPolicyNsPrefix(DATA_USAGE_START_DATE), TRANSFER_PROCESS_SCOPE);
         registry.bind(withCxPolicyNsPrefix(DATA_USAGE_START_DATE), POLICY_MONITOR_SCOPE);
 
