@@ -89,11 +89,12 @@ connector's own database, never the Policy Hub.
 **A single policy**
 
 ```
-GET {management}/v3/policydefinitions/{id}
+GET {management}/v4/policydefinitions/{id}
 ```
 
 `{id}` is the UUID returned above. The hub's human-readable name is also persisted on the definition
-itself, as `privateProperties.policyHubName`, so it remains visible here.
+itself, as `privateProperties.policyHubName`, so it remains visible here. `/v3/policydefinitions/{id}` returns
+the same definition in the v3 JSON-LD format.
 
 **All policies stored in the connector**
 
@@ -117,76 +118,82 @@ created by hand via `POST /v3/policydefinitions`. The body is a standard `QueryS
 
 Imported policies can be told apart by `privateProperties.policyHubName`.
 
+Multi-value right operands (e.g. the `DataSubset` or `UsagePurpose` value lists) are not returned as a JSON array
+here — see the [known limitation](../con-x-policy/README.md#known-limitation-multi-value-right-operands).
+
 ## How an import runs
 
-Walkthrough along the Bruno collection in
-[`local/bruno/con-x-local-test/transactions/provider`](../../edc-controlplane/edc-controlplane-construct-x/local/bruno/con-x-local-test/transactions/provider).
-Step 2 offers **two alternative ways** to get a policy onto the connector — run **either 2A or 2B**,
-not both: 2A creates a policy by hand through the standard Management API, 2B imports it from the
-Policy Hub.
+The testbed uses two Bruno collections in
+[`local/bruno`](../../edc-controlplane/edc-controlplane-construct-x/local/bruno):
+
+- [`con-x-local-test`](../../edc-controlplane/edc-controlplane-construct-x/local/bruno/con-x-local-test) — the
+  general testbed collection: identities, assets, contract definitions, catalog, negotiation and transfer.
+- [`con-x-policy-hub-import`](../../edc-controlplane/edc-controlplane-construct-x/local/bruno/con-x-policy-hub-import) —
+  only the Policy Hub requests described in this README (`ImportPolicyFromHub`, `Check Imported Policy`,
+  `List All Policies`, `SyncPoliciesFromHub`). Its environment needs just `PROVIDER_MANAGEMENT` and
+  `HUB_POLICY_ID`, the UUID of the hub policy to import.
 
 ```
- Bruno: transactions/provider              Provider control plane           Policy Hub (:8080)
- ────────────────────────────              ──────────────────────           ──────────────────
+ Bruno collection                                   Provider control plane          Policy Hub (:8080)
+ ────────────────                                   ──────────────────────          ──────────────────
 
- 1  CreateAsset
-    POST /v3/assets ──────────────────▶  asset "assetId"
-
-
- 2  Create a policy — choose ONE of the two options:
-
- ┌─ 2A  CreatePolicy  (manual, standard Management API) ─────────────────────────────────────┐
- │  POST /v3/policydefinitions        Hand-writes a policy ("@id": "aPolicy") with empty    │
- │  {"@id": "aPolicy", ...}           permission/prohibition/obligation arrays. Works with  │
- │                                    no Policy Hub at all (e.g. a testbed without one),    │
- │                                    but nothing is enforced and no hub policy is          │
- │                                    exercised. Policy id to use below: "aPolicy".         │
- └───────────────────────────────────────────────────────────────────────────────────────────┘
-
- ┌─ 2B  ImportPolicyFromHub  (from the Policy Hub) ──────────────────────────────────────────┐
- │  POST /v1alpha/policyhub/                                                                 │
- │       policies/{{HUB_POLICY_ID}}                                                          │
- │       /import ───────────────────▶  resolve basic auth                                    │
- │                                     from Vault                                            │
- │                                       │                                                   │
- │                                     fetch ODRL ─────────────▶ GET /api/v1/policies/       │
- │                                                                   {{HUB_POLICY_ID}}/odrl  │
- │                                                ◀───────────── 200 JSON-LD                 │
- │                                     expand → validate →                                   │
- │                                     transform → create (or                                │
- │                                     update, if it exists)                                 │
- │                                       │                                                   │
- │                                     PolicyDefinition                                      │
- │                                       id = {{HUB_POLICY_ID}}                              │
- │                          ◀──────────  200 {"@id": …, "policyHubName": …}                  │
- │  post-response script sets:                                                               │
- │    importedPolicyId   ← @id                                                               │
- │    importedPolicyName ← policyHubName                                                     │
- └───────────────────────────────────────────────────────────────────────────────────────────┘
+ 1  con-x-local-test / identities  (once, top to bottom)
+    onboards issuer, provider and consumer and puts their STS secrets into the vault
 
 
- 3  Check Imported Policy  (or List All Policies)
-    GET /v3/policydefinitions/
-        {{importedPolicyId}} ────────────▶  stored definition; for 2B incl.
-                              ◀──────────   privateProperties.policyHubName
+ 2  con-x-local-test / transactions/provider/createAssetOne / CreateAsset
+    POST /v3/assets ──────────────────────────────▶  asset "demoAssetIdOne"
 
 
- 4  CreateContractDefinition
+ 3  con-x-policy-hub-import / ImportPolicyFromHub
+    POST /v1alpha/policyhub/policies/
+         {{HUB_POLICY_ID}}/import ────────────────▶  resolve basic auth
+                                                      from Vault
+                                                        │
+                                                      fetch ODRL ───────────────▶  GET /api/v1/policies/
+                                                                                       {{HUB_POLICY_ID}}/odrl
+                                                                   ◀───────────────  200 JSON-LD
+                                                      expand → validate →
+                                                      transform → create (or
+                                                      update, if it exists)
+                                                        │
+                                                      PolicyDefinition
+                                                        id = {{HUB_POLICY_ID}}
+                                  ◀──────────────────  200 {"@id": …, "policyHubName": …}
+
+
+ 4  con-x-policy-hub-import / Check Imported Policy  (or List All Policies)
+    GET /v4/policydefinitions/{{HUB_POLICY_ID}} ──▶  stored definition, incl.
+                                  ◀──────────────────  privateProperties.policyHubName
+
+
+ 5  con-x-local-test / transactions/provider/createAssetOne / CreateContractDefinition
     POST /v3/contractdefinitions
-      accessPolicyId   = {{importedPolicyId}} ──▶  contract definition "1"
-      contractPolicyId = {{importedPolicyId}}      → catalog serves "assetId" under the
-                                                     chosen policy
-                                                     (2A: "aPolicy", 2B: the hub UUID)
+      accessPolicyId   = <HUB_POLICY_ID> ──────────▶  contract definition
+      contractPolicyId = <HUB_POLICY_ID>              → catalog serves "demoAssetIdOne"
+                                                        under the hub policy
+
+
+ 6  con-x-local-test / transactions/consumer
+    RequestProviderCatalog → InitiateNegotiation → CheckNegotiationResult →
+    InitPullTransfer → Get EDR → PullAssetData
 ```
 
-Which policy ends up in the contract definition is decided by what `accessPolicyId` /
-`contractPolicyId` point at. After **2B** that is `importedPolicyId`, set by the import's
-post-response script; after **2A** set both to `"aPolicy"` instead.
+The import stores the policy under the Policy Hub's UUID, so `{{HUB_POLICY_ID}}` is also the id to use in
+contract definitions. Step 5 is a manual edit: the shipped `CreateContractDefinition` request in
+`con-x-local-test` points at `accessPolicyOne` / `contractPolicyOne`, so replace both ids with the value of
+`HUB_POLICY_ID` before you run it.
 
-Switching to a different hub policy means changing `HUB_POLICY_ID` and re-running 2B — its
-post-response script repoints `importedPolicyId`, which step 4 picks up. A stale or unset
-`importedPolicyId` (or a policy id that was never created) makes the contract definition reference a
+The collections do not share variables. The `importedPolicyId` and `importedPolicyName` that
+`ImportPolicyFromHub` sets in its post-response script only exist in the Bruno session of
+`con-x-policy-hub-import` and are there for readability; no other request depends on them.
+
+Switching to a different hub policy means changing `HUB_POLICY_ID`, re-running the import, and updating the two
+policy ids in the contract definition. A policy id that was never created makes the contract definition reference a
 non-existent policy: no error, the dataset just silently drops out of the catalog.
+
+Without a Policy Hub, create policies by hand with the `CreateAccessPolicy` and `CreateContractPolicy` requests next
+to `CreateAsset` in `con-x-local-test` and leave the contract definition as it is.
 
 ## Keeping imports up to date
 

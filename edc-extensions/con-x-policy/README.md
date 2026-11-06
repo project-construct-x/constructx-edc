@@ -116,6 +116,27 @@ Things to keep in mind with `odrl:or`:
   `contract.negotiation` scopes, and the date constraints are bound to neither. In an access policy, an `or`
   branch consisting only of date constraints therefore never grants access on its own.
 
+## Known limitation: multi-value right operands
+
+Right operands with several values (`odrl:isAnyOf`, used by `UsagePurpose`, `DataSubset` and others) are stored and
+returned as a garbled Java `toString()` dump instead of a JSON array. A `DataSubset` policy imported from the Policy
+Hub looks like this when read back via `GET /v4/policydefinitions/{id}` and in the consumer's catalog:
+
+```json
+"rightOperand": "[{@value={chars=field:materialName, string=field:materialName, valueType=STRING}}, {@value={chars=attribute:color, ...}}]"
+```
+
+- It is a known upstream bug
+  ([tractusx-edc#3043](https://github.com/eclipse-tractusx/tractusx-edc/issues/3043), reported for
+  `BusinessPartnerNumber`) and is not caused by this module. It was still reproducible on 2026-11-06 with EDC 0.17.0
+  in the Construct-X distribution.
+- The value is already in this form in the provider's database, not only when it is rendered.
+- `UsagePurpose` and `DataSubset` do not evaluate their right operand (they always pass), so catalog, negotiation,
+  transfer and data access still work: the full flow with a hub policy containing `DataSubset` ran through.
+  The consumer does, however, receive the garbled value, and a backend that enforces `DataSubset` from the offer
+  or the contract agreement cannot use it. A constraint that is evaluated against a multi-value right operand would
+  likely break when a catalog offer is passed into a negotiation.
+
 ## Policy definition validation
 
 `ConxPolicyDefinitionValidator` is the entry point. Its chain consists of:
