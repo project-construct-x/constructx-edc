@@ -43,6 +43,8 @@ dependencies {
         exclude(group = "org.junit.platform")
         exclude(group = "org.junit")
     }
+    // provides the jakarta.ws.rs RuntimeDelegate, which building a Response (e.g. the 503) needs outside a runtime
+    testImplementation(libs.edc.core.jersey)
     testImplementation(libs.edc.lib.jsonld)
     // ships the cached document/odrl.jsonld context that the runtime's JsonLdExtension registers as well
     testImplementation(libs.edc.ext.jsonld)
