@@ -27,13 +27,13 @@ dependencies {
     // Construct-X builds on the unmodified Catena-X policy functions and validators. Note: cx-policy ships its own
     // CxPolicyExtension, which must be removed from the runtime (see ConxPolicyExtension and the Construct-X
     // distributions' ShadowJar configuration).
+    // Deliberately no dependency on the Catena-X BPN/BDRS modules (bpn-validation, bdrs-client and their SPIs): the
+    // BusinessPartnerGroup/BusinessPartnerNumber functions are not registered, participants are selected by DID.
     api(project(":edc-extensions:cx-policy"))
-    implementation(project(":edc-extensions:bpn-validation:bpn-validation-spi"))
     // the ABAC left-operand pattern (BasicAbacUtils.BASIC_ABAC_PATTERN) is the contract between the validator here and the
     // constraint function there; sharing it keeps the two from drifting apart (a policy that validates but is never evaluated)
     implementation(project(":edc-extensions:basic-abac"))
     implementation(project(":spi:core-spi"))
-    implementation(project(":spi:bdrs-client-spi"))
     implementation(libs.edc.spi.core)
     implementation(libs.edc.core.policy.monitor)
     implementation(libs.edc.spi.catalog)

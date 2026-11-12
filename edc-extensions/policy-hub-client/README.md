@@ -296,7 +296,9 @@ The Catena-X policy functions must be on the classpath, otherwise `edc.policy.va
 (default `true`) rejects hub policies at creation time because their left operands are unknown to
 the policy engine. Both Construct-X control plane distributions
 (`con-x-controlplane-postgresql-hashicorp-vault`, `con-x-controlplane-postgresql-vault`) therefore
-depend on the local `edc-extensions:con-x-policy` module (plus `:bpn-validation` and `:bdrs-client`).
+depend on the local `edc-extensions:con-x-policy` module. They deliberately do not ship the Catena-X
+BPN/BDRS extensions (`bpn-validation`, `bdrs-client`), so hub policies with `BusinessPartnerGroup` or
+`BusinessPartnerNumber` are rejected on import.
 
 `con-x-policy` builds on the **unmodified** Catena-X `edc-extensions:cx-policy` and adds the
 Construct-X extensions and fixes that make the hub's own ODRL output importable (`DataUsageStartDate`,

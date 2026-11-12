@@ -49,8 +49,6 @@ import org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesBpnlPermissionCon
 import org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesBpnlProhibitionConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesRegionPermissionConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesRegionProhibitionConstraintFunction;
-import org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerGroupConstraintFunction;
-import org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerNumberConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.confidentialinformation.ConfidentialInformationMeasuresConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.confidentialinformation.ConfidentialInformationSharingConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.contractreference.ContractReferenceConstraintFunction;
@@ -72,8 +70,6 @@ import org.eclipse.tractusx.edc.policy.cx.versionchange.VersionChangesConstraint
 import org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDefinitionConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonthsConstraintFunction;
-import org.eclipse.tractusx.edc.spi.identity.mapper.BdrsClient;
-import org.eclipse.tractusx.edc.validation.businesspartner.spi.store.BusinessPartnerStore;
 
 import java.time.Clock;
 
@@ -85,8 +81,6 @@ import static org.eclipse.edc.connector.policy.monitor.spi.PolicyMonitorContext.
 import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.CX_POLICY_2025_09_NS;
 import static org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesBpnlProhibitionConstraintFunction.AFFILIATES_BPNL;
 import static org.eclipse.tractusx.edc.policy.cx.affiliates.AffiliatesRegionProhibitionConstraintFunction.AFFILIATES_REGION;
-import static org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerGroupConstraintFunction.BUSINESS_PARTNER_GROUP;
-import static org.eclipse.tractusx.edc.policy.cx.businesspartner.BusinessPartnerNumberConstraintFunction.BUSINESS_PARTNER_NUMBER;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.CATALOG_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.NEGOTIATION_SCOPE;
 import static org.eclipse.tractusx.edc.policy.cx.common.PolicyScopes.TRANSFER_PROCESS_SCOPE;
@@ -134,6 +128,8 @@ import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonths
  *   no function for it, which causes a NullPointerException when building the catalog)</li>
  *   <li>new {@link ConnectorConstraintFunction}: evaluates the Policy Hub's "Participant selection" constraint
  *   using EDC's own {@code connector} left operand (does not exist upstream)</li>
+ *   <li>no {@code BusinessPartnerGroup}/{@code BusinessPartnerNumber} functions: they need the Catena-X BPN/BDRS
+ *   services ({@code BusinessPartnerStore}, {@code BdrsClient}), which Construct-X deliberately does not depend on</li>
  *   <li>new {@link DataSubsetConstraintFunction}: placeholder for the Policy Hub's {@code DataSubset} constraint
  *   (Construct-X namespace, does not exist upstream)</li>
  *   <li>the validators accept credential attributes of the {@code basic-abac} extension as permission left operands in
@@ -155,12 +151,6 @@ public class ConxPolicyExtension implements ServiceExtension {
 
     @Inject
     private RuleBindingRegistry bindingRegistry;
-
-    @Inject
-    private BusinessPartnerStore store;
-
-    @Inject
-    private BdrsClient bdrsClient;
 
     @Inject
     private Clock clock;
@@ -207,12 +197,11 @@ public class ConxPolicyExtension implements ServiceExtension {
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, new MembershipCredentialConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, new MembershipCredentialConstraintFunction<>());
 
+        // BusinessPartnerGroup/BusinessPartnerNumber are deliberately not registered: Construct-X does not depend on the
+        // Catena-X BPN/BDRS infrastructure (BusinessPartnerStore, BdrsClient), and the validators reject both left
+        // operands. Participants are selected by DID through the connector constraint instead.
         engine.registerFunction(CatalogPolicyContext.class, Permission.class,
-                withCxPolicyNsPrefix(BUSINESS_PARTNER_GROUP), new BusinessPartnerGroupConstraintFunction<>(store, bdrsClient));
-        engine.registerFunction(CatalogPolicyContext.class, Permission.class,
-                withCxPolicyNsPrefix(BUSINESS_PARTNER_NUMBER), new BusinessPartnerNumberConstraintFunction<>());
-        engine.registerFunction(CatalogPolicyContext.class, Permission.class,
-                CONNECTOR, new ConnectorConstraintFunction<>(bdrsClient));
+                CONNECTOR, new ConnectorConstraintFunction<>());
 
         // Usage Permission Validators
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class,

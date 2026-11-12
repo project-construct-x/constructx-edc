@@ -32,6 +32,8 @@ import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_OR_CONSTRAINT
 import static org.eclipse.edc.jsonld.spi.PropertyAndTypeNames.ODRL_XONE_CONSTRAINT_ATTRIBUTE;
 import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 import static org.eclipse.tractusx.edc.edr.spi.CoreConstants.CX_POLICY_2025_09_NS;
+import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.BUSINESS_PARTNER_GROUP_LITERAL;
+import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.BUSINESS_PARTNER_NUMBER_LITERAL;
 import static org.eclipse.tractusx.edc.policy.cx.validator.PolicyValidationConstants.DATA_USAGE_END_DATE_LITERAL;
 
 /**
@@ -66,8 +68,11 @@ public final class ConxPolicyValidationConstants {
     );
 
     // Upstream only allows DataUsageStartDate/DataUsageEndDate on CONTRACT (usage) policies.
+    // BusinessPartnerGroup/BusinessPartnerNumber are removed: they need the Catena-X BPN/BDRS services, which
+    // Construct-X does not depend on, so ConxPolicyExtension registers no function for them.
     static final Set<String> ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS = union(
-            PolicyValidationConstants.ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS,
+            without(PolicyValidationConstants.ACCESS_PERMISSION_POLICY_ALLOWED_LEFT_OPERANDS,
+                    BUSINESS_PARTNER_GROUP_LITERAL, BUSINESS_PARTNER_NUMBER_LITERAL),
             DATA_USAGE_START_DATE_LITERAL,
             DATA_USAGE_END_DATE_LITERAL,
             CONNECTOR_LITERAL,
@@ -92,6 +97,11 @@ public final class ConxPolicyValidationConstants {
      */
     public static boolean isAbacLeftOperand(String leftOperand) {
         return leftOperand != null && BASIC_ABAC_PATTERN.matcher(leftOperand).matches();
+    }
+
+    private static Set<String> without(Set<String> base, String... removals) {
+        var removed = Set.of(removals);
+        return base.stream().filter(operand -> !removed.contains(operand)).collect(Collectors.toUnmodifiableSet());
     }
 
     private static Set<String> union(Set<String> base, String... additions) {

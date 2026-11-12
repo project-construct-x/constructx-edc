@@ -18,8 +18,10 @@ apply. The Construct-X control plane distributions therefore remove
 `META-INF/services/org.eclipse.edc.spi.system.ServiceExtension` file (see `ExcludingServiceFileTransformer` in
 their `build.gradle.kts`).
 
-The extension injects `BusinessPartnerStore` and `BdrsClient`, so the runtime also needs `bpn-validation` and
-`bdrs-client`.
+Construct-X deliberately does not depend on the Catena-X BPN/BDRS infrastructure: the runtime needs neither
+`bpn-validation` nor `bdrs-client`. Consequently `BusinessPartnerGroup` and `BusinessPartnerNumber` are not
+supported. No function is registered for them, and the validator rejects them as left operands. Participants are
+selected by DID with the [`connector`](#connector-participant-selection) constraint instead.
 
 ## Policy behavior
 
@@ -67,12 +69,10 @@ that is a single comma-separated string of one or more `did:...` values, e.g.
 semantics for it, so `ConnectorConstraintFunction` (no upstream equivalent) provides them.
 
 - Allowed only in `ACCESS` permission policies, not in `CONTRACT` (usage) policies.
-- The participant's identity is resolved to a DID for comparison: used as-is if already `did:`-prefixed, otherwise
-  resolved up from a BPN via `BdrsClient.resolveDid(...)` — the inverse of the `BusinessPartnerGroup`/
-  `BusinessPartnerNumber` functions, which resolve a DID down to a BPN.
-- Like `BusinessPartnerGroup`/`BusinessPartnerNumber`, this constraint is evaluated only in the `catalog` scope: it
-  governs whether an offer is visible in the catalog for a given participant, not whether a subsequent negotiation
-  or transfer is accepted.
+- The participant's identity must be a DID (Construct-X uses DIDs as participant ids) and is compared as-is. Any
+  other identity (e.g. a BPN) is rejected. There is no BPN-to-DID resolution via BDRS.
+- The constraint is evaluated only in the `catalog` scope: it governs whether an offer is visible in the catalog for a
+  given participant, not whether a subsequent negotiation or transfer is accepted.
 
 Implementation: `ConnectorConstraintFunction`.
 

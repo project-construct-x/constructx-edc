@@ -39,8 +39,6 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.tractusx.edc.policy.cx.framework.FrameworkAgreementConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.usage.UsagePurposeConstraintFunction;
-import org.eclipse.tractusx.edc.spi.identity.mapper.BdrsClient;
-import org.eclipse.tractusx.edc.validation.businesspartner.spi.store.BusinessPartnerStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,8 +74,6 @@ class ConxPolicyExtensionTest {
         context.registerService(PolicyEngine.class, policyEngine);
         context.registerService(RuleBindingRegistry.class, bindingRegistry);
         context.registerService(JsonObjectValidatorRegistry.class, validatorRegistry);
-        context.registerService(BusinessPartnerStore.class, mock());
-        context.registerService(BdrsClient.class, mock());
         context.registerService(Clock.class, Clock.systemUTC());
     }
 

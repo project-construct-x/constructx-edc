@@ -24,7 +24,6 @@ import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.participant.spi.ParticipantAgent;
 import org.eclipse.edc.participant.spi.ParticipantAgentPolicyContext;
 import org.eclipse.edc.policy.model.Operator;
-import org.eclipse.tractusx.edc.spi.identity.mapper.BdrsClient;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -38,8 +37,7 @@ class ConnectorConstraintFunctionTest {
     private static final String RIGHT_OPERAND = "did:web:adesso.de,did:web:adesso-group.com";
 
     private final ParticipantAgent participantAgent = mock();
-    private final BdrsClient bdrsClient = mock();
-    private final ConnectorConstraintFunction<ParticipantAgentPolicyContext> function = new ConnectorConstraintFunction<>(bdrsClient);
+    private final ConnectorConstraintFunction<ParticipantAgentPolicyContext> function = new ConnectorConstraintFunction<>();
     private final ParticipantAgentPolicyContext context = new TestParticipantAgentPolicyContext(participantAgent);
 
     @Test
@@ -57,21 +55,11 @@ class ConnectorConstraintFunctionTest {
     }
 
     @Test
-    void evaluate_whenIdentityIsBpnAndResolvedDidInList_shouldReturnTrue() {
-        var bpn = "BPNL00000000001A";
-        when(participantAgent.getIdentity()).thenReturn(bpn);
-        when(bdrsClient.resolveDid(bpn)).thenReturn("did:web:adesso-group.com");
-
-        assertThat(function.evaluate(Operator.EQ, RIGHT_OPERAND, null, context)).isTrue();
-    }
-
-    @Test
-    void evaluate_whenBpnCannotBeResolvedToDid_shouldReturnFalse() {
-        var bpn = "BPNL00000000001A";
-        when(participantAgent.getIdentity()).thenReturn(bpn);
-        when(bdrsClient.resolveDid(bpn)).thenReturn(null);
+    void evaluate_whenIdentityIsBpn_shouldReturnFalse() {
+        when(participantAgent.getIdentity()).thenReturn("BPNL00000000001A");
 
         assertThat(function.evaluate(Operator.EQ, RIGHT_OPERAND, null, context)).isFalse();
+        assertThat(context.getProblems()).anyMatch(problem -> problem.contains("must be a DID"));
     }
 
     @Test

@@ -25,7 +25,6 @@ import org.eclipse.edc.policy.model.Operator;
 import org.eclipse.edc.policy.model.Permission;
 import org.eclipse.edc.spi.constants.CoreConstants;
 import org.eclipse.tractusx.edc.policy.cx.common.ValueValidatingConstraintFunction;
-import org.eclipse.tractusx.edc.spi.identity.mapper.BdrsClient;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +32,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
-import static org.eclipse.tractusx.edc.spi.identity.mapper.BdrsConstants.DID_PREFIX;
 
 /**
  * Evaluates the Construct-X Policy Hub's "Participant selection" constraint: grants access only to participants
@@ -42,9 +40,8 @@ import static org.eclipse.tractusx.edc.spi.identity.mapper.BdrsConstants.DID_PRE
  * Uses EDC's own left operand {@code https://w3id.org/edc/v0.0.1/ns/connector} (does not exist upstream — no
  * {@code Conx}-prefixed counterpart to patch).
  * <p>
- * Unlike {@code BusinessPartnerGroupConstraintFunction}/{@code BusinessPartnerNumberConstraintFunction} (which
- * resolve a DID identity down to a BPN), this resolves a BPN identity up to a DID, since the right-operand values
- * here are DIDs.
+ * The participant agent's identity must itself be a DID (Construct-X uses DIDs as participant ids). There is
+ * deliberately no BPN-to-DID resolution: Construct-X does not depend on the Catena-X BDRS.
  *
  * @param <C> the type of the participant agent policy context
  */
@@ -56,12 +53,10 @@ public class ConnectorConstraintFunction<C extends ParticipantAgentPolicyContext
     // agreed to accept for this constraint, so a right operand using another method is rejected at policy-creation
     // time instead of silently never matching at evaluation time.
     private static final String DID_WEB_PATTERN = "did:web:.+";
+    private static final String DID_PREFIX = "did:";
 
-    private final BdrsClient bdrsClient;
-
-    public ConnectorConstraintFunction(BdrsClient bdrsClient) {
+    public ConnectorConstraintFunction() {
         super(Set.of(Operator.EQ), DID_WEB_PATTERN, true);
-        this.bdrsClient = bdrsClient;
     }
 
     @Override
@@ -77,14 +72,13 @@ public class ConnectorConstraintFunction<C extends ParticipantAgentPolicyContext
             return false;
         }
 
-        var did = identity.startsWith(DID_PREFIX) ? identity : bdrsClient.resolveDid(identity);
-        if (did == null) {
-            context.reportProblem(format("Could not resolve a DID for identity '%s'", identity));
+        if (!identity.startsWith(DID_PREFIX)) {
+            context.reportProblem(format("Identity of the participant agent must be a DID, but was '%s'", identity));
             return false;
         }
 
         var allowedDids = parseRightOperand(rightOperand, context);
-        return allowedDids != null && allowedDids.contains(did);
+        return allowedDids != null && allowedDids.contains(identity);
     }
 
     private Set<String> parseRightOperand(Object rightValue, PolicyContext context) {

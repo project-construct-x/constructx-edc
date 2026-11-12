@@ -46,11 +46,9 @@ dependencies {
     // UsagePurpose, FrameworkAgreement, ...) emitted by the Construct-X Policy Hub. Without them
     // edc.policy.validation.enabled=true already rejects the policy on creation. con-x-policy pulls
     // in the unmodified cx-policy; its ConxPolicyExtension replaces CxPolicyExtension (see ShadowJar).
+    // Deliberately no Catena-X BPN/BDRS extensions (bpn-validation, bdrs-client): Construct-X uses DIDs as
+    // participant ids and con-x-policy does not register the BusinessPartnerGroup/BusinessPartnerNumber functions.
     implementation(project(":edc-extensions:con-x-policy"))
-    // ConxPolicyExtension injects BusinessPartnerStore (in-mem default) and BdrsClient; both are
-    // mandatory injects, so the runtime does not boot without these two.
-    implementation(project(":edc-extensions:bpn-validation"))
-    implementation(project(":edc-extensions:bdrs-client"))
 
     // Hotfix version overrides
     implementation("com.fasterxml.jackson.core:jackson-core:2.22.3")

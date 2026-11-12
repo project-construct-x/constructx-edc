@@ -132,8 +132,6 @@ class ConxAtomicConstraintValidatorTest {
     @ValueSource(strings = {
             FRAMEWORK_AGREEMENT_LITERAL,
             MEMBERSHIP_LITERAL,
-            BUSINESS_PARTNER_GROUP_LITERAL,
-            BUSINESS_PARTNER_NUMBER_LITERAL,
             DATA_USAGE_START_DATE_LITERAL,
             DATA_USAGE_END_DATE_LITERAL
     })
@@ -143,6 +141,20 @@ class ConxAtomicConstraintValidatorTest {
         ValidationResult result = accessPolicyValidator.validate(constraint);
 
         assertThat(result).isSucceeded();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            BUSINESS_PARTNER_GROUP_LITERAL,
+            BUSINESS_PARTNER_NUMBER_LITERAL
+    })
+    void validate_whenBusinessPartnerLeftOperandInAccessPolicy_shouldFail(String leftOperand) {
+        var constraint = atomicConstraint(leftOperand);
+
+        ValidationResult result = accessPolicyValidator.validate(constraint);
+
+        assertThat(result).isFailed();
+        FailureAssert.assertThat(result.getFailure()).messages().anyMatch(msg -> msg.contains("not allowed"));
     }
 
     @ParameterizedTest
