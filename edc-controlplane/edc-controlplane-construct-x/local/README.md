@@ -90,6 +90,32 @@ are interested
 in a more detailed explanation of these interactions, please see
 the [EDC Samples](https://github.com/eclipse-edc/Samples/tree/main/transfer).
 
+#### Importing policies from the Construct-X Policy Hub (optional)
+
+The provider control plane can pull policies directly from a locally running
+[Construct-X Policy Hub](https://github.com/project-construct-x/policy-hub) instead of you creating them by hand.
+Start the Policy Hub stack (its own `docker-compose.yml`, backend on port 8080), run the `identities` folder of
+`con-x-local-test` as described above, and then use the separate Bruno collection
+[`bruno/con-x-policy-hub-import`](bruno/con-x-policy-hub-import). It contains only the Policy Hub requests. Set
+`HUB_POLICY_ID` in its environment to the UUID of the hub policy and run `ImportPolicyFromHub`. That calls
+`POST /management/v1alpha/policyhub/policies/{id}/import` on the provider control plane, which fetches the ODRL
+rendering from the hub (URL and vault-stored basic-auth credentials are configured via the `constructx.policyhub.*`
+settings in the `docker-compose.yaml`) and stores it as a policy definition under that UUID. `Check Imported Policy`,
+`List All Policies` and `SyncPoliciesFromHub` inspect and refresh the imported policies.
+
+To offer an asset under the imported policy, run `CreateAsset` from `con-x-local-test` and set `accessPolicyId` and
+`contractPolicyId` in its `CreateContractDefinition` request to the same `HUB_POLICY_ID`; the catalog, negotiation and
+transfer requests of `con-x-local-test` then work as usual. If you run without the Policy Hub, use the policy requests
+in `con-x-local-test` as they are. For a step-by-step walkthrough see the
+[`policy-hub-client` README](../../../edc-extensions/policy-hub-client/README.md#how-an-import-runs).
+
+The Docker images of the control plane **and** the data plane must both be built from the same checkout
+(`./gradlew :edc-controlplane:edc-controlplane-construct-x:con-x-controlplane-postgresql-hashicorp-vault:dockerize` and
+`./gradlew :edc-dataplane:edc-dataplane-construct-x:con-x-dataplane-postgresql-hashicorp-vault:dockerize`).
+The compose file only references these images (`image:`, no `build:`), so `docker compose up --build` does not
+rebuild them. A stale data plane image next to a newer control plane makes transfers fail with a `500` on
+`/control/v1/dataflows/start`.
+
 NOTE: The requests in the `transactions/consumer` folder are definitely not suited for being run in batch mode. Instead, 
 especially before you run the `InitiateNegotiation` or the `Get EDR` requests, it is strongly recommended that you make sure 
 that a healthy timespan (like 2 seconds) lies between them and the respective previous request. This is because the 

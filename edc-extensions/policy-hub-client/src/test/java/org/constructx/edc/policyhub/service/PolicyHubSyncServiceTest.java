@@ -1,0 +1,243 @@
+/*
+ * Copyright (c) 2026 adesso SE. All rights reserved.
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package org.constructx.edc.policyhub.service;
+
+import org.constructx.edc.policyhub.client.PolicyHubAccessDeniedException;
+import org.constructx.edc.policyhub.client.PolicyHubUnavailableException;
+import org.eclipse.edc.connector.controlplane.policy.spi.PolicyDefinition;
+import org.eclipse.edc.connector.controlplane.services.spi.policydefinition.PolicyDefinitionService;
+import org.eclipse.edc.policy.model.Policy;
+import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.ServiceResult;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.constructx.edc.policyhub.service.PolicyHubImportService.POLICY_HUB_HASH_PROPERTY;
+import static org.constructx.edc.policyhub.service.PolicyHubImportService.POLICY_HUB_NAME_PROPERTY;
+import static org.constructx.edc.policyhub.service.PolicyHubSyncService.PAGE_SIZE;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class PolicyHubSyncServiceTest {
+
+    private static final PolicyHubSyncService.OutageRetry OUTAGE_RETRY =
+            new PolicyHubSyncService.OutageRetry(Duration.ofSeconds(5), Duration.ofSeconds(60));
+
+    private final PolicyDefinitionService policyDefinitionService = mock();
+    private final PolicyHubImportService importService = mock();
+    private final Monitor monitor = mock();
+    private final List<Duration> sleeps = new ArrayList<>();
+
+    private final PolicyHubSyncService service =
+            new PolicyHubSyncService(policyDefinitionService, importService, Duration.ZERO, OUTAGE_RETRY, sleeps::add, monitor);
+
+    @Test
+    void sync_whenDefinitionsWereImported_shouldReimportOnlyThose() {
+        var imported = importedDefinition("hub-1", "hash-1");
+        var manual = definition("manual").build();
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(imported, manual)));
+        when(importService.importPolicy("hub-1")).thenReturn(ServiceResult.success(imported));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        verify(importService).importPolicy("hub-1");
+        verify(importService, never()).importPolicy("manual");
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, null));
+    }
+
+    @Test
+    void sync_whenHubContentChanged_shouldCountAsUpdated() {
+        var imported = importedDefinition("hub-1", "old-hash");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(imported)));
+        when(importService.importPolicy("hub-1")).thenReturn(ServiceResult.success(importedDefinition("hub-1", "new-hash")));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 1, 0, 0, null));
+    }
+
+    @Test
+    void sync_whenHubReturnsNotFound_shouldKeepDefinitionAndContinue() {
+        var missing = importedDefinition("hub-1", "hash-1");
+        var present = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(missing, present)));
+        when(importService.importPolicy("hub-1")).thenReturn(ServiceResult.badRequest(
+                "Could not fetch policy 'hub-1' from the Policy Hub: Policy Hub returned status 404 for policy 'hub-1'"));
+        when(importService.importPolicy("hub-2")).thenReturn(ServiceResult.success(present));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        verify(importService).importPolicy("hub-2");
+        verify(policyDefinitionService, never()).deleteById(anyString());
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 1, 1, null));
+    }
+
+    @Test
+    void sync_whenMoreDefinitionsThanOnePage_shouldReadAllPages() {
+        var firstPage = IntStream.range(0, PAGE_SIZE)
+                .mapToObj(i -> importedDefinition("hub-" + i, "hash"))
+                .toList();
+        var secondPage = List.of(importedDefinition("hub-last", "hash"));
+        when(policyDefinitionService.search(argThat(query -> query != null && query.getOffset() == 0)))
+                .thenReturn(ServiceResult.success(firstPage));
+        when(policyDefinitionService.search(argThat(query -> query != null && query.getOffset() == PAGE_SIZE)))
+                .thenReturn(ServiceResult.success(secondPage));
+        when(importService.importPolicy(anyString()))
+                .thenAnswer(a -> ServiceResult.success(importedDefinition(a.getArgument(0), "hash")));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        verify(policyDefinitionService, times(2)).search(any(QuerySpec.class));
+        verify(importService).importPolicy("hub-last");
+        assertThat(summary.checked()).isEqualTo(PAGE_SIZE + 1);
+    }
+
+    @Test
+    void sync_whenTriggeredManually_shouldLogTriggerInSummary() {
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of()));
+
+        service.sync(PolicyHubSyncService.Trigger.MANUAL);
+
+        verify(monitor).info("Policy Hub sync (manual) finished: 0 checked, 0 updated, 0 unchanged, 0 failed");
+    }
+
+    @Test
+    void sync_whenListingFails_shouldImportNothing() {
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.unexpected("database down"));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        verify(importService, never()).importPolicy(anyString());
+        assertThat(summary.checked()).isZero();
+    }
+
+    @Test
+    void sync_whenHubComesBackDuringRetries_shouldCompleteRun() {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1"))
+                .thenThrow(new PolicyHubUnavailableException("Connection refused"))
+                .thenThrow(new PolicyHubUnavailableException("Connection refused"))
+                .thenReturn(ServiceResult.success(first));
+        when(importService.importPolicy("hub-2")).thenReturn(ServiceResult.success(second));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        assertThat(sleeps).containsExactly(Duration.ofSeconds(5), Duration.ofSeconds(10));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(2, 0, 2, 0, null));
+        verify(monitor).info("Policy Hub sync (scheduled): Policy Hub reachable again after 2 retries");
+    }
+
+    @Test
+    void sync_whenHubStaysUnreachable_shouldAbortAfterRetryBudget() {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1")).thenThrow(new PolicyHubUnavailableException("Connection refused"));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        // 5 + 10 + 20 + 25 = 60 s: the last pause is cut short to stay within the budget
+        assertThat(sleeps).containsExactly(Duration.ofSeconds(5), Duration.ofSeconds(10),
+                Duration.ofSeconds(20), Duration.ofSeconds(25));
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(0, 0, 0, 0, new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.UNREACHABLE, "Connection refused")));
+        verify(importService, never()).importPolicy("hub-2");
+        verify(monitor).warning("Policy Hub sync (scheduled) aborted: Policy Hub unreachable for 60 s (Connection refused), 0 of 2 policies checked");
+    }
+
+    @Test
+    void sync_whenTriggeredManuallyAndHubUnreachable_shouldAbortWithoutWaiting() {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1")).thenReturn(ServiceResult.success(first));
+        when(importService.importPolicy("hub-2")).thenThrow(new PolicyHubUnavailableException("status 503"));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.MANUAL);
+
+        assertThat(sleeps).isEmpty();
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(1, 0, 1, 0, new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.UNREACHABLE, "status 503")));
+        verify(monitor).warning("Policy Hub sync (manual) aborted: Policy Hub unreachable (status 503), 1 of 2 policies checked");
+    }
+
+    @ParameterizedTest
+    @EnumSource(PolicyHubSyncService.Trigger.class)
+    void sync_whenHubRejectsCredentials_shouldAbortAtOnceWithoutWaiting(PolicyHubSyncService.Trigger trigger) {
+        var first = importedDefinition("hub-1", "hash-1");
+        var second = importedDefinition("hub-2", "hash-2");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first, second)));
+        when(importService.importPolicy("hub-1")).thenThrow(new PolicyHubAccessDeniedException("status 401"));
+
+        var summary = service.sync(trigger);
+
+        // waiting cannot fix wrong credentials: no pause, one request, the rest is not asked
+        assertThat(sleeps).isEmpty();
+        verify(importService, times(1)).importPolicy("hub-1");
+        verify(importService, never()).importPolicy("hub-2");
+        assertThat(summary).isEqualTo(new PolicyHubSyncService.SyncSummary(0, 0, 0, 0,
+                new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.ACCESS_DENIED, "status 401")));
+        verify(monitor).warning("Policy Hub sync (%s) aborted: Policy Hub rejected the credentials (status 401), 0 of 2 policies checked; check the Policy Hub credentials in the vault"
+                .formatted(trigger.name().toLowerCase(Locale.ROOT)));
+    }
+
+    @Test
+    void sync_whenCredentialsAreRejectedAfterOutage_shouldAbortAsAccessDenied() {
+        var first = importedDefinition("hub-1", "hash-1");
+        when(policyDefinitionService.search(any())).thenReturn(ServiceResult.success(List.of(first)));
+        when(importService.importPolicy("hub-1"))
+                .thenThrow(new PolicyHubUnavailableException("Connection refused"))
+                .thenThrow(new PolicyHubAccessDeniedException("status 403"));
+
+        var summary = service.sync(PolicyHubSyncService.Trigger.SCHEDULED);
+
+        assertThat(sleeps).containsExactly(Duration.ofSeconds(5));
+        assertThat(summary.abort()).isEqualTo(
+                new PolicyHubSyncService.Abort(PolicyHubSyncService.AbortCause.ACCESS_DENIED, "status 403"));
+    }
+
+    private static PolicyDefinition importedDefinition(String id, String hash) {
+        return definition(id)
+                .privateProperty(POLICY_HUB_NAME_PROPERTY, "name-" + id)
+                .privateProperty(POLICY_HUB_HASH_PROPERTY, hash)
+                .build();
+    }
+
+    private static PolicyDefinition.Builder definition(String id) {
+        return PolicyDefinition.Builder.newInstance()
+                .id(id)
+                .policy(Policy.Builder.newInstance().build());
+    }
+}

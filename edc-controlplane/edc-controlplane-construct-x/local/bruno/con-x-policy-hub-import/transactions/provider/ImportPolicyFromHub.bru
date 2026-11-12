@@ -1,0 +1,42 @@
+meta {
+  name: ImportPolicyFromHub
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{PROVIDER_MANAGEMENT}}/v1alpha/policyhub/policies/{{HUB_POLICY_ID}}/import
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  bru.setVar("importedPolicyId", res.getBody()['@id']);
+  bru.setVar("importedPolicyName", res.getBody()['policyHubName']);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  Pulls a policy from the Construct-X Policy Hub into the provider control plane. The control
+  plane fetches GET {hub}/api/v1/policies/{{HUB_POLICY_ID}}/odrl itself (URL and vault-based
+  basic-auth credentials are configured via constructx.policyhub.* in the docker-compose.yaml)
+  and stores it as a local policy definition. Repeating the request updates the definition.
+
+  The returned "@id" is the Policy Hub's UUID (same value as HUB_POLICY_ID), not the Policy
+  Hub's human-readable policy name - the stored policy definition is addressed by that UUID in
+  the connector. The human-readable name (e.g. "meine-policy-date") is returned separately as
+  "policyHubName", so it stays easy to tell which Policy Hub policy a given connector-side UUID
+  corresponds to.
+
+  The policy is stored under the Policy Hub UUID (= HUB_POLICY_ID), so a contract definition
+  created in the con-x-local-test collection references it with accessPolicyId /
+  contractPolicyId = HUB_POLICY_ID. The post-response script additionally keeps "@id" and
+  "policyHubName" in the runtime variables "importedPolicyId" / "importedPolicyName" for
+  readability; they only exist within the current Bruno session.
+
+  Prerequisite: the Policy Hub stack (policy-hub/docker-compose.yml) is running on port 8080.
+}

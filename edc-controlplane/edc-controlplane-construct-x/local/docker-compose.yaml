@@ -236,7 +236,8 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
-
+      # The consumer intentionally gets no constructx.policyhub.* settings - the Policy Hub import
+      # is provider-side only.
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1"]
       start_period: 10s
@@ -332,6 +333,13 @@ services:
       - edc.vault.hashicorp.url=http://shared-vault:8200
       - edc.vault.hashicorp.health.check.enabled=true
       - edc.vault.hashicorp.token=vaultsecret0123456789
+      # Construct-X Policy Hub. Reachable via host.docker.internal because the hub runs in its
+      # own compose project. If you attach its backend to con-x-test-network instead, use
+      # http://policyhub-backend:8080 here.
+      - constructx.policyhub.url=http://host.docker.internal:8080
+      - constructx.policyhub.credentials.alias=policy-hub-credentials
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider http://localhost:9000/api/check/readiness || exit 1" ]
       start_period: 10s
