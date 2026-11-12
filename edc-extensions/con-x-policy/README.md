@@ -60,6 +60,26 @@ passes.
 The version is optional: both `"DataExchangeGovernance"` and `"DataExchangeGovernance:1.0"` are valid, in the
 new as well as in the legacy notation (`ConxFrameworkAgreementConstraintFunction`).
 
+Evaluation is unchanged from upstream: it requires a Catena-X `DataExchangeGovernanceCredential` (or the
+credential named by the sub-type). There is no Construct-X credential that states a framework agreement, so
+`basic-abac` cannot take over here. Policies with `FrameworkAgreement` are importable, but the constraint only
+passes for participants that hold such a credential.
+
+### `Membership` (evaluated through `basic-abac`)
+
+`Membership eq "active"` is accepted as before (same left operand, operator and right operand as upstream), so Policy
+Hub policies with a `MEMBERSHIP` constraint import unchanged. The evaluation differs: upstream requires a Catena-X
+`MembershipCredential`, which Construct-X participants do not hold. `ConxMembershipConstraintFunction` (a subclass
+of the upstream function) evaluates the constraint through the [`basic-abac`](../basic-abac/README.md) extension
+instead, as the credential attribute
+
+```
+https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential.credentialSubject.isMember eq true
+```
+
+`ConstructXMembershipCredential` is the `basic-abac` default credential, which the consumer presents in every
+request, so the constraint works in the catalog as well as in negotiation and transfer.
+
 ### `connector` (Participant selection)
 
 The Policy Hub's "Participant selection" constraint uses EDC's own built-in left operand
@@ -131,6 +151,13 @@ for example `https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCr
 - **Why it is needed:** the validator accepts only a fixed set of left operands, which rejected every credential
   attribute. With `basic-abac` loaded in the same distribution, such policies could neither be created through
   `POST /v3/policydefinitions` nor imported from the Policy Hub (same validator).
+- **Catalog requests:** a catalog request carries no policy, so the consumer only presents the `basic-abac` default
+  credential (`edc.abac.defaultcredential`, by default `ConstructXMembershipCredential`). In an `ACCESS` policy, only
+  attributes of that credential can therefore grant access. An attribute of another credential type (e.g.
+  `Baustelle123Credential`) hides the offer from the catalog. Verified in the local testbed on 2026-11-12.
+- **Right operand as string:** write numbers as strings (`"rightOperand": "4"`). `basic-abac` compares `"4"` and
+  `4` as equal. A bare JSON number currently makes `POST /v3/policydefinitions` fail with a `500`
+  (`ClassCastException` in `ConxAtomicConstraintValidator`, which uses EDC's `MandatoryValue`).
 
 See the `basic-abac` README for how to write right operands (e.g. set operators need a stringified JSON list).
 Implementation: `ConxPolicyValidationConstants.isAbacLeftOperand`, used by `ConxLeftOperandValidator` and

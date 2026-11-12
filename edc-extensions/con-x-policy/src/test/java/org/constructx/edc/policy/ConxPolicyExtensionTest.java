@@ -26,6 +26,7 @@ import org.constructx.edc.policy.datausage.CatalogDataUsageStartDateConstraintFu
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.framework.ConxFrameworkAgreementConstraintFunction;
+import org.constructx.edc.policy.membership.ConxMembershipConstraintFunction;
 import org.eclipse.edc.connector.controlplane.catalog.spi.policy.CatalogPolicyContext;
 import org.eclipse.edc.connector.controlplane.contract.spi.policy.ContractNegotiationPolicyContext;
 import org.eclipse.edc.connector.controlplane.contract.spi.policy.TransferProcessPolicyContext;
@@ -38,6 +39,7 @@ import org.eclipse.edc.policy.model.Permission;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.tractusx.edc.policy.cx.framework.FrameworkAgreementConstraintFunction;
+import org.eclipse.tractusx.edc.policy.cx.membership.MembershipCredentialConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.usage.UsagePurposeConstraintFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -158,5 +160,20 @@ class ConxPolicyExtensionTest {
                 .toList();
         assertThat(frameworkAgreementFunctions).hasSize(3).allMatch(ConxFrameworkAgreementConstraintFunction.class::isInstance);
         verify(policyEngine).registerFunction(eq(ContractNegotiationPolicyContext.class), eq(Permission.class), isA(ConxFrameworkAgreementConstraintFunction.class));
+    }
+
+    @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    void initialize_shouldRegisterOnlyConxMembershipFunction(ConxPolicyExtension extension, ServiceExtensionContext context) {
+        extension.initialize(context);
+
+        ArgumentCaptor<DynamicAtomicConstraintRuleFunction> captor = ArgumentCaptor.forClass(DynamicAtomicConstraintRuleFunction.class);
+        verify(policyEngine, atLeastOnce()).registerFunction(any(Class.class), any(Class.class), captor.capture());
+
+        List<DynamicAtomicConstraintRuleFunction> membershipFunctions = captor.getAllValues().stream()
+                .filter(MembershipCredentialConstraintFunction.class::isInstance)
+                .toList();
+        assertThat(membershipFunctions).hasSize(3).allMatch(ConxMembershipConstraintFunction.class::isInstance);
+        verify(policyEngine).registerFunction(eq(CatalogPolicyContext.class), eq(Permission.class), isA(ConxMembershipConstraintFunction.class));
     }
 }

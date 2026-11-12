@@ -29,6 +29,7 @@ import org.constructx.edc.policy.datausage.CatalogDataUsageStartDateConstraintFu
 import org.constructx.edc.policy.datausage.ConxDataUsageEndDateConstraintFunction;
 import org.constructx.edc.policy.datausage.DataUsageStartDateConstraintFunction;
 import org.constructx.edc.policy.framework.ConxFrameworkAgreementConstraintFunction;
+import org.constructx.edc.policy.membership.ConxMembershipConstraintFunction;
 import org.constructx.edc.policy.validator.ConxPolicyDefinitionValidator;
 import org.eclipse.edc.connector.controlplane.catalog.spi.policy.CatalogPolicyContext;
 import org.eclipse.edc.connector.controlplane.contract.spi.policy.ContractNegotiationPolicyContext;
@@ -61,7 +62,6 @@ import org.eclipse.tractusx.edc.policy.cx.dismantler.DismantlerCredentialConstra
 import org.eclipse.tractusx.edc.policy.cx.jurisdictionlocation.JurisdictionLocationConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.jurisdictionlocation.JurisdictionLocationReferenceConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.liability.LiabilityConstraintFunction;
-import org.eclipse.tractusx.edc.policy.cx.membership.MembershipCredentialConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.precedence.PrecedenceConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.usage.ExcludingUsageConstraintFunction;
 import org.eclipse.tractusx.edc.policy.cx.usage.UsagePurposeConstraintFunction;
@@ -119,6 +119,9 @@ import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonths
  * <ul>
  *   <li>{@link ConxPolicyDefinitionValidator} instead of the upstream policy definition validator</li>
  *   <li>{@link ConxFrameworkAgreementConstraintFunction}: subtype without version is valid</li>
+ *   <li>{@link ConxMembershipConstraintFunction}: {@code Membership} is evaluated through {@code basic-abac} as
+ *   {@code ConstructXMembershipCredential.credentialSubject.isMember eq true} instead of requiring the Catena-X
+ *   {@code MembershipCredential}, which Construct-X participants do not hold</li>
  *   <li>{@link ConxDataUsageEndDateConstraintFunction}/{@link ConxDataProvisioningEndDateConstraintFunction}: LEQ and bare dates</li>
  *   <li>new {@link DataUsageStartDateConstraintFunction} (does not exist upstream)</li>
  *   <li>{@link CatalogDataUsageStartDateConstraintFunction}/{@link CatalogDataUsageEndDateConstraintFunction}: date
@@ -193,9 +196,11 @@ public class ConxPolicyExtension implements ServiceExtension {
         engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, new ConxFrameworkAgreementConstraintFunction<>());
         engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, new ConxFrameworkAgreementConstraintFunction<>());
 
-        engine.registerFunction(CatalogPolicyContext.class, Permission.class, new MembershipCredentialConstraintFunction<>());
-        engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, new MembershipCredentialConstraintFunction<>());
-        engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, new MembershipCredentialConstraintFunction<>());
+        // Membership is evaluated through basic-abac (ConstructXMembershipCredential.credentialSubject.isMember), not
+        // through the Catena-X MembershipCredential, which Construct-X participants do not hold
+        engine.registerFunction(CatalogPolicyContext.class, Permission.class, new ConxMembershipConstraintFunction<>());
+        engine.registerFunction(ContractNegotiationPolicyContext.class, Permission.class, new ConxMembershipConstraintFunction<>());
+        engine.registerFunction(TransferProcessPolicyContext.class, Permission.class, new ConxMembershipConstraintFunction<>());
 
         // BusinessPartnerGroup/BusinessPartnerNumber are deliberately not registered: Construct-X does not depend on the
         // Catena-X BPN/BDRS infrastructure (BusinessPartnerStore, BdrsClient), and the validators reject both left
