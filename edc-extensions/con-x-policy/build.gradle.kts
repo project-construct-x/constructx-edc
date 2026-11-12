@@ -24,9 +24,10 @@ plugins {
 repositories { mavenCentral() }
 
 dependencies {
-    // Construct-X builds on the unmodified Catena-X policy functions and validators. Note: cx-policy ships its own
-    // CxPolicyExtension, which must be removed from the runtime (see ConxPolicyExtension and the Construct-X
-    // distributions' ShadowJar configuration).
+    // cx-policy is used purely as a library: ConxPolicyExtension reuses individual, unmodified classes (constraint
+    // functions, validator building blocks) but is the only policy extension that runs in Construct-X. The Catena-X
+    // CxPolicyExtension that cx-policy ships is NOT used and is removed from the runtime by the Construct-X
+    // distributions' ShadowJar configuration.
     // Deliberately no dependency on the Catena-X BPN/BDRS modules (bpn-validation, bdrs-client and their SPIs): the
     // BusinessPartnerGroup/BusinessPartnerNumber functions are not registered, participants are selected by DID.
     api(project(":edc-extensions:cx-policy"))

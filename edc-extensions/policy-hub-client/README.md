@@ -292,7 +292,7 @@ and rotating them needs no restart.
 
 ## Runtime prerequisite
 
-The Catena-X policy functions must be on the classpath, otherwise `edc.policy.validation.enabled`
+The Construct-X policy extension `con-x-policy` must be on the classpath, otherwise `edc.policy.validation.enabled`
 (default `true`) rejects hub policies at creation time because their left operands are unknown to
 the policy engine. Both Construct-X control plane distributions
 (`con-x-controlplane-postgresql-hashicorp-vault`, `con-x-controlplane-postgresql-vault`) therefore
@@ -300,8 +300,9 @@ depend on the local `edc-extensions:con-x-policy` module. They deliberately do n
 BPN/BDRS extensions (`bpn-validation`, `bdrs-client`), so hub policies with `BusinessPartnerGroup` or
 `BusinessPartnerNumber` are rejected on import.
 
-`con-x-policy` builds on the **unmodified** Catena-X `edc-extensions:cx-policy` and adds the
-Construct-X extensions and fixes that make the hub's own ODRL output importable (`DataUsageStartDate`,
+`con-x-policy` is Construct-X's own policy extension. It reuses individual, unmodified classes of the Catena-X
+`edc-extensions:cx-policy` module as a library, but the Catena-X extension itself is not used. It provides what
+makes the hub's own ODRL output importable (`DataUsageStartDate`,
 `FrameworkAgreement` without a version, "at least one" semantics, constraint-free `CONTRACT` policies,
 `UsagePurpose` catalog NPE, Participant selection via `connector`, `DataSubset`, credential attributes of
 `basic-abac`, `Membership` evaluated through `basic-abac` against the `ConstructXMembershipCredential`). Its

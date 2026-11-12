@@ -51,7 +51,7 @@ public class ConxPolicyDefinitionValidator {
     );
 
     /**
-     * Creates a validator for Catena-X/Construct-X policy definitions.
+     * Creates the Construct-X validator for policy definitions.
      *
      * @return a validator instance for JSON object policy definitions
      */

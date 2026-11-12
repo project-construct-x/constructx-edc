@@ -107,13 +107,15 @@ import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDefinitionCons
 import static org.eclipse.tractusx.edc.policy.cx.warranty.WarrantyDurationMonthsConstraintFunction.WARRANTY_DURATION_MONTHS;
 
 /**
- * Construct-X replacement for {@link CxPolicyExtension}: provides the standard CX usage policies plus the
- * Construct-X additions and fixes.
+ * The Construct-X policy extension: registers the ODRL policy functions, rule bindings and policy definition
+ * validation of the Construct-X connector. It is the only policy extension that runs in Construct-X; the Catena-X
+ * {@link CxPolicyExtension} is not used. Individual, unmodified classes of the {@code cx-policy} module (constraint
+ * functions, validator building blocks) are reused as a library where their behavior fits.
  * <p>
- * Must run <strong>instead of</strong> {@link CxPolicyExtension}, not next to it: EDC composes JSON validators and
- * policy {@code validate()} functions (all of them must pass), so the relaxed Construct-X validation would otherwise
- * still be rejected by the upstream one. The Construct-X distributions therefore remove {@link CxPolicyExtension}
- * from the merged {@code ServiceExtension} file.
+ * {@link CxPolicyExtension} must not be loaded next to this extension: EDC composes JSON validators and policy
+ * {@code validate()} functions (all of them must pass), so its stricter validation would still reject what
+ * Construct-X accepts. The Construct-X distributions therefore remove it from the merged {@code ServiceExtension}
+ * file.
  * <p>
  * Differences to upstream:
  * <ul>

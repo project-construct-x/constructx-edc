@@ -8,12 +8,13 @@ and evaluate correctly at catalog, negotiation and transfer time.
 ## Setup
 
 `ConxPolicyExtension` registers the policy functions, the rule bindings and `ConxPolicyDefinitionValidator` as
-the JSON validator for policy definitions. It builds on the classes of [`cx-policy`](../cx-policy), which stays
-unmodified.
+the JSON validator for policy definitions. It is the only policy extension that runs in Construct-X; the Catena-X
+`CxPolicyExtension` is not used. Individual classes of [`cx-policy`](../cx-policy) (constraint functions, validator
+building blocks) are reused unmodified as a library where their behavior fits.
 
-`ConxPolicyExtension` must run **instead of** `CxPolicyExtension`, not next to it. EDC composes validators (all
-registered validators must pass), so the stricter validation of `CxPolicyExtension` would otherwise still
-apply. The Construct-X control plane distributions therefore remove
+Because the library classes come with the module, the Catena-X `CxPolicyExtension` is on the classpath too. It
+must never be loaded next to `ConxPolicyExtension`: EDC composes validators (all registered validators must pass),
+so its stricter validation would otherwise still apply. The Construct-X control plane distributions therefore remove
 `org.eclipse.tractusx.edc.policy.cx.CxPolicyExtension` from the merged
 `META-INF/services/org.eclipse.edc.spi.system.ServiceExtension` file (see `ExcludingServiceFileTransformer` in
 their `build.gradle.kts`).
