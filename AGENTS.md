@@ -15,9 +15,10 @@ The `con-x-controlplane-postgresql-hashicorp-vault` and `con-x-dataplane-postgre
 modules do **not** compile sibling source. They are thin `shadowJar` aggregations of **pre-built,
 published** upstream artifacts, assembled at runtime via EDC's ServiceLoader autoload (`mergeServiceFiles()`):
 - Dependencies are upstream BOMs/artifacts: `org.eclipse.edc:*` and `org.eclipse.tractusx.edc:*` (e.g. `controlplane-dcp-bom`, `controlplane-feature-sql-bom`, `vault-hashicorp`, `tx-dcp`, `agreements`).
-- **Versions are pinned inline** in each module's `build.gradle.kts` (`val edcVersion` / `val txVersion`), deviating from the repo-wide version-catalog rule. To bump, edit those local vals in both runtime build files.
+- **Versions come from root `gradle.properties`**, deviating from the repo-wide version-catalog rule: `edcVersion` = `con-x-edcVersion`, `txVersion` = `version` (read via `project.property(...)` in each runtime's `build.gradle.kts`). To bump EDC, change `con-x-edcVersion` only, then check the upstream BOMs for changed module composition.
 - Entrypoint: `mainClass = org.eclipse.edc.boot.system.runtime.BaseRuntime`.
 - Dataplane intentionally `exclude`s `org.eclipse.edc:data-plane-util` in favor of the tractusx `dataplane-util`.
+- Controlplane intentionally `exclude`s the new `data-plane-signaling*` modules (pulled in by the EDC ≥ 0.18 controlplane BOM) and adds legacy `transfer-data-plane-signaling` instead: the con-x dataplane is still the legacy JSON-LD EDC data plane. Without this, transfers terminate with `400 ... missing '@context'` and no EDR is created. Remove once the dataplane implements the new Data Plane Signaling spec.
 - To add a feature to a con-x runtime, add the BOM/artifact dependency here — don't wire code — unless authoring a genuinely new extension (then add it as a module and depend on it).
 - Build a single runtime image, e.g.: `./gradlew :edc-controlplane:edc-controlplane-construct-x:con-x-controlplane-postgresql-hashicorp-vault:dockerize` (note: that module's README has a typo, `postgres` vs `postgresql`).
 

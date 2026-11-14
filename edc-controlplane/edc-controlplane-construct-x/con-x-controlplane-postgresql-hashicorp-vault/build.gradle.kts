@@ -25,12 +25,23 @@ plugins {
     alias(libs.plugins.shadow)
 }
 
+// Since EDC 0.18 the controlplane BOM ships the new Data Plane Signaling implementation
+// (non JSON-LD), which the legacy EDC data plane in con-x-dataplane cannot understand.
+// Keep the legacy JSON-LD signaling until the data plane is migrated.
+configurations.all {
+    exclude(group = "org.eclipse.edc", module = "data-plane-signaling")
+    exclude(group = "org.eclipse.edc", module = "data-plane-signaling-core")
+    exclude(group = "org.eclipse.edc", module = "data-plane-signaling-api")
+    exclude(group = "org.eclipse.edc", module = "data-plane-signaling-oauth2")
+}
+
 val edcVersion = project.property("con-x-edcVersion") as String
 val txVersion = project.property("version") as String
 
 dependencies {
     implementation("org.eclipse.edc:controlplane-dcp-bom:$edcVersion")
     implementation("org.eclipse.edc:controlplane-feature-sql-bom:$edcVersion")
+    implementation("org.eclipse.edc:transfer-data-plane-signaling:$edcVersion")
 
     implementation("org.eclipse.edc:vault-hashicorp:$edcVersion")
 
