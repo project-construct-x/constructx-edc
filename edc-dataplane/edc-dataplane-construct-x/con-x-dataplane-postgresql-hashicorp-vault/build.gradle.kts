@@ -45,8 +45,8 @@ dependencies {
 
 
     // Hotfix version overrides
-    implementation("com.fasterxml.jackson.core:jackson-core:2.22.3")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.22.4")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.23.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.23.0")
 }
 
 
