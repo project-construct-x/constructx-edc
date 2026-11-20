@@ -34,22 +34,53 @@ dependencies {
 
     implementation("org.eclipse.edc:vault-hashicorp:$edcVersion")
 
+    implementation(project(":edc-extensions:policy-hub-client"))
+
     implementation("org.eclipse.tractusx.edc:agreements:$txVersion")
     implementation("org.eclipse.tractusx.edc:retirement-evaluation-store-sql:$txVersion")
     implementation(project(":edc-extensions:agreements:retirement-evaluation-bootstrapping"))
     implementation(project(":edc-extensions:dynamic-issuers"))
     implementation(project(":edc-extensions:basic-abac"))
 
-
+    // Construct-X's own policy extension (con-x-policy, ConxPolicyExtension): the ODRL policy functions and the
+    // policy definition validation of the Construct-X connector. Required so the control plane knows the left
+    // operands (Membership, UsagePurpose, FrameworkAgreement, DataSubset, ...) emitted by the Construct-X Policy
+    // Hub; without them edc.policy.validation.enabled=true already rejects the policy on creation.
+    // The Catena-X policy extension (CxPolicyExtension) is NOT used: con-x-policy only reuses individual classes of
+    // the unmodified cx-policy module as a library, and the ShadowJar below removes CxPolicyExtension from the runtime.
+    // Deliberately no Catena-X BPN/BDRS extensions (bpn-validation, bdrs-client): Construct-X uses DIDs as
+    // participant ids and con-x-policy does not register the BusinessPartnerGroup/BusinessPartnerNumber functions.
+    implementation(project(":edc-extensions:con-x-policy"))
 
     // Hotfix version overrides
     implementation("com.fasterxml.jackson.core:jackson-core:2.22.3")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.22.4")
+}
 
+configurations.runtimeClasspath {
+    // No Catena-X BPN/BDRS code in the Construct-X runtime, not even interfaces: the unmodified cx-policy library
+    // depends on these two SPI modules, but only for the BusinessPartnerGroup/BusinessPartnerNumber functions and
+    // CxPolicyExtension, none of which con-x-policy uses or loads.
+    exclude(group = "org.eclipse.tractusx.edc", module = "bdrs-client-spi")
+    exclude(group = "org.eclipse.tractusx.edc", module = "bpn-validation-spi")
+}
+
+/**
+ * Merges `META-INF/services` files like `mergeServiceFiles()`, but drops the given service implementations.
+ */
+class ExcludingServiceFileTransformer(private val excluded: Set<String>) :
+    com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer() {
+    override fun transform(context: com.github.jengelman.gradle.plugins.shadow.transformers.TransformerContext) {
+        val lines = context.inputStream.bufferedReader().use { it.readLines() }.filterNot { it.trim() in excluded }
+        super.transform(context.copy(inputStream = lines.joinToString("\n").byteInputStream()))
+    }
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-    mergeServiceFiles()
+    // Only Construct-X's own ConxPolicyExtension (con-x-policy) may run. The Catena-X CxPolicyExtension arrives on the
+    // classpath with the cx-policy library classes; drop it from the service file so it is never loaded (EDC composes
+    // policy validators, so it would otherwise still reject what Construct-X accepts).
+    transform(ExcludingServiceFileTransformer(setOf("org.eclipse.tractusx.edc.policy.cx.CxPolicyExtension")))
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     archiveFileName.set("con-x-controlplane-postgresql-hashicorp-vault.jar")
     transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer())
