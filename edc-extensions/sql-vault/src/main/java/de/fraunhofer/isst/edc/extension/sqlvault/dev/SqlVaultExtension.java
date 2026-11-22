@@ -91,8 +91,9 @@ public class SqlVaultExtension implements ServiceExtension {
             String[] kvPairs = initData.split(";;;");
             for (String kvPair : kvPairs) {
                 try {
-                    String[] kv = kvPair.split(":::");
-                    sqlVault.storeSecret(kv[0], kv[1]);
+                    String[] kv = kvPair.split(":::", 2);
+                    sqlVault.storeSecret(kv[0], kv[1])
+                            .onFailure(f -> monitor.warning("Error storing sql vault data for key " + kv[0] + ": " + f.getFailureDetail()));
                 } catch (Exception e) {
                     monitor.warning("Error storing sql vault data: " + kvPair);
                 }
@@ -105,8 +106,9 @@ public class SqlVaultExtension implements ServiceExtension {
                     if (Files.isRegularFile(path)) {
                         String key = path.getFileName().toString();
                         try {
-                            String value = Files.readString(path);
-                            sqlVault.storeSecret(key, value);
+                            String value = Files.readString(path).strip();
+                            sqlVault.storeSecret(key, value)
+                                    .onFailure(f -> monitor.warning("Error storing sql vault data for key " + key + ": " + f.getFailureDetail()));
                         } catch (Exception ex) {
                             monitor.warning("Error reading value for key: " + key);
                         }

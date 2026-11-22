@@ -14,7 +14,7 @@ extension and stick to the HashiCorp vault extension, if you require maximum sec
 
 
 ### Usage 
-This extension will self-register at boot-time and then deploy initial secrets, which you can define via as described in the following. 
+This extension will self-register at boot time and deploy initial secrets afterward, which can be defined as described below. 
 
 #### Secret definition via explicit property 
 
