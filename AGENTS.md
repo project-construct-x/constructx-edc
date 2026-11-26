@@ -11,13 +11,17 @@ Helm charts. Remote: `project-construct-x/constructx-edc`; upstream:
 3. **Construct-X additions** — keep changes minimal and upstream-aligned. The only Construct-X-specific code is a handful of extensions plus the runtime distributions under `edc-controlplane/edc-controlplane-construct-x/` and `edc-dataplane/edc-dataplane-construct-x/`.
 
 ## Construct-X runtimes (review these first for con-x work)
-The `con-x-controlplane-postgresql-hashicorp-vault` and `con-x-dataplane-postgresql-hashicorp-vault`
-modules do **not** compile sibling source. They are thin `shadowJar` aggregations of **pre-built,
-published** upstream artifacts, assembled at runtime via EDC's ServiceLoader autoload (`mergeServiceFiles()`):
+There are two variants per plane, differing only in the vault backend:
+`con-x-{controlplane,dataplane}-postgresql-hashicorp-vault` (HashiCorp Vault) and
+`con-x-{controlplane,dataplane}-postgresql-vault` (Postgres-backed `:edc-extensions:sql-vault`).
+**Keep all four build files in sync** — every exclude/dependency change applies to both variants of a plane.
+They are thin `shadowJar` aggregations of mostly **pre-built, published** upstream artifacts plus a few
+in-repo extensions (`project(":edc-extensions:...")`), assembled at runtime via EDC's ServiceLoader autoload (`mergeServiceFiles()`):
 - Dependencies are upstream BOMs/artifacts: `org.eclipse.edc:*` and `org.eclipse.tractusx.edc:*` (e.g. `controlplane-dcp-bom`, `controlplane-feature-sql-bom`, `vault-hashicorp`, `tx-dcp`, `agreements`).
-- **Versions are pinned inline** in each module's `build.gradle.kts` (`val edcVersion` / `val txVersion`), deviating from the repo-wide version-catalog rule. To bump, edit those local vals in both runtime build files.
+- **Versions come from root `gradle.properties`**, deviating from the repo-wide version-catalog rule: `edcVersion` = `con-x-edcVersion`, `txVersion` = `version` (read via `project.property(...)` in each runtime's `build.gradle.kts`). In-repo extensions are still compiled against the version catalog's `edc` version, so they run on `con-x-edcVersion` binaries — when bumping, also build and test those extensions against the new EDC version. To bump EDC, change `con-x-edcVersion` only, then check the upstream BOMs for changed module composition.
 - Entrypoint: `mainClass = org.eclipse.edc.boot.system.runtime.BaseRuntime`.
-- Dataplane intentionally `exclude`s `org.eclipse.edc:data-plane-util` in favor of the tractusx `dataplane-util`.
+- Dataplanes intentionally `exclude` `org.eclipse.edc:data-plane-util` in favor of the tractusx `dataplane-util`.
+- Controlplanes intentionally `exclude` the new `data-plane-signaling*` modules (pulled in by the EDC ≥ 0.18 controlplane BOM) and add legacy `transfer-data-plane-signaling` instead: the con-x dataplane is still the legacy JSON-LD EDC data plane. Without this, transfers terminate with `400 ... missing '@context'` and no EDR is created. Remove once the dataplane implements the new Data Plane Signaling spec.
 - To add a feature to a con-x runtime, add the BOM/artifact dependency here — don't wire code — unless authoring a genuinely new extension (then add it as a module and depend on it).
 - Build a single runtime image, e.g.: `./gradlew :edc-controlplane:edc-controlplane-construct-x:con-x-controlplane-postgresql-hashicorp-vault:dockerize` (note: that module's README has a typo, `postgres` vs `postgresql`).
 

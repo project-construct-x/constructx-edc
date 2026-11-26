@@ -49,6 +49,7 @@ public class SqlVault extends AbstractSqlStore implements Vault {
                 return queryExecutor.single(connection, false,
                         resultSet -> resultSet.getString("secret"), command, key);
             } catch (Exception e) {
+                monitor.severe("Error resolving secret for key: " + key, e);
                 return null;
             }
         });

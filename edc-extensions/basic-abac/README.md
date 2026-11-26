@@ -171,5 +171,6 @@ There is a technical necessity that the controlplane minimally needs at least on
 edc.abac.defaultcredential=https://w3id.org/my/very/special/FooMembershipCredential
 ```
 
-You are not required to use that property. If you don't, it will default to `https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential`.
+You are not required to use that property. If you don't, it will default to   
+`https://w3id.org/constructx/credentials/v0.1/MembershipCredential`.
 

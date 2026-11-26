@@ -14,5 +14,5 @@ a con-x EDC a bit less difficult.
 From the project root directory, run
 
 ```shell
-./gradlew :edc-controlplane:edc-controlplane-construct-x:con-x-controlplane-postgres-vault:dockerize
+./gradlew :edc-controlplane:edc-controlplane-construct-x:con-x-controlplane-postgresql-vault:dockerize
 ```

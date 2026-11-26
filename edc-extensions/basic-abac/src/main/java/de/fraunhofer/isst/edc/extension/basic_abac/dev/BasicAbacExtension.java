@@ -50,7 +50,7 @@ import static org.eclipse.edc.policy.model.OdrlNamespace.ODRL_SCHEMA;
 public class BasicAbacExtension implements ServiceExtension {
 
     @Setting(description = "The default credential type to be used",
-            defaultValue = "https://w3id.org/constructx/credentials/v1.0/ConstructXMembershipCredential",
+            defaultValue = "https://w3id.org/constructx/credentials/v0.1/MembershipCredential",
             key = "edc.abac.defaultcredential")
     private String defaultCredential;
 
